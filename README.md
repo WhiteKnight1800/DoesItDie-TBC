@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.png" alt="Does It Die logo" width="120">
+  <img src="docs/images/logo-skull.png" alt="Does It Die logo" width="160">
 </p>
 
 <h1 align="center">Does It Die (TBC)</h1>
