@@ -722,6 +722,14 @@ local okW, errW = pcall(function()
 end)
 if not okW then failures = failures + 1; print("FAIL  tooltip wait test crashed: " .. tostring(errW)) end
 
+-- A tooltip that isn't read as a DoT is logged once, so a missed DoT can be found with /did debug
+do
+    cast(27209); cast(27209)
+    local n = 0
+    for _, line in ipairs(db.log) do if line:find("SKIP Shadow Bolt", 1, true) then n = n + 1 end end
+    check("skipped tooltip logged once", n, 1)
+end
+
 -- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------
 local okCE, errCE = pcall(function()
     local P = ns.parseDot

@@ -755,6 +755,7 @@ end
 -- a fresh character): the cast waits up to DESC_WAIT_SECONDS for it, then is tracked as if it had just landed.
 local DESC_WAIT_SECONDS = 3
 local pendingDesc -- { spellID, key, at }
+local skippedLogged = {} -- spellID -> true once its tooltip has been logged as not a DoT
 local function onPlayerCast(spellID, castGUID, keyOverride)
     local key = keyOverride or castTargetKey(castGUID)
     local ok, name, desc = pcall(spellNameAndDescription, spellID)
@@ -783,6 +784,11 @@ local function onPlayerCast(spellID, castGUID, keyOverride)
     if not total then
         if not isSecret(desc) and ns.locale.shouldLogUnread(spellID, desc) then
             trace(string.format("NOT READ %s (id %d): %s", name, spellID, desc))
+        elseif not isSecret(desc) and not skippedLogged[spellID] then
+            -- Once per spell: what a tooltip that wasn't read as a DoT says, so a missed DoT shows up in /did debug.
+            skippedLogged[spellID] = true
+            trace(string.format("SKIP %s (id %d), not a DoT by its tooltip: %s", name, spellID,
+                tostring(desc):gsub("[\r\n]+", " "):sub(1, 160)))
         end
         return
     end
