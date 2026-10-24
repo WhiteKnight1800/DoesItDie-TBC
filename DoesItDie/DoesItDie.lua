@@ -312,6 +312,8 @@ local function parseDot(desc, comboPoints)
     if desc:find("[Cc]oats a weapon") then return nil end
     -- Heals over time: Forever's Renew reads "Heals the target of 830 damage over 15 sec".
     if desc:find("^Heals") then return nil end
+    -- Classic Era: some vanilla tooltips say "every second" where TBC says "every 1 sec".
+    desc = desc:gsub("every second", "every 1 sec")
 
     local total, school, duration
     for amount, words, secs in desc:gmatch("(%d+)%s*([%a ]-)%s*damage over (%d+%.?%d*) sec") do
@@ -1518,6 +1520,7 @@ end
 
 -- ns.db is set on ADDON_LOADED.
 ns.DEFAULTS = DEFAULTS
+ns.parseDot = parseDot -- tests
 ns.lists = { waitModes = WAIT_MODES } -- Display.lua adds the look lists
 -- What Display.lua needs from the tracking above.
 ns.tracking = { housekeep = housekeep, targetRemainingDamage = targetRemainingDamage, unitKey = unitKey }

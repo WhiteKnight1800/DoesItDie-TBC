@@ -1,14 +1,16 @@
-DoesItDie - TBC Classic port
-============================
+DoesItDie - TBC Anniversary & Classic Era port
+==============================================
 
 Ported by WhiteKnight / Smuggz_.
 
 A port of "Does It Die" (by JoeGG, MIT licence, github.com/swirllyman/DoesItDie, v0.8.2) from WoW Forever to
-the TBC Classic Anniversary client (interface 20505 / 20506 / 20507).
+the TBC Classic Anniversary client (interface 20505 / 20506 / 20507) and the Classic Era client (Classic Era,
+Hardcore; interface 11507 / 11508 / 11509). One download works on both.
 
 INSTALL
-  Put the DoesItDie folder in:  World of Warcraft\_anniversary_\Interface\AddOns\
-  (or whichever folder your TBC client uses), then restart the game fully. Type /did for options.
+  Put the DoesItDie folder in:  World of Warcraft\_anniversary_\Interface\AddOns\  (TBC Anniversary)
+                            or:  World of Warcraft\_classic_era_\Interface\AddOns\  (Classic Era)
+  then restart the game fully. Type /did for options.
   If the addon shows as "out of date", tick "Load out of date AddOns" on the character screen.
 
 WHAT CHANGED FROM THE FOREVER VERSION
@@ -37,6 +39,9 @@ WHAT CHANGED FROM THE FOREVER VERSION
     known, nothing is drawn on that player instead of a full bar; the size is then remembered per player name.
     Ticks on players are learned separately, so PvP (resilience) never drags down your PvE estimates.
     /did pvp (or Advanced > Show on enemy players) turns the marker and kill icon off on players.
+  * Classic Era: the same build loads there. Spells that don't exist in vanilla (Unstable Affliction, Seed of
+    Corruption, Vampiric Touch, Lacerate) simply never show up; vanilla tooltip wording ("every second") is read.
+    Vanilla has no focus frame, so the focus marker only appears if a unit frame addon provides one.
   * Options page falls back to the classic Interface Options if the newer Settings panel isn't there.
   Everything else (marker, kill icon, nameplates, focus frame, looks, /did window) is the original's.
 

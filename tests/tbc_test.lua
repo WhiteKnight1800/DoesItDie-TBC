@@ -616,6 +616,42 @@ local okT3, errT3 = pcall(function()
 end)
 if not okT3 then failures = failures + 1; print("FAIL  PvP test crashed: " .. tostring(errT3)) end
 
+-- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------
+local okCE, errCE = pcall(function()
+    local P = ns.parseDot
+    local function total(desc, cp) return (P(desc, cp)) end
+    check("CE Corruption", total("Corrupts the target, causing 822 Shadow damage over 18 sec."), 822)
+    check("CE Immolate: periodic part", total("Burns the enemy for 279 Fire damage and then an additional 510 Fire damage over 15 sec."), 510)
+    check("CE Curse of Agony", total("Curses the target with agony, causing 1044 Shadow damage over 24 sec."), 1044)
+    check("CE Siphon Life: 10 x 15", total("Transfers 15 health from the target to the caster every 3 sec.  Lasts 30 sec."), 150)
+    check("CE Drain Life 'every second': 5 x 71", total("Transfers 71 health every second from the target to the caster.  Lasts 5 sec."), 355)
+    check("CE Drain Life 'every 1 sec': 5 x 71", total("Transfers 71 health every 1 sec from the target to the caster.  Lasts 5 sec."), 355)
+    check("CE Shadow Word: Pain", total("A word of darkness that causes 852 Shadow damage over 18 sec."), 852)
+    check("CE Devouring Plague", total("Afflicts the target with a disease that causes 904 Shadow damage over 24 sec.  Damage caused by the Devouring Plague heals the caster."), 904)
+    check("CE Moonfire", total("Burns the enemy for 189 to 222 Arcane damage and then an additional 384 Arcane damage over 12 sec."), 384)
+    check("CE Rend", total("Wounds the target causing them to bleed for 147 damage over 21 sec."), 147)
+    check("CE Flame Shock", total("Instantly sears the target with fire, causing 292 Fire damage immediately and 320 Fire damage over 12 sec."), 320)
+    check("CE Garrote", total("Garrote the enemy, causing 1194 damage over 18 sec.  Awards 1 combo point."), 1194)
+    check("CE Rupture 5 points", total("Finishing move that causes damage over time, increased by your attack power.  Lasts longer per combo point:\n   1 point: 284 damage over 8 secs\n   2 points: 400 damage over 10 secs\n   3 points: 532 damage over 12 secs\n   4 points: 680 damage over 14 secs\n   5 points: 844 damage over 16 secs", 5), 844)
+    check("CE Rip 3 points", total("Finishing move that causes damage over time.  Damage increases per combo point and by your attack power:\r\n   1 point: 282 damage over 12 sec.\r\n   2 points: 408 damage over 12 sec.\r\n   3 points: 534 damage over 12 sec.\r\n   4 points: 660 damage over 12 sec.\r\n   5 points: 786 damage over 12 sec.", 3), 534)
+
+    -- A vanilla fight end to end, with vanilla spell IDs (Corruption rank 7, Immolate rank 8)
+    SPELLS[11672] = { "Corruption", "Corrupts the target, causing 822 Shadow damage over 18 sec." }
+    SPELLS[11668] = { "Immolate", "Burns the enemy for 279 Fire damage and then an additional 510 Fire damage over 15 sec." }
+    local mob = "Creature-0-0000-0-0000-11111-0000CE0001"
+    targetGuid = mob; H.fire("PLAYER_TARGET_CHANGED")
+    cast(11672); applied(mob, 11672)
+    cast(11668); applied(mob, 11668)
+    local t, by = remaining()
+    check("CE fight: both DoTs shown", by["Corruption"] ~= nil and by["Immolate"] ~= nil, true)
+    wait(3); tick(mob, 11672, 160)
+    _, by = remaining()
+    check("CE fight: Corruption follows its real ticks (5 left x 160)", by["Corruption"], 800)
+    log("UNIT_DIED", "", mob, 0)
+    check("CE fight: cleared on death", (remaining()), 0)
+end)
+if not okCE then failures = failures + 1; print("FAIL  Classic Era test crashed: " .. tostring(errCE)) end
+
 print(string.format("\n%d passed, %d failed", passes, failures))
 if failures > 0 then
     print("--- last log lines ---")

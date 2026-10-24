@@ -2,7 +2,7 @@
   <img src="docs/images/logo-skull.png" alt="Does It Die logo" width="160">
 </p>
 
-<h1 align="center">Does It Die (TBC)</h1>
+<h1 align="center">Does It Die (TBC &amp; Classic Era)</h1>
 
 <p align="center">
   <strong>Stop wasting casts on mobs that are already dead.</strong><br>
@@ -10,9 +10,10 @@
 </p>
 
 <p align="center">
-  <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Classic%20Anniversary-c9a24b?style=flat-square">
-  <img alt="Game version" src="https://img.shields.io/badge/game-2.5.5%20%7C%202.5.6-6d3bd1?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--tbc15-7cff4f?style=flat-square">
+  <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
+  <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
+  <img alt="Game version" src="https://img.shields.io/badge/game-1.15%20%7C%202.5-6d3bd1?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--tbc16-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
@@ -32,6 +33,7 @@
 - [Supported DoTs](#supported-dots)
 - [How accurate is it?](#how-accurate-is-it)
 - [PvP](#pvp)
+- [Classic Era](#classic-era)
 - [Compatibility](#compatibility)
 - [Bug reports](#bug-reports)
 - [Development](#development)
@@ -44,7 +46,7 @@
 | **Damage marker** | A striped section on your target's health bar covers the damage your DoTs still have to deal. If the health ends inside the marker, the mob is going to die. |
 | **Kill icon** | When your DoTs are enough to kill the target, a skull (or red X, tick or sunglasses) appears on its portrait. |
 | **Nameplates** | The same marker and a small kill icon on every enemy nameplate with your DoTs on it. Made for multi-dotting. |
-| **Focus frame** | The marker on your focus's health bar, and `/cast [@focus]` DoTs are tracked on the right mob. |
+| **Focus frame** | The marker on your focus's health bar, and `/cast [@focus]` DoTs are tracked on the right mob (TBC). |
 | **Per-DoT colours** | Each DoT gets its own segment, so you can see Corruption, Immolate and Agony separately. |
 | **Fully customisable** | `/did` opens an options window with a live preview: icons, fills, outlines, animations and text. |
 
@@ -62,6 +64,7 @@ The original addon was built for WoW: Forever, which hides most combat informati
 - **Spell power and attack power** are read at cast time, so trinket procs and flasks are reflected.
 - **Curse of Agony modelled correctly.** The base damage ramps up; the spell power bonus is spread evenly over every tick.
 - **No false kill icons.** Before a DoT's first tick the estimate is cautious (the lowest of your last 5 casts); from the first tick, that DoT's real ticks take over.
+- **One download for TBC Anniversary and Classic Era.** See [Classic Era](#classic-era).
 - **Works in PvP.** The game only reports enemy players' health as a percentage, so their real health is worked out from the damage they take. The marker appears after a few hits and is remembered per player. Can be switched off.
 - **Plater support**, plus automatic detection of other nameplate addons' health bars.
 - **Real combo points** for Rip and Rupture, and DoT timing that starts when the debuff lands.
@@ -90,7 +93,7 @@ The original addon was built for WoW: Forever, which hides most combat informati
 **Manually:**
 
 1. Download the latest version from the [Releases](../../releases) page, or this repository as a zip (**Code → Download ZIP**).
-2. Copy the `DoesItDie` folder into `World of Warcraft\_anniversary_\Interface\AddOns\`.
+2. Copy the `DoesItDie` folder into `World of Warcraft\_anniversary_\Interface\AddOns\` (TBC Anniversary) or `World of Warcraft\_classic_era_\Interface\AddOns\` (Classic Era).
 3. Restart the game and type `/did` to open the options.
 
 If the addon shows as out of date, tick **Load out of date AddOns** on the character selection screen.
@@ -114,14 +117,16 @@ If the addon shows as out of date, tick **Load out of date AddOns** on the chara
 
 | Class | Spells |
 |---|---|
-| **Warlock** | Corruption, Immolate, Curse of Agony, Unstable Affliction, Siphon Life, Seed of Corruption, *Drain Life and Drain Soul (while channelling)* |
-| **Priest** | Shadow Word: Pain, Vampiric Touch, Devouring Plague, Holy Fire, *Mind Flay (while channelling)* |
-| **Druid** | Moonfire, Insect Swarm, Entangling Roots, Rake, Rip, Pounce, Lacerate |
+| **Warlock** | Corruption, Immolate, Curse of Agony, Unstable Affliction\*, Siphon Life, Seed of Corruption\*, *Drain Life and Drain Soul (while channelling)* |
+| **Priest** | Shadow Word: Pain, Vampiric Touch\*, Devouring Plague, Holy Fire, *Mind Flay (while channelling)* |
+| **Druid** | Moonfire, Insect Swarm, Entangling Roots, Rake, Rip, Pounce, Lacerate\* |
 | **Hunter** | Serpent Sting, Immolation Trap |
 | **Mage** | Fireball and Pyroblast (their damage-over-time part) |
 | **Rogue** | Rupture, Garrote |
 | **Shaman** | Flame Shock |
 | **Warrior** | Rend |
+
+\* TBC only; these spells don't exist in Classic Era.
 
 Finishers (Rip, Rupture) use the combo points you actually spent.
 
@@ -135,7 +140,7 @@ The addon learns from your **real ticks**, so your spell power, spell rank, tale
 
 ## PvP
 
-The TBC client only tells addons an enemy player's health as a percentage, not in hit points. Does It Die works out their real health by adding up all the damage and healing they take in the combat log (from everyone, not just you) and comparing it with how far their percentage moves: 1,200 damage moving them from 80% to 70% means about 12,000 health.
+The game only tells addons an enemy player's health as a percentage, not in hit points. Does It Die works out their real health by adding up all the damage and healing they take in the combat log (from everyone, not just you) and comparing it with how far their percentage moves: 1,200 damage moving them from 80% to 70% means about 12,000 health.
 
 - On a new player, chat says it's measuring, and the marker appears once they've lost about 8% of their health.
 - The size is remembered per player name, so the next fight with the same player shows the marker straight away.
@@ -143,11 +148,20 @@ The TBC client only tells addons an enemy player's health as a percentage, not i
 - Players can heal, drink potions and use immunities, so in PvP the kill icon is a hint, not a promise.
 - Turn it off with `/did pvp` or **Advanced → Show on enemy players**.
 
+## Classic Era
+
+The same download works on Classic Era (including Hardcore). Both games run on the same modern Classic client, so everything above works the same way there: combat log tracking, channels, spell power, nameplates, Plater, the health text copy and PvP.
+
+- Spells that only exist in TBC (Unstable Affliction, Seed of Corruption, Vampiric Touch, Lacerate) simply never show up.
+- Vanilla tooltip wording is read, including "every second" for Drain Life.
+- Classic Era has no Blizzard focus frame, so the focus marker only appears if a unit frame addon provides one.
+- Season of Discovery rune DoTs aren't specifically supported yet.
+
 ## Compatibility
 
 | | |
 |---|---|
-| **Client** | TBC Classic Anniversary (2.5.5, 2.5.6) |
+| **Client** | TBC Classic Anniversary (2.5.5, 2.5.6) and Classic Era (1.15.7 to 1.15.9) |
 | **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
 | **Nameplates** | Blizzard, Plater, EllesmereUI, Platynator, and most others automatically |
 
@@ -163,7 +177,7 @@ Please [open an issue](../../issues/new/choose) and include:
 
 ## Development
 
-`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the TBC client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, the health text copy, and PvP health measuring. It needs a Lua 5.1 interpreter:
+`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the TBC client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, the health text copy, PvP health measuring, and Classic Era (vanilla) tooltips. It needs a Lua 5.1 interpreter:
 
 ```sh
 lua tests/tbc_test.lua DoesItDie tests
@@ -173,7 +187,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the history of the TBC port.
 
 ## Credits and licence
 
-- **TBC port:** WhiteKnight / Smuggz_
+- **TBC and Classic Era port:** WhiteKnight / Smuggz_
 - **Original addon:** [Does It Die](https://github.com/swirllyman/DoesItDie) by **JoeGG**, made for WoW: Forever. The marker, kill icon, options window and overall design are his work.
 
 Released under the [MIT licence](LICENSE), as the original is.
