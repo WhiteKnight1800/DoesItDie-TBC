@@ -1,11 +1,9 @@
 # Changelog (TBC port)
 
-## v0.8.2-tbc16
+## v0.8.2-tbc15
 - **Classic Era support:** the same download now loads on Classic Era (and Hardcore) as well as TBC Anniversary.
 - Vanilla tooltip wording is read ("every second", as on Drain Life).
 - Tests for vanilla tooltips and a Classic Era fight.
-
-## v0.8.2-tbc15
 - On an enemy player, chat says when the addon is measuring their health, so an empty bar doesn't look like a fault.
 - The display keeps working if the game wasn't restarted after updating.
 
