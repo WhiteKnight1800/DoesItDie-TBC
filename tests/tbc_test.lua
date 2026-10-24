@@ -286,6 +286,31 @@ do
     print("      status: " .. tostring(status))
 end
 
+-- 19b. Threat Plates: its plate frame hangs on Blizzard's plate as plate.TPFrame, the bar in TPFrame.visual.healthbar
+do
+    local tp = CreateFrame("Frame", nil, FakePlate)
+    local hb = CreateFrame("StatusBar", nil, tp)
+    hb:SetSize(120, 12); hb:SetMinMaxValues(0, 100); hb.value = 100
+    function hb.GetEffectiveAlpha() return 1 end
+    tp.visual = { healthbar = hb, name = {}, castbar = CreateFrame("StatusBar", nil, tp) }
+    FakePlate.TPFrame = tp
+    local oldChildren = FakePlate.GetChildren
+    function FakePlate.GetChildren(self) return tp end
+    -- a fresh plate: the previous test's addon bar is gone
+    local hidden = {}
+    for _, f in ipairs(frames) do
+        if f.kind == "StatusBar" and f.shown and f.parent and f.parent.parent == FakePlate and f.parent ~= tp then f:Hide(); table.insert(hidden, f) end
+    end
+    step("nameplate refresh with Threat Plates", function() for _ = 1, 3 do H.update(0.1) end end)
+    local status = ns.plateBarStatus and ns.plateBarStatus() or "?"
+    check("Threat Plates' health bar found", status:find("TPFrame.visual.healthbar", 1, true) ~= nil, true)
+    print("      status: " .. tostring(status))
+    FakePlate.TPFrame = nil
+    FakePlate.GetChildren = oldChildren
+    hb:Hide()
+    for _, f in ipairs(hidden) do f:Show() end
+end
+
 -- 20. Plater with "use UIParent": its unit frame is outside the Blizzard plate, linked as plate.unitFrame -----------
 do
     Plater = {}

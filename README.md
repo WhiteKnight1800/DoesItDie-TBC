@@ -163,7 +163,7 @@ The same download works on Classic Era (including Hardcore). Both games run on t
 |---|---|
 | **Client** | Classic Era and Hardcore (1.15.7 to 1.15.9), TBC Classic Anniversary (2.5.5, 2.5.6) |
 | **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
-| **Nameplates** | Blizzard, Plater, EllesmereUI, Platynator, and most others automatically |
+| **Nameplates** | Blizzard, Plater, Threat Plates, EllesmereUI, Platynator, and most others automatically |
 
 **Known limitations:** only your own DoTs are tracked; on enemy players the marker waits until their health has been measured; proc DoTs with no cast (Deep Wounds, Ignite, poisons) aren't tracked; healing on the target isn't accounted for; Curse of Doom isn't a DoT, so it isn't shown.
 
