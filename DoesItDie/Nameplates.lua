@@ -604,12 +604,14 @@ end
 local function updatePlate(unit, plate, db)
     local entries, total = ns.dotBreakdownForUnit(unit)
     if total <= 0 or unitIsDead(unit) then return end
+    local health, maxHealth = (ns.realHealth or function(u) return UnitHealth(u), UnitHealthMax(u) end)(unit) -- nil for an enemy player not measured yet
+    if not health then return end
     local healthBar, host, path, addonBar, iconOnly = findHealthBar(plate, unit)
     if not healthBar or (not iconOnly and not barShown(healthBar)) then return end
     seenHosts[host] = true
     lastBarPath = path
     local w = widgetsFor(host, healthBar, host ~= plate, addonBar)
-    if drawPlate(w, entries, total, UnitHealthMax(unit), UnitHealth(unit), db) and iconOnly then w.marker:Hide() end
+    if drawPlate(w, entries, total, maxHealth, math.max(health, 0.01), db) and iconOnly then w.marker:Hide() end
 end
 
 -- The options window's mock nameplate: { plate, healthBar } plus its preview state ({ health, dots } in % of

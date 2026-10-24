@@ -1120,13 +1120,17 @@ local function refresh()
         trace(string.format("ESTIMATE %d remaining from %d DoT(s)", damage, count))
     end
     if count == 0 then return hideAll() end
+    -- Enemy players: real health is only known once it has been measured (PlayerHealth.lua). Until then nothing is
+    -- drawn, rather than a marker sized against "100 health" that covers the whole bar.
+    local health, maxHealth = (ns.realHealth or function(u) return UnitHealth(u), UnitHealthMax(u) end)("target")
+    if not health then return hideAll() end
 
     local perDot = db.dotColors ~= "single"
     local ok, err = pcall(function()
-        skullBar:SetMinMaxValues(0, UnitHealth("target"))
+        skullBar:SetMinMaxValues(0, math.max(health, 0.01))
         skullBar:SetValue(damage)
         if healthBar then
-            setMarkerScale(UnitHealthMax("target"))
+            setMarkerScale(maxHealth)
             setMarkerValue(damage, ns.tracking.unitKey("target"), updateSegments(perDot and breakdown or nil))
         end
     end)

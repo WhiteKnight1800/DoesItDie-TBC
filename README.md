@@ -12,7 +12,7 @@
 <p align="center">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Classic%20Anniversary-c9a24b?style=flat-square">
   <img alt="Game version" src="https://img.shields.io/badge/game-2.5.5%20%7C%202.5.6-6d3bd1?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--tbc12-7cff4f?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--tbc15-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
@@ -31,6 +31,7 @@
 - [Commands](#commands)
 - [Supported DoTs](#supported-dots)
 - [How accurate is it?](#how-accurate-is-it)
+- [PvP](#pvp)
 - [Compatibility](#compatibility)
 - [Bug reports](#bug-reports)
 - [Development](#development)
@@ -61,6 +62,7 @@ The original addon was built for WoW: Forever, which hides most combat informati
 - **Spell power and attack power** are read at cast time, so trinket procs and flasks are reflected.
 - **Curse of Agony modelled correctly.** The base damage ramps up; the spell power bonus is spread evenly over every tick.
 - **No false kill icons.** Before a DoT's first tick the estimate is cautious (the lowest of your last 5 casts); from the first tick, that DoT's real ticks take over.
+- **Works in PvP.** The game only reports enemy players' health as a percentage, so their real health is worked out from the damage they take. The marker appears after a few hits and is remembered per player. Can be switched off.
 - **Plater support**, plus automatic detection of other nameplate addons' health bars.
 - **Real combo points** for Rip and Rupture, and DoT timing that starts when the debuff lands.
 
@@ -100,6 +102,7 @@ If the addon shows as out of date, tick **Load out of date AddOns** on the chara
 | `/did` | Open the options window (live preview) |
 | `/did accuracy` | Predicted vs real damage for your last DoTs |
 | `/did channels` | Turn Drain Life / Drain Soul / Mind Flay prediction on or off |
+| `/did pvp` | Show or hide the marker and kill icon on enemy players |
 | `/did text` | Put the health numbers above or below the marker |
 | `/did textcheck` | List the text over your target's health bar (for bug reports) |
 | `/did skull` | Show the kill icon for 5 seconds to check its position |
@@ -130,6 +133,16 @@ The addon learns from your **real ticks**, so your spell power, spell rank, tale
 - **From the first tick on**, that DoT is predicted from its own real ticks.
 - `/did accuracy` shows predicted vs real damage for your last DoTs, including anything the mob resisted.
 
+## PvP
+
+The TBC client only tells addons an enemy player's health as a percentage, not in hit points. Does It Die works out their real health by adding up all the damage and healing they take in the combat log (from everyone, not just you) and comparing it with how far their percentage moves: 1,200 damage moving them from 80% to 70% means about 12,000 health.
+
+- On a new player, chat says it's measuring, and the marker appears once they've lost about 8% of their health.
+- The size is remembered per player name, so the next fight with the same player shows the marker straight away.
+- Your ticks on players (reduced by resilience) are learned separately, so PvP never changes your PvE estimates.
+- Players can heal, drink potions and use immunities, so in PvP the kill icon is a hint, not a promise.
+- Turn it off with `/did pvp` or **Advanced → Show on enemy players**.
+
 ## Compatibility
 
 | | |
@@ -138,7 +151,7 @@ The addon learns from your **real ticks**, so your spell power, spell rank, tale
 | **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
 | **Nameplates** | Blizzard, Plater, EllesmereUI, Platynator, and most others automatically |
 
-**Known limitations:** only your own DoTs are tracked; proc DoTs with no cast (Deep Wounds, Ignite, poisons) aren't tracked; healing on the target isn't accounted for; Curse of Doom isn't a DoT, so it isn't shown.
+**Known limitations:** only your own DoTs are tracked; on enemy players the marker waits until their health has been measured; proc DoTs with no cast (Deep Wounds, Ignite, poisons) aren't tracked; healing on the target isn't accounted for; Curse of Doom isn't a DoT, so it isn't shown.
 
 ## Bug reports
 
@@ -150,7 +163,7 @@ Please [open an issue](../../issues/new/choose) and include:
 
 ## Development
 
-`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the TBC client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, and the health text copy. It needs a Lua 5.1 interpreter:
+`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the TBC client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, the health text copy, and PvP health measuring. It needs a Lua 5.1 interpreter:
 
 ```sh
 lua tests/tbc_test.lua DoesItDie tests

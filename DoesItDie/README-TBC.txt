@@ -32,6 +32,11 @@ WHAT CHANGED FROM THE FOREVER VERSION
     numbers inside the bar is drawn on top of it (works with Blizzard's frame, BetterBlizzFrames and others, in
     combat too). /did text (or Advanced > Health text above marker) turns this off; /did textcheck lists the text
     it found over the bar.
+  * PvP: the TBC client only reports enemy players' health as a percentage, so their real health is measured from
+    the damage and healing they take (combat log, all sources) against how far their percentage moves. Until it's
+    known, nothing is drawn on that player instead of a full bar; the size is then remembered per player name.
+    Ticks on players are learned separately, so PvP (resilience) never drags down your PvE estimates.
+    /did pvp (or Advanced > Show on enemy players) turns the marker and kill icon off on players.
   * Options page falls back to the classic Interface Options if the newer Settings panel isn't there.
   Everything else (marker, kill icon, nameplates, focus frame, looks, /did window) is the original's.
 

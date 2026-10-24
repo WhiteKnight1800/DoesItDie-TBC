@@ -973,6 +973,10 @@ local function buildTabs()
     advanced:checkbox("estimateDuringCast", "Estimate during casting", { tooltip = "Shows a DoT with a cast time "
         .. "while you're still casting it. Once the cast lands the normal estimate takes over; an interrupted or "
         .. "failed cast removes it." })
+    advanced:checkbox("showOnPlayers", "Show on enemy players", { tooltip = "Draws the marker and kill icon on "
+        .. "enemy players in PvP too. Their real health is worked out from the damage they take, so the marker "
+        .. "appears after a few hits. Players can heal, so in PvP the kill icon is a hint, not a promise. Untick "
+        .. "to use the addon on mobs only." })
     advanced:checkbox("markerUnderText", "Health text above marker", { tooltip = "Keeps your target frame's "
         .. "health numbers readable: the marker stays over the bar's colour and the numbers are drawn on top of it. "
         .. "Untick to let the marker cover the numbers, as the original addon did." })

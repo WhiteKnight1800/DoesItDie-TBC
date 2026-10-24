@@ -159,7 +159,8 @@ local DEFAULTS = {
     -- Accuracy
     waitFirstTick = "off",
     estimateDuringCast = true,
-    markerUnderText = true, -- TBC port: the marker sits under the target frame's health text, not over it
+    markerUnderText = true,
+    showOnPlayers = true,   -- TBC port: marker and kill icon on enemy players too (their health is measured) -- TBC port: the marker sits under the target frame's health text, not over it
     trackChannels = true, -- Drain Life, Drain Soul, Mind Flay while channelling (TBC port; /did channels)
     uiLanguage = "auto", -- the options window's language (Locale.lua): "auto" or a language tag
     -- Nameplates (Nameplates.lua): their own look, since enemy plates are red. Defaults read well on red.
@@ -769,6 +770,8 @@ local function onPlayerCast(spellID, castGUID)
     -- A finisher's tick size depends on the points spent, so learned sizes are kept per point count.
     local tickKey = spellID
     if isFinisher then tickKey = comboPoints and (spellID .. "x" .. comboPoints) or nil end
+    -- Ticks on players (resilience, PvP buffs) are learned separately, so PvP never drags down PvE estimates.
+    if tickKey and type(key) == "string" and key:find("^Player%-") then tickKey = tickKey .. "p" end
 
     local now = GetTime()
     if TRAP_DOTS[name] then
@@ -1768,6 +1771,10 @@ SlashCmdList.DOESITDIE = function(msg)
         print("Learned tick sizes cleared.")
     elseif cmd == "textcheck" then
         for _, line in ipairs(ns.textReport()) do print(line); trace("TEXTCHECK " .. line) end
+    elseif cmd == "pvp" then
+        db.showOnPlayers = db.showOnPlayers == false
+        print("Marker and kill icon on enemy players " .. (db.showOnPlayers and "ON" or "OFF") .. ".")
+        ns.refresh()
     elseif cmd == "text" then
         db.markerUnderText = db.markerUnderText == false
         ns.relayer()
@@ -1800,6 +1807,7 @@ SlashCmdList.DOESITDIE = function(msg)
             "/did reset - forget learned tick sizes",
             "/did accuracy - show predicted vs real damage of your last DoTs",
             "/did text - put the marker under or over the health text",
+            "/did pvp - show or hide the marker and kill icon on enemy players",
             "/did textcheck - list the text over the target's health bar and whether it's above the marker",
         }) do print(ns.locale.T(line)) end
     end

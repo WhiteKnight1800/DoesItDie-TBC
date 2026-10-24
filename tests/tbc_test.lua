@@ -568,6 +568,54 @@ local okT2, errT2 = pcall(function()
 end)
 if not okT2 then failures = failures + 1; print("FAIL  outside-text test crashed: " .. tostring(errT2)) end
 
+-- 29. PvP: an enemy player's health is only a percentage; the real size is measured from damage taken ---------------
+local okT3, errT3 = pcall(function()
+    local enemy = "Player-1-0000ABCD"
+    local pct, realUnitHealth, realUnitHealthMax, realUnitName = 100, UnitHealth, UnitHealthMax, UnitName
+    function UnitPlayerControlled(u) return (u == "target" or u == "nameplate1") and targetGuid == enemy end
+    function UnitIsUnit() return false end
+    function UnitInParty() return false end
+    function UnitInRaid() return false end
+    function UnitHealth(u) if UnitPlayerControlled(u) then return pct end return realUnitHealth(u) end
+    function UnitHealthMax(u) if UnitPlayerControlled(u) then return 100 end return realUnitHealthMax(u) end
+    function UnitName(u) if UnitPlayerControlled(u) then return "Gankster" end return realUnitName(u) end
+    targetGuid = enemy; H.fire("PLAYER_TARGET_CHANGED")
+    for _ = 1, 3 do H.update(0.1) end                                   -- first look at the player: 100%
+    local ticksBefore = db.ticks[27216]
+    cast(27216); applied(enemy, 27216)
+    for _ = 1, 3 do H.update(0.1) end
+    check("enemy player not measured yet: no marker (instead of a full bar)", DoesItDieRemaining.shown, false)
+    local told = false
+    for _, line in ipairs(chat) do if line:find("measuring Gankster's health", 1, true) then told = true end end
+    check("chat says it's measuring the player", told, true)
+    log("SPELL_DAMAGE", "Player-1-OTHER", enemy, 27209, { 1200 })      -- someone hits them for 1200: 100% -> 90%
+    pct = 90; H.fire("UNIT_HEALTH", "target")
+    for _ = 1, 3 do H.update(0.1) end
+    check("health measured: 1200 damage moved 10% = 12000", db.playerHealth and db.playerHealth.Gankster and db.playerHealth.Gankster.est, 12000)
+    check("marker shows once the size is known", DoesItDieRemaining.shown, true)
+    local _, mx = DoesItDieRemaining:GetMinMaxValues()
+    check("marker scaled to the player's real health", mx, 12000, 1)
+    wait(3); tick(enemy, 27216, 150)
+    check("PvP tick learned separately", db.ticks["27216p"], 150)
+    check("PvE tick size untouched by PvP", db.ticks[27216], ticksBefore)
+    -- A later fight with the same player (new GUID after a relog) starts with the remembered size
+    log("UNIT_DIED", "", enemy, 0)
+    enemy = "Player-1-0000BEEF"; targetGuid = enemy; pct = 100; H.fire("PLAYER_TARGET_CHANGED")
+    cast(27216); applied(enemy, 27216)
+    for _ = 1, 3 do H.update(0.1) end
+    check("same player again: remembered size used at once", DoesItDieRemaining.shown, true)
+    SlashCmdList.DOESITDIE("pvp")
+    for _ = 1, 3 do H.update(0.1) end
+    check("/did pvp off: nothing drawn on the enemy player", DoesItDieRemaining.shown, false)
+    check("setting saved", db.showOnPlayers, false)
+    SlashCmdList.DOESITDIE("pvp")
+    for _ = 1, 3 do H.update(0.1) end
+    check("/did pvp on again: marker back", DoesItDieRemaining.shown, true)
+    UnitPlayerControlled, UnitHealth, UnitHealthMax, UnitName = nil, realUnitHealth, realUnitHealthMax, realUnitName
+    log("UNIT_DIED", "", enemy, 0)
+end)
+if not okT3 then failures = failures + 1; print("FAIL  PvP test crashed: " .. tostring(errT3)) end
+
 print(string.format("\n%d passed, %d failed", passes, failures))
 if failures > 0 then
     print("--- last log lines ---")

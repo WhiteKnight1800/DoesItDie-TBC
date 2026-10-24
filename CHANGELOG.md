@@ -1,5 +1,16 @@
 # Changelog (TBC port)
 
+## v0.8.2-tbc15
+- On an enemy player, chat says when the addon is measuring their health, so an empty bar doesn't look like a fault.
+- The display keeps working if the game wasn't restarted after updating.
+
+## v0.8.2-tbc14
+- New option Advanced > **Show on enemy players**, and `/did pvp`, to turn the marker and kill icon off on players.
+
+## v0.8.2-tbc13
+- **PvP:** the marker no longer fills the whole bar on enemy players. The TBC client only reports their health as a percentage, so their real health is worked out from the damage and healing they take, then remembered per player name.
+- Ticks on players are learned separately, so PvP (resilience) never changes your PvE estimates.
+
 ## v0.8.2-tbc12
 - Health numbers on the target frame are drawn on top of the DoT marker (a copy of the text, so it works on Blizzard's protected frame in combat). Works with Blizzard's frame, BetterBlizzFrames and other unit frame addons.
 - New option Advanced > Health text above marker, and `/did text`.
