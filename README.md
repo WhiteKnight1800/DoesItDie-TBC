@@ -150,6 +150,10 @@ The game only tells addons an enemy player's health as a percentage, not in hit 
 
 ## Classic Era
 
+<p align="center">
+  <img src="docs/images/8-classic-era.png" alt="Does It Die on Classic Era: Rend's marker on a level 11 warrior's target" width="860">
+</p>
+
 The same download works on Classic Era (including Hardcore). Both games run on the same modern Classic client, so everything above works the same way there: combat log tracking, channels, spell power, nameplates, Plater, the health text copy and PvP.
 
 - Spells that only exist in TBC (Unstable Affliction, Seed of Corruption, Vampiric Touch, Lacerate) simply never show up.
