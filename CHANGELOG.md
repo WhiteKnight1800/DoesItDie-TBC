@@ -5,6 +5,8 @@
 - Health drained from enemy players by spells counts toward measuring their health.
 - Nameplates: the marker stays on top when Plater raises a plate (when it becomes your target, for example). Before, it could end up underneath Plater's bar.
 - A DoT cast before the game has loaded its tooltip (seen on a fresh character) is no longer skipped: it waits a moment for the tooltip, then shows.
+- Rend on TBC is tracked again: its tooltip adds weapon damage ("28 damage plus an additional 1 (based on weapon damage) over 12 sec"), which wasn't read.
+- `/did debug` shows a spell's tooltip when it isn't read as a DoT, so missed DoTs are easy to report.
 
 ## v0.8.2-tbc16
 - More accurate first estimate: one odd cast (heavy partial resists, a tanky mob) can no longer halve the prediction for your next casts. The cautious estimate before a DoT's first tick now stays within 80% of your latest cast.

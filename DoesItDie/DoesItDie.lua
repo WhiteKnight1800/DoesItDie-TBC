@@ -315,6 +315,19 @@ local function parseDot(desc, comboPoints)
     -- Classic Era: some vanilla tooltips say "every second" where TBC says "every 1 sec".
     desc = desc:gsub("every second", "every 1 sec")
 
+    -- TBC Rend at low level: "bleed for 28 damage plus an additional 1 (based on weapon damage) over 12 sec." The
+    -- weapon bonus is counted with the base, and the bracket dropped so "damage over" reads as usual.
+    do
+        local base, extra = desc:match("(%d+) damage plus an additional (%d+)")
+        local clean = desc:gsub("%s*%b()", "")
+        if base and extra then
+            local secs = clean:match("plus an additional %d+%s*over (%d+%.?%d*) sec")
+            if secs and tonumber(secs) > 0 then
+                return tonumber(base) + tonumber(extra), SCHOOL_MASKS.Physical, tonumber(secs)
+            end
+        end
+        desc = clean
+    end
     local total, school, duration
     for amount, words, secs in desc:gmatch("(%d+)%s*([%a ]-)%s*damage over (%d+%.?%d*) sec") do
         total, school, duration = tonumber(amount), schoolFromWords(words), tonumber(secs)
