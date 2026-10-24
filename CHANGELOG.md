@@ -1,5 +1,9 @@
 # Changelog (Classic & TBC port)
 
+## v0.8.2-tbc17
+- **PvP:** enemy players who keep getting healed back up (healers, a mage's Ice Barrier or Mana Shield) are now measured hit by hit, so their marker shows instead of staying hidden.
+- Health drained from enemy players by spells counts toward measuring their health.
+
 ## v0.8.2-tbc16
 - More accurate first estimate: one odd cast (heavy partial resists, a tanky mob) can no longer halve the prediction for your next casts. The cautious estimate before a DoT's first tick now stays within 80% of your latest cast.
 - Partly resisted ticks are learned at their full size, so a run of resists isn't mistaken for the spell's real damage.

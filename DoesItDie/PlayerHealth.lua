@@ -13,6 +13,11 @@ local ANCHOR_SECONDS = 30     -- measure over at most this long: natural regener
 local FORGET_SECONDS = 300    -- drop a player's running totals after this long without events
 local MIN_HEALTH, MAX_HEALTH = 200, 60000 -- plausible TBC player and pet health
 local CACHE_SIZE = 300
+-- Hit by hit: each change in percentage is paired with the damage or healing logged since the last one. This measures
+-- players whose health goes up and down without ever dropping MIN_MOVE overall (healed in a group, or a mage refreshing
+-- Ice Barrier and Mana Shield). Small steps round to whole percents, so more of them are needed first.
+local GROSS_MIN = 12          -- percentage points of hit-by-hit movement before that estimate is used
+local PAIR_SECONDS = 2        -- a percentage change and its combat log event arrive within this of each other
 
 local trackers = {}           -- guid -> { net, anchorNet, anchorPct, anchorAt, lastPct, est, seenAt, name }
 
@@ -77,12 +82,40 @@ local function startWindow(t, pct, now)
     t.winSpan = 0
 end
 
+-- Pairs the percentage change since the last match with the damage or healing logged since then (see GROSS_MIN).
+-- The health update and its combat log event can arrive in either order, so one side waits for the other briefly.
+local function pairStep(t, pct, now)
+    if not t.matchPct then t.matchPct, t.pendNet, t.matchAt = pct, 0, now return end
+    local dp, dn = t.matchPct - pct, t.pendNet or 0
+    if dp ~= 0 and dn ~= 0 then
+        local est = dn / dp * 100
+        if (dp > 0) == (dn > 0) and est >= MIN_HEALTH and est <= MAX_HEALTH then
+            t.grossNet = (t.grossNet or 0) + math.abs(dn)
+            t.grossPct = (t.grossPct or 0) + math.abs(dp)
+        end
+        t.matchPct, t.pendNet, t.matchAt = pct, 0, now
+    elseif (dp ~= 0 or dn ~= 0) and now - (t.matchAt or now) > PAIR_SECONDS then
+        -- Only one side moved (regeneration, an event out of range): start again from here.
+        t.matchPct, t.pendNet, t.matchAt = pct, 0, now
+    elseif dp == 0 and dn == 0 then
+        t.matchAt = now
+    end
+    if not t.est and (t.grossPct or 0) >= GROSS_MIN then
+        t.est = t.grossNet / t.grossPct * 100
+        t.span = t.grossPct
+        remember(t.name, t.est)
+        if ns.trace then ns.trace(string.format("PLAYER health of %s estimated at %d (hit by hit, %d dealt over %d%%)",
+            tostring(t.name), t.est, t.grossNet, t.grossPct)) end
+    end
+end
+
 local function sample(unit, guid)
     local okH, pct = pcall(UnitHealth, unit)
     if not okH or type(pct) ~= "number" or isSecret(pct) then return end
     local t = trackerFor(guid)
     t.name = t.name or cacheKey(unit)
     local now = GetTime()
+    pairStep(t, pct, now)
     if not t.anchorPct or now - t.anchorAt > ANCHOR_SECONDS or pct <= 0 then return startWindow(t, pct, now) end
     local moved, dealt = t.anchorPct - pct, t.net - t.anchorNet
     local span = math.abs(moved)
@@ -139,6 +172,7 @@ end
 local DAMAGE_AT_15 = { SPELL_DAMAGE = true, SPELL_PERIODIC_DAMAGE = true, RANGE_DAMAGE = true, DAMAGE_SHIELD = true,
     DAMAGE_SPLIT = true, SPELL_BUILDING_DAMAGE = true }
 local HEAL = { SPELL_HEAL = true, SPELL_PERIODIC_HEAL = true }
+local LEECH = { SPELL_LEECH = true, SPELL_PERIODIC_LEECH = true, SPELL_DRAIN = true, SPELL_PERIODIC_DRAIN = true }
 
 local frame = CreateFrame("Frame")
 if type(CombatLogGetCurrentEventInfo) == "function" then
@@ -161,11 +195,13 @@ frame:SetScript("OnEvent", function(_, event, unit)
     elseif sub == "ENVIRONMENTAL_DAMAGE" then amount = a13
     elseif DAMAGE_AT_15[sub] then amount = a15
     elseif HEAL[sub] then amount = -((tonumber(a15) or 0) - (tonumber(a16) or 0))
+    elseif LEECH[sub] and tonumber(a16) == -2 then amount = a15 -- health drained (power type -2 is health)
     elseif sub == "UNIT_DIED" then trackers[destGUID] = nil return
     else return end
     if type(amount) ~= "number" or amount == 0 then return end
     local t = trackerFor(destGUID)
     t.net = t.net + amount
+    t.pendNet = (t.pendNet or 0) + amount
 end)
 
 -- Forget players not seen for a while.

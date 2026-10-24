@@ -38,6 +38,7 @@ WHAT CHANGED FROM THE FOREVER VERSION
     the damage and healing they take (combat log, all sources) against how far their percentage moves. Until it's
     known, nothing is drawn on that player instead of a full bar; the size is then remembered per player name.
     Ticks on players are learned separately, so PvP (resilience) never drags down your PvE estimates.
+    Players kept topped up (healers, Ice Barrier, Mana Shield) are measured hit by hit instead.
     /did pvp (or Advanced > Show on enemy players) turns the marker and kill icon off on players.
   * Classic Era: the same build loads there. Spells that don't exist in vanilla (Unstable Affliction, Seed of
     Corruption, Vampiric Touch, Lacerate) simply never show up; vanilla tooltip wording ("every second") is read.

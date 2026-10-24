@@ -641,6 +641,46 @@ local okT3, errT3 = pcall(function()
 end)
 if not okT3 then failures = failures + 1; print("FAIL  PvP test crashed: " .. tostring(errT3)) end
 
+-- PvP: a player kept topped up (healer, or a mage's Ice Barrier) never drops 8% overall: measured hit by hit ---------
+local okT4, errT4 = pcall(function()
+    local enemy = "Player-1-0000C0DE"
+    local pct, realUnitHealth, realUnitHealthMax, realUnitName = 100, UnitHealth, UnitHealthMax, UnitName
+    function UnitPlayerControlled(u) return (u == "target" or u == "nameplate1") and targetGuid == enemy end
+    function UnitIsUnit() return false end
+    function UnitInParty() return false end
+    function UnitInRaid() return false end
+    function UnitHealth(u) if UnitPlayerControlled(u) then return pct end return realUnitHealth(u) end
+    function UnitHealthMax(u) if UnitPlayerControlled(u) then return 100 end return realUnitHealthMax(u) end
+    local who = "Glacier"
+    function UnitName(u) if UnitPlayerControlled(u) then return who end return realUnitName(u) end
+    targetGuid = enemy; H.fire("PLAYER_TARGET_CHANGED")
+    for _ = 1, 3 do H.update(0.1) end
+    cast(27216); applied(enemy, 27216)
+    for i = 1, 4 do
+        log("SPELL_DAMAGE", "Player-1-OTHER", enemy, 27209, { 500 }); pct = 95; H.fire("UNIT_HEALTH", "target")
+        H.update(0.5)
+        -- the heal's health update arrives before its combat log event this time
+        pct = 100; H.fire("UNIT_HEALTH", "target")
+        log("SPELL_HEAL", "Player-1-HEALER", enemy, 27209, { 500, 0 })
+        H.update(0.5)
+    end
+    local cached = db.playerHealth and db.playerHealth.Glacier
+    check("topped-up player measured hit by hit: 500 per 5% = 10000", cached and cached.est, 10000)
+    check("marker shows on the topped-up player", DoesItDieRemaining.shown, true)
+    -- health drained by a spell (SPELL_PERIODIC_LEECH, power type -2) counts as damage
+    enemy, who, pct = "Player-1-0000D00D", "Drainee", 100
+    targetGuid = enemy; H.fire("PLAYER_TARGET_CHANGED")
+    for _ = 1, 3 do H.update(0.1) end
+    H.fire("UNIT_HEALTH", "target") -- first look at 100%
+    log("SPELL_PERIODIC_LEECH", PLAYER, enemy, 27238, { 1000, -2, 0 }); pct = 90; H.fire("UNIT_HEALTH", "target")
+    for _ = 1, 3 do H.update(0.1) end
+    local drained = db.playerHealth and db.playerHealth.Drainee
+    check("drained health counted as damage: 1000 per 10% = 10000", drained and drained.est, 10000)
+    UnitPlayerControlled, UnitHealth, UnitHealthMax, UnitName = nil, realUnitHealth, realUnitHealthMax, realUnitName
+    log("UNIT_DIED", "", enemy, 0)
+end)
+if not okT4 then failures = failures + 1; print("FAIL  PvP hit-by-hit test crashed: " .. tostring(errT4)) end
+
 -- One odd cast can't halve the cautious estimate; partial resists learn the unresisted size -------------------
 local okF, errF = pcall(function()
     db.ticks[27216] = 350; db.tickPower = db.tickPower or {}; db.tickPower[27216] = nil
