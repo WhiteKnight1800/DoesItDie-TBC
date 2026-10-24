@@ -72,16 +72,16 @@ The original addon was built for WoW: Forever, which hides most combat informati
 ## Screenshots
 
 <p align="center">
-  <img src="docs/images/3-in-game.png" alt="In game: kill icon on the nameplate, the DoT marker on the target frame and the kill icon on the portrait" width="860">
+  <img src="docs/images/3-multi-dot-a-pack.png" alt="Multi-dotting a pack: a skull on every nameplate your DoTs will finish" width="860">
 </p>
 
 <table>
   <tr>
     <td width="50%"><img src="docs/images/4-every-dot-its-own-colour.png" alt="Each DoT in its own colour"><br><sub><b>Every DoT, its own colour,</b> with an optional per-DoT damage breakdown.</sub></td>
-    <td width="50%"><img src="docs/images/5-nameplates.png" alt="The DoT marker on a Plater nameplate"><br><sub><b>Right on your nameplates.</b> The marker sits on Plater's own health bar.</sub></td>
+    <td width="50%"><img src="docs/images/5-pvp.png" alt="Does It Die on an enemy player"><br><sub><b>Works on enemy players,</b> with their real health measured from the damage they take.</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/6-health-numbers-on-top.png" alt="Health numbers drawn on top of the DoT marker"><br><sub><b>Health numbers stay readable,</b> drawn on top of the marker.</sub></td>
+    <td width="50%"><img src="docs/images/6-make-it-yours.png" alt="The /did options window with live preview"><br><sub><b>Make it yours</b> in <code>/did</code>, with a live preview and presets.</sub></td>
     <td width="50%"><img src="docs/images/7-everything-it-does.png" alt="Everything Does It Die does"><br><sub><b>Everything it does,</b> on Classic Era and TBC Anniversary.</sub></td>
   </tr>
 </table>
