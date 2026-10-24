@@ -390,7 +390,7 @@ do
     local last = db.accuracy and db.accuracy[#db.accuracy] or ""
     print("      " .. last)
     check("accuracy: predicted 1296 from the learned 216/tick", last:find("predicted 1296", 1, true) ~= nil, true)
-    check("accuracy: really dealt 1080, 20% too high", last:find("dealt 1080 (+17% too high)", 1, true) ~= nil, true)
+    check("accuracy: really dealt 1080, 20% too high", last:find("dealt 1080 (17% too high)", 1, true) ~= nil, true)
     step("/did accuracy prints", function() SlashCmdList.DOESITDIE("accuracy") end)
     check("printed to chat", chat[#chat]:find("Corruption: predicted 1296", 1, true) ~= nil, true)
 end
@@ -416,7 +416,7 @@ do
     wait(0.5); log("SPELL_AURA_REMOVED", PLAYER, mobs.A, 27218, { "DEBUFF" })
     local last = db.accuracy[#db.accuracy]
     print("      " .. last)
-    check("accuracy line shows +0%", last:find("(+0% too high)", 1, true) ~= nil, true)
+    check("accuracy line shows 0%", last:find("(0% too high)", 1, true) ~= nil, true)
 end
 
 -- 24. Spell power changed since a size was learned: the bonus part follows the power at cast -----------------------
@@ -640,6 +640,26 @@ local okT3, errT3 = pcall(function()
     log("UNIT_DIED", "", enemy, 0)
 end)
 if not okT3 then failures = failures + 1; print("FAIL  PvP test crashed: " .. tostring(errT3)) end
+
+-- One odd cast can't halve the cautious estimate; partial resists learn the unresisted size -------------------
+local okF, errF = pcall(function()
+    db.ticks[27216] = 350; db.tickPower = db.tickPower or {}; db.tickPower[27216] = nil
+    db.tickHistory = db.tickHistory or {}
+    db.tickHistory[27216] = { { avg = 175 }, { avg = 350 } }
+    local mob = "Creature-0-0000-0-0000-22222-0000F10001"
+    targetGuid = mob; H.fire("PLAYER_TARGET_CHANGED")
+    cast(27216); applied(mob, 27216)
+    local _, by = remaining()
+    check("cautious estimate floored at 80% of the latest cast (6 x 280)", by["Corruption"], 1680)
+    -- a tick with 175 partly resisted is learned as 350
+    wait(3); log("SPELL_PERIODIC_DAMAGE", PLAYER, mob, 27216, { 175, 0, 32, 175, 0, 0, nil })
+    log("UNIT_DIED", "", mob, 0)
+    check("partly resisted tick learned at its full size", db.ticks[27216], 350)
+    -- the accuracy label for a prediction at half the real damage
+    local last = db.accuracy[#db.accuracy]
+    check("accuracy line has no minus sign", last:find("-", 1, true) == nil or last:find("%(%-") == nil, true)
+end)
+if not okF then failures = failures + 1; print("FAIL  cautious floor test crashed: " .. tostring(errF)) end
 
 -- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------
 local okCE, errCE = pcall(function()

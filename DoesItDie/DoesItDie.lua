@@ -700,9 +700,14 @@ local function scaleTo(avg, entryPower, base, power)
     if power and entryPower and entryPower > 0 and bonus > 0 then return base + bonus * power / entryPower end
     return avg
 end
+-- The cautious size never goes below CAUTIOUS_FLOOR of the latest cast's size: what's on a mob changes ticks by
+-- 10-25%, so that covers it, while one odd cast (heavy resists, a tanky mob) can't halve the next five estimates
+-- (seen in-game: Corruption predicted 175.8 per tick, real 351.8).
+local CAUTIOUS_FLOOR = 0.8
 local function scaledLearned(tickKey, base, power)
     local learned = tickKey and db.ticks[tickKey]
     if not learned then return nil end
+    local latest = scaleTo(learned, db.tickPower and db.tickPower[tickKey], base, power)
     local history = db.tickHistory and db.tickHistory[tickKey]
     if type(history) == "table" and #history > 0 then
         local lowest
@@ -710,9 +715,9 @@ local function scaledLearned(tickKey, base, power)
             local value = scaleTo(entry.avg, entry.power, base, power)
             if not lowest or value < lowest then lowest = value end
         end
-        return lowest
+        return math.max(lowest, latest * CAUTIOUS_FLOOR)
     end
-    return scaleTo(learned, db.tickPower and db.tickPower[tickKey], base, power)
+    return latest
 end
 
 -- A DoT as it stands the moment it's applied, before any tick.
@@ -1225,10 +1230,14 @@ local MAX_ACCURACY = 20
 local function noteAccuracy(dot, name, how)
     if not dot.predictedAt or dot.channel or (dot.ticksSeen or 0) == 0 then return end
     local dealt = dot.dealt or 0
-    local diff = dot.predictedAt > 0 and math.floor((dot.predictedAt - dealt) / dot.predictedAt * 100 + 0.5) or 0
+    -- Off by: too high as a share of the prediction, too low as a share of what it really dealt (so a prediction
+    -- of half the real damage reads "50% too low", never "-100%").
+    local high = dot.predictedAt >= dealt
+    local base = high and dot.predictedAt or dealt
+    local diff = base > 0 and math.floor(math.abs(dot.predictedAt - dealt) / base * 100 + 0.5) or 0
     local real = dot.ticksSeen > 0 and dealt / dot.ticksSeen or 0
-    local line = string.format("%s: predicted %d, dealt %d (%s%d%% too %s), ticks %d/%d, start per-tick %s, real %.1f, %s",
-        name, dot.predictedAt, dealt, diff >= 0 and "+" or "", diff, diff >= 0 and "high" or "low", dot.ticksSeen,
+    local line = string.format("%s: predicted %d, dealt %d (%d%% too %s), ticks %d/%d, start per-tick %s, real %.1f, %s",
+        name, dot.predictedAt, dealt, diff, high and "high" or "low", dot.ticksSeen,
         dot.totalTicks, dot.startPerTick and string.format("%.1f", dot.startPerTick) or "?", real, how)
     if (dot.resisted or 0) > 0 then line = line .. string.format(", %d resisted by the mob", dot.resisted) end
     trace("ACCURACY " .. line)
@@ -1404,8 +1413,9 @@ do
         local wasWaiting = isWaiting(dot)
         local _, index = distanceToExpectedTick(dot, now)
         if dot.firstTickAt and index <= (dot.lastTickIndex or 0) then index = dot.lastTickIndex + 1 end
-        -- Absorbed damage still came from the DoT: count it toward the tick size it learns.
-        local size = (tonumber(amount) or 0) + (tonumber(absorbed) or 0)
+        -- Absorbed and partly resisted damage still came from the DoT: count it toward the tick size it learns, so
+        -- an unlucky run of resists isn't learned as the spell's real size.
+        local size = (tonumber(amount) or 0) + (tonumber(absorbed) or 0) + (tonumber(resisted) or 0)
         if not dot.predictedAt and dot.ticksSeen == 0 then
             dot.predictedAt = math.floor(remainingDamage(dot) + 0.5)
             dot.startPerTick = expectedTick(dot)
