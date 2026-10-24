@@ -331,6 +331,11 @@ do
     check("marker in Plater's strata", marker and marker.strata, "HIGH")
     check("marker above Plater's border frame", marker and marker.level, 51)
     check("marker shown", marker and marker.shown, true)
+    -- Plater raises the plate (it became the target): the marker must follow it on top
+    platerFrame:SetFrameStrata("DIALOG"); hb:SetFrameStrata("DIALOG"); hb:SetFrameLevel(60); border:SetFrameLevel(64)
+    for _ = 1, 3 do H.update(0.1) end
+    check("marker follows Plater's raised strata", marker and marker.strata, "DIALOG")
+    check("marker back above Plater's raised bar", marker and marker.level, 69)
 end
 
 -- 21. Drain Life while channelling: 5 ticks over 5s, pushback shortens it, stopping removes it ------------------

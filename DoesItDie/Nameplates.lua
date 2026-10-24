@@ -389,19 +389,17 @@ end
 -- own (EllesmereUI flattens its plate's children into one render layer; frames that set a strata are drawn
 -- apart from it, ordered by level; Platynator's bars are MEDIUM, above the plate's WORLD). Set before the
 -- levels: a strata change resets them.
-local function attachWidgets(w, healthBar, matchStrata)
-    w.healthBar = healthBar
-    w.signature = nil -- the icon position is anchored to the bar in applyStyle
-    w.marker:ClearAllPoints()
-    w.marker:SetAllPoints(healthBar)
-
+-- Layering is checked again on every update, not only when attaching: Plater moves a plate to another strata or
+-- level when it changes (the target's plate is raised), and a marker layered once was left underneath its bar.
+local function layerWidgets(w, healthBar, matchStrata)
     local strataOf = matchStrata and healthBar or w.host
     local okStrata, strata = pcall(strataOf.GetFrameStrata, strataOf)
-    if (matchStrata or w.strataSet) and okStrata and type(strata) == "string" and not isSecret(strata) then
+    if (matchStrata or w.strataSet) and okStrata and type(strata) == "string" and not isSecret(strata)
+        and strata ~= w.appliedStrata then
         w.marker:SetFrameStrata(strata)
         w.iconWindow:SetFrameStrata(strata)
         w.iconBar:SetFrameStrata(strata)
-        w.strataSet = true
+        w.strataSet, w.appliedStrata, w.layerKey = true, strata, nil -- a strata change resets levels
     end
     local ok, level = pcall(healthBar.GetFrameLevel, healthBar)
     if not ok or isSecret(level) or type(level) ~= "number" then level = FALLBACK_LEVEL end
@@ -416,9 +414,23 @@ local function attachWidgets(w, healthBar, matchStrata)
             end
         end
     end
+    -- Our own level can move too (a parent's level change carries its children along).
+    local okOwn, own = pcall(w.marker.GetFrameLevel, w.marker)
+    local key = tostring(w.appliedStrata or "") .. ":" .. level
+    if key == w.layerKey and okOwn and own == level + 5 then return end
+    w.layerKey = key
     w.marker:SetFrameLevel(level + 5)
     w.iconWindow:SetFrameLevel(level + 20)
     w.iconBar:SetFrameLevel(level + 21)
+end
+
+local function attachWidgets(w, healthBar, matchStrata)
+    w.healthBar = healthBar
+    w.signature = nil -- the icon position is anchored to the bar in applyStyle
+    w.marker:ClearAllPoints()
+    w.marker:SetAllPoints(healthBar)
+    w.layerKey = nil
+    layerWidgets(w, healthBar, matchStrata)
 end
 
 -- pooledHost: host is a plate addon's own pooled frame (EllesmereUI), not Blizzard's nameplate.
@@ -586,6 +598,8 @@ local function widgetsFor(host, healthBar, pooledHost, matchStrata)
         w = createWidgets(host, healthBar, pooledHost, matchStrata)
     elseif w.healthBar ~= healthBar then
         attachWidgets(w, healthBar, matchStrata)
+    else
+        layerWidgets(w, healthBar, matchStrata)
     end
     return w
 end
