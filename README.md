@@ -87,7 +87,7 @@ The original addon was built for WoW: Forever, which hides most combat informati
 
 **Manually:**
 
-1. Download the latest release, or this repository as a zip (**Code → Download ZIP**).
+1. Download the latest version from the [Releases](../../releases) page, or this repository as a zip (**Code → Download ZIP**).
 2. Copy the `DoesItDie` folder into `World of Warcraft\_anniversary_\Interface\AddOns\`.
 3. Restart the game and type `/did` to open the options.
 
