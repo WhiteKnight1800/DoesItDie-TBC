@@ -751,10 +751,22 @@ local function newDot(spellID, tickKey, name, total, school, duration, statedInt
 end
 
 -- Returns the target key the DoT was applied to, or nil if the cast wasn't a tracked DoT.
-local function onPlayerCast(spellID, castGUID)
-    local key = castTargetKey(castGUID)
+-- A spell's tooltip text can be missing the first time it's cast (the client loads spell data on demand, seen on
+-- a fresh character): the cast waits up to DESC_WAIT_SECONDS for it, then is tracked as if it had just landed.
+local DESC_WAIT_SECONDS = 3
+local pendingDesc -- { spellID, key, at }
+local function onPlayerCast(spellID, castGUID, keyOverride)
+    local key = keyOverride or castTargetKey(castGUID)
     local ok, name, desc = pcall(spellNameAndDescription, spellID)
     if not ok or not name or isSecret(name) then return end
+    if desc == nil or desc == "" then
+        if not keyOverride and key then
+            pendingDesc = { spellID = spellID, key = key, at = GetTime() }
+            if C_Spell and C_Spell.RequestLoadSpellData then pcall(C_Spell.RequestLoadSpellData, spellID) end
+            trace(string.format("WAIT %s (id %d): its tooltip isn't loaded yet", name, spellID))
+        end
+        return
+    end
     if type(desc) == "string" and not isSecret(desc) then
         local awarded = tonumber(desc:match("Awards (%d+) combo point")) or ns.locale.comboPointsAwarded(desc)
         if awarded then onBuilderCast(key, awarded) end
@@ -1531,6 +1543,23 @@ end
 -- ns.db is set on ADDON_LOADED.
 ns.DEFAULTS = DEFAULTS
 ns.parseDot = parseDot -- tests
+
+-- Casts waiting for their tooltip text (see DESC_WAIT_SECONDS).
+local descWaiter = CreateFrame("Frame")
+descWaiter:SetScript("OnUpdate", function()
+    local pending = pendingDesc
+    if not pending then return end
+    if GetTime() - pending.at > DESC_WAIT_SECONDS then
+        pendingDesc = nil
+        trace("DROP a cast whose tooltip never loaded")
+        return
+    end
+    local ok, _, desc = pcall(spellNameAndDescription, pending.spellID)
+    if ok and type(desc) == "string" and desc ~= "" then
+        pendingDesc = nil
+        onPlayerCast(pending.spellID, nil, pending.key)
+    end
+end)
 ns.lists = { waitModes = WAIT_MODES } -- Display.lua adds the look lists
 -- What Display.lua needs from the tracking above.
 ns.tracking = { housekeep = housekeep, targetRemainingDamage = targetRemainingDamage, unitKey = unitKey }

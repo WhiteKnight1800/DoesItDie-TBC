@@ -706,6 +706,22 @@ local okF, errF = pcall(function()
 end)
 if not okF then failures = failures + 1; print("FAIL  cautious floor test crashed: " .. tostring(errF)) end
 
+-- A tooltip that isn't loaded yet on the first cast (fresh character): the cast waits for it -----------------------
+local okW, errW = pcall(function()
+    SPELLS[6547] = { "Rend", "" }
+    local mob = "Creature-0-0000-0-0000-33333-0000AB0001"
+    targetGuid = mob; H.fire("PLAYER_TARGET_CHANGED")
+    cast(6547); applied(mob, 6547)
+    local _, by = remaining()
+    check("Rend with no tooltip yet: not shown", by["Rend"], nil)
+    SPELLS[6547][2] = "Wounds the target causing them to bleed for 45 damage over 15 sec."
+    H.update(0.2)
+    _, by = remaining()
+    check("Rend tracked once its tooltip loads", by["Rend"] ~= nil, true)
+    log("UNIT_DIED", "", mob, 0)
+end)
+if not okW then failures = failures + 1; print("FAIL  tooltip wait test crashed: " .. tostring(errW)) end
+
 -- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------
 local okCE, errCE = pcall(function()
     local P = ns.parseDot

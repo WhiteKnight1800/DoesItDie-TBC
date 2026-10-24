@@ -4,6 +4,7 @@
 - **PvP:** enemy players who keep getting healed back up (healers, a mage's Ice Barrier or Mana Shield) are now measured hit by hit, so their marker shows instead of staying hidden.
 - Health drained from enemy players by spells counts toward measuring their health.
 - Nameplates: the marker stays on top when Plater raises a plate (when it becomes your target, for example). Before, it could end up underneath Plater's bar.
+- A DoT cast before the game has loaded its tooltip (seen on a fresh character) is no longer skipped: it waits a moment for the tooltip, then shows.
 
 ## v0.8.2-tbc16
 - More accurate first estimate: one odd cast (heavy partial resists, a tanky mob) can no longer halve the prediction for your next casts. The cautious estimate before a DoT's first tick now stays within 80% of your latest cast.
