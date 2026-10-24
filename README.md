@@ -2,7 +2,7 @@
   <img src="docs/images/logo-skull.png" alt="Does It Die logo" width="160">
 </p>
 
-<h1 align="center">Does It Die (TBC &amp; Classic Era)</h1>
+<h1 align="center">Does It Die (Classic &amp; TBC)</h1>
 
 <p align="center">
   <strong>Stop wasting casts on mobs that are already dead.</strong><br>
@@ -10,15 +10,15 @@
 </p>
 
 <p align="center">
-  <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
+  <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="Game version" src="https://img.shields.io/badge/game-1.15%20%7C%202.5-6d3bd1?style=flat-square">
   <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--tbc15-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
 <p align="center">
-  <img src="docs/images/in-game.jpg" alt="Does It Die in game: the DoT marker on the target frame and kill icons on the nameplate and portrait" width="720">
+  <img src="docs/images/1-does-it-die.png" alt="Does It Die: know the moment your DoTs will finish the job. TBC Anniversary, Classic Era and Hardcore" width="860">
 </p>
 
 ---
@@ -26,7 +26,7 @@
 ## Contents
 
 - [What it does](#what-it-does)
-- [What's new in the TBC version](#whats-new-in-the-tbc-version)
+- [What's new in this version](#whats-new-in-this-version)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Commands](#commands)
@@ -51,12 +51,12 @@
 | **Fully customisable** | `/did` opens an options window with a live preview: icons, fills, outlines, animations and text. |
 
 <p align="center">
-  <img src="docs/images/how-to-read-it.png" alt="How to read the marker: if the health ends inside the marker, your DoTs will kill it" width="720">
+  <img src="docs/images/2-how-to-read-it.png" alt="How to read the marker: if the health ends inside the marker, your DoTs will kill it" width="860">
 </p>
 
-## What's new in the TBC version
+## What's new in this version
 
-The original addon was built for WoW: Forever, which hides most combat information from addons, so it had to estimate which hits were DoT ticks. TBC has no such restrictions, so this version reads things directly.
+The original addon was built for WoW: Forever, which hides most combat information from addons, so it had to estimate which hits were DoT ticks. TBC Anniversary and Classic Era have no such restrictions, so this version reads things directly.
 
 - **Exact tracking from the combat log.** Every tick, miss, resist, dispel and death is read by spell name, on every mob, including ones you've tabbed away from.
 - **Health numbers stay readable.** A copy of your target frame's health text is drawn on top of the marker. Works with Blizzard's frame, BetterBlizzFrames and other unit frame addons, in combat too.
@@ -71,24 +71,24 @@ The original addon was built for WoW: Forever, which hides most combat informati
 
 ## Screenshots
 
+<p align="center">
+  <img src="docs/images/3-in-game.png" alt="In game: kill icon on the nameplate, the DoT marker on the target frame and the kill icon on the portrait" width="860">
+</p>
+
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/health-numbers-on-top.png" alt="Health numbers drawn on top of the DoT marker"><br><sub><b>Health numbers on top.</b> The marker sits over the bar and the percentage stays readable.</sub></td>
-    <td width="50%"><img src="docs/images/plater-nameplate.png" alt="The DoT marker on a Plater nameplate"><br><sub><b>Plater nameplates.</b> The marker sits on Plater's own health bar.</sub></td>
+    <td width="50%"><img src="docs/images/4-every-dot-its-own-colour.png" alt="Each DoT in its own colour"><br><sub><b>Every DoT, its own colour,</b> with an optional per-DoT damage breakdown.</sub></td>
+    <td width="50%"><img src="docs/images/5-nameplates.png" alt="The DoT marker on a Plater nameplate"><br><sub><b>Right on your nameplates.</b> The marker sits on Plater's own health bar.</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/per-dot-colours.png" alt="Each DoT in its own colour"><br><sub><b>Every DoT, its own colour,</b> with an optional per-DoT damage breakdown.</sub></td>
-    <td width="50%"><img src="docs/images/multi-dot.png" alt="Markers and kill icons on several nameplates"><br><sub><b>Multi-dot a pack.</b> Markers and kill icons on every plate with your DoTs.</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="docs/images/drain-life.png" alt="Drain Life counted toward the marker while channelling"><br><sub><b>Drain Life counts too.</b> Channels add the ticks they still have to deal.</sub></td>
-    <td width="50%"><img src="docs/images/how-to-read-it.png" alt="How to read the marker"><br><sub><b>How to read it.</b> Health inside the marker means it dies.</sub></td>
+    <td width="50%"><img src="docs/images/6-health-numbers-on-top.png" alt="Health numbers drawn on top of the DoT marker"><br><sub><b>Health numbers stay readable,</b> drawn on top of the marker.</sub></td>
+    <td width="50%"><img src="docs/images/7-everything-it-does.png" alt="Everything Does It Die does"><br><sub><b>Everything it does,</b> on Classic Era and TBC Anniversary.</sub></td>
   </tr>
 </table>
 
 ## Installation
 
-**CurseForge app:** search for **Does It Die (TBC)** and click Install.
+**CurseForge app:** search for **Does It Die (Classic & TBC)** and click Install, or get it from the [CurseForge page](https://www.curseforge.com/wow/addons/does-it-die-classicandtbc).
 
 **Manually:**
 
@@ -161,7 +161,7 @@ The same download works on Classic Era (including Hardcore). Both games run on t
 
 | | |
 |---|---|
-| **Client** | TBC Classic Anniversary (2.5.5, 2.5.6) and Classic Era (1.15.7 to 1.15.9) |
+| **Client** | Classic Era and Hardcore (1.15.7 to 1.15.9), TBC Classic Anniversary (2.5.5, 2.5.6) |
 | **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
 | **Nameplates** | Blizzard, Plater, EllesmereUI, Platynator, and most others automatically |
 
@@ -177,17 +177,17 @@ Please [open an issue](../../issues/new/choose) and include:
 
 ## Development
 
-`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the TBC client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, the health text copy, PvP health measuring, and Classic Era (vanilla) tooltips. It needs a Lua 5.1 interpreter:
+`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the Classic client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, the health text copy, PvP health measuring, and Classic Era (vanilla) tooltips. It needs a Lua 5.1 interpreter:
 
 ```sh
 lua tests/tbc_test.lua DoesItDie tests
 ```
 
-See [CHANGELOG.md](CHANGELOG.md) for the history of the TBC port.
+See [CHANGELOG.md](CHANGELOG.md) for the history of the port.
 
 ## Credits and licence
 
-- **TBC and Classic Era port:** WhiteKnight / Smuggz_
+- **Classic & TBC port:** WhiteKnight / Smuggz_
 - **Original addon:** [Does It Die](https://github.com/swirllyman/DoesItDie) by **JoeGG**, made for WoW: Forever. The marker, kill icon, options window and overall design are his work.
 
 Released under the [MIT licence](LICENSE), as the original is.

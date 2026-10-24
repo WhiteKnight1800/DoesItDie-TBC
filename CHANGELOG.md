@@ -1,4 +1,4 @@
-# Changelog (TBC port)
+# Changelog (Classic & TBC port)
 
 ## v0.8.2-tbc15
 - **Classic Era support:** the same download now loads on Classic Era (and Hardcore) as well as TBC Anniversary.
