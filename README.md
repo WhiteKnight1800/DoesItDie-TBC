@@ -1,47 +1,168 @@
-# Does It Die (TBC)
+<p align="center">
+  <img src="docs/images/logo.png" alt="Does It Die logo" width="120">
+</p>
 
-A World of Warcraft **TBC Classic Anniversary** addon that tracks your DoTs and shows, on your target frame and nameplates, how much damage they still have to deal, with a kill icon when that's enough to finish the mob off.
+<h1 align="center">Does It Die (TBC)</h1>
 
-Ported to TBC by **WhiteKnight / Smuggz_** from **[Does It Die](https://github.com/swirllyman/DoesItDie)** by **JoeGG**, originally made for WoW: Forever and released under the MIT licence (see [LICENSE](LICENSE)). The marker, kill icon, options window and overall design are his work.
+<p align="center">
+  <strong>Stop wasting casts on mobs that are already dead.</strong><br>
+  See, right on your target frame and nameplates, whether your DoTs will finish the job.
+</p>
 
-## What the TBC version adds
+<p align="center">
+  <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Classic%20Anniversary-c9a24b?style=flat-square">
+  <img alt="Game version" src="https://img.shields.io/badge/game-2.5.5%20%7C%202.5.6-6d3bd1?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--tbc12-7cff4f?style=flat-square">
+  <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
+</p>
 
-- **Exact tracking from the combat log:** every tick, miss, resist, dispel and death is read by spell name, on every mob, including ones you've tabbed away from.
-- **Channels count:** Drain Life, Drain Soul and Mind Flay add the ticks they still have to deal, pushback included (`/did channels`).
+<p align="center">
+  <img src="docs/images/in-game.jpg" alt="Does It Die in game: the DoT marker on the target frame and kill icons on the nameplate and portrait" width="720">
+</p>
+
+---
+
+## Contents
+
+- [What it does](#what-it-does)
+- [What's new in the TBC version](#whats-new-in-the-tbc-version)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+- [Commands](#commands)
+- [Supported DoTs](#supported-dots)
+- [How accurate is it?](#how-accurate-is-it)
+- [Compatibility](#compatibility)
+- [Bug reports](#bug-reports)
+- [Development](#development)
+- [Credits and licence](#credits-and-licence)
+
+## What it does
+
+| | |
+|---|---|
+| **Damage marker** | A striped section on your target's health bar covers the damage your DoTs still have to deal. If the health ends inside the marker, the mob is going to die. |
+| **Kill icon** | When your DoTs are enough to kill the target, a skull (or red X, tick or sunglasses) appears on its portrait. |
+| **Nameplates** | The same marker and a small kill icon on every enemy nameplate with your DoTs on it. Made for multi-dotting. |
+| **Focus frame** | The marker on your focus's health bar, and `/cast [@focus]` DoTs are tracked on the right mob. |
+| **Per-DoT colours** | Each DoT gets its own segment, so you can see Corruption, Immolate and Agony separately. |
+| **Fully customisable** | `/did` opens an options window with a live preview: icons, fills, outlines, animations and text. |
+
+<p align="center">
+  <img src="docs/images/how-to-read-it.png" alt="How to read the marker: if the health ends inside the marker, your DoTs will kill it" width="720">
+</p>
+
+## What's new in the TBC version
+
+The original addon was built for WoW: Forever, which hides most combat information from addons, so it had to estimate which hits were DoT ticks. TBC has no such restrictions, so this version reads things directly.
+
+- **Exact tracking from the combat log.** Every tick, miss, resist, dispel and death is read by spell name, on every mob, including ones you've tabbed away from.
+- **Health numbers stay readable.** A copy of your target frame's health text is drawn on top of the marker. Works with Blizzard's frame, BetterBlizzFrames and other unit frame addons, in combat too.
+- **Channels count.** Drain Life, Drain Soul and Mind Flay add the ticks they still have to deal, pushback included.
 - **Spell power and attack power** are read at cast time, so trinket procs and flasks are reflected.
-- **Curse of Agony** modelled correctly: the base damage ramps up, the spell power bonus is spread evenly.
-- **Cautious first estimate** before a DoT's first tick (lowest of your last 5 casts), so no false kill icons.
-- **Health numbers stay readable:** a copy of the target frame's health text is drawn on top of the marker. Works with Blizzard's frame, BetterBlizzFrames and other unit frame addons, in combat too (`/did text`, `/did textcheck`).
+- **Curse of Agony modelled correctly.** The base damage ramps up; the spell power bonus is spread evenly over every tick.
+- **No false kill icons.** Before a DoT's first tick the estimate is cautious (the lowest of your last 5 casts); from the first tick, that DoT's real ticks take over.
 - **Plater support**, plus automatic detection of other nameplate addons' health bars.
-- **Accuracy report:** `/did accuracy` shows predicted vs real damage for your last DoTs.
+- **Real combo points** for Rip and Rupture, and DoT timing that starts when the debuff lands.
 
-## Install
+## Screenshots
 
-Copy the `DoesItDie` folder into `World of Warcraft\_anniversary_\Interface\AddOns\` and restart the game. Type `/did` for options.
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/health-numbers-on-top.png" alt="Health numbers drawn on top of the DoT marker"><br><sub><b>Health numbers on top.</b> The marker sits over the bar and the percentage stays readable.</sub></td>
+    <td width="50%"><img src="docs/images/plater-nameplate.png" alt="The DoT marker on a Plater nameplate"><br><sub><b>Plater nameplates.</b> The marker sits on Plater's own health bar.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/per-dot-colours.png" alt="Each DoT in its own colour"><br><sub><b>Every DoT, its own colour,</b> with an optional per-DoT damage breakdown.</sub></td>
+    <td width="50%"><img src="docs/images/multi-dot.png" alt="Markers and kill icons on several nameplates"><br><sub><b>Multi-dot a pack.</b> Markers and kill icons on every plate with your DoTs.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/drain-life.png" alt="Drain Life counted toward the marker while channelling"><br><sub><b>Drain Life counts too.</b> Channels add the ticks they still have to deal.</sub></td>
+    <td width="50%"><img src="docs/images/how-to-read-it.png" alt="How to read the marker"><br><sub><b>How to read it.</b> Health inside the marker means it dies.</sub></td>
+  </tr>
+</table>
 
-Also on CurseForge as **Does It Die (TBC)**.
+## Installation
+
+**CurseForge app:** search for **Does It Die (TBC)** and click Install.
+
+**Manually:**
+
+1. Download the latest release, or this repository as a zip (**Code → Download ZIP**).
+2. Copy the `DoesItDie` folder into `World of Warcraft\_anniversary_\Interface\AddOns\`.
+3. Restart the game and type `/did` to open the options.
+
+If the addon shows as out of date, tick **Load out of date AddOns** on the character selection screen.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `/did` | Options window with a live preview |
+| `/did` | Open the options window (live preview) |
 | `/did accuracy` | Predicted vs real damage for your last DoTs |
-| `/did channels` | Turn channel prediction on or off |
-| `/did text` | Health numbers above or below the marker |
-| `/did textcheck` | List the text over the target's health bar (for bug reports) |
-| `/did ticks` | What each DoT really ticks for vs its tooltip |
+| `/did channels` | Turn Drain Life / Drain Soul / Mind Flay prediction on or off |
+| `/did text` | Put the health numbers above or below the marker |
+| `/did textcheck` | List the text over your target's health bar (for bug reports) |
+| `/did skull` | Show the kill icon for 5 seconds to check its position |
+| `/did ticks` | What each DoT really ticks for, compared with its tooltip |
 | `/did reset` | Forget learned tick sizes |
 | `/did debug` | Echo the tracking log to chat |
 
-## Tests
+## Supported DoTs
 
-`tests/tbc_test.lua` loads every addon file in a fake WoW environment (based on the original project's test harness) set up like the TBC client, and plays scripted fights through the combat log: tick tracking, misses, channels, Agony's ramp, spell power scaling, Plater, and the health text copy. It needs a Lua 5.1 interpreter:
+| Class | Spells |
+|---|---|
+| **Warlock** | Corruption, Immolate, Curse of Agony, Unstable Affliction, Siphon Life, Seed of Corruption, *Drain Life and Drain Soul (while channelling)* |
+| **Priest** | Shadow Word: Pain, Vampiric Touch, Devouring Plague, Holy Fire, *Mind Flay (while channelling)* |
+| **Druid** | Moonfire, Insect Swarm, Entangling Roots, Rake, Rip, Pounce, Lacerate |
+| **Hunter** | Serpent Sting, Immolation Trap |
+| **Mage** | Fireball and Pyroblast (their damage-over-time part) |
+| **Rogue** | Rupture, Garrote |
+| **Shaman** | Flame Shock |
+| **Warrior** | Rend |
 
-```
+Finishers (Rip, Rupture) use the combo points you actually spent.
+
+## How accurate is it?
+
+The addon learns from your **real ticks**, so your spell power, spell rank, talents, buffs and debuffs on the mob are all in the numbers, and it remembers them between sessions.
+
+- **Before a DoT's first tick**, the estimate is deliberately cautious: the lowest of your last few casts, scaled to your current spell power. Partial resists and debuffs on a mob can't be known until it ticks.
+- **From the first tick on**, that DoT is predicted from its own real ticks.
+- `/did accuracy` shows predicted vs real damage for your last DoTs, including anything the mob resisted.
+
+## Compatibility
+
+| | |
+|---|---|
+| **Client** | TBC Classic Anniversary (2.5.5, 2.5.6) |
+| **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
+| **Nameplates** | Blizzard, Plater, EllesmereUI, Platynator, and most others automatically |
+
+**Known limitations:** only your own DoTs are tracked; proc DoTs with no cast (Deep Wounds, Ignite, poisons) aren't tracked; healing on the target isn't accounted for; Curse of Doom isn't a DoT, so it isn't shown.
+
+## Bug reports
+
+Please [open an issue](../../issues/new/choose) and include:
+
+- your class and the spell involved;
+- which unit frame and nameplate addons you use;
+- the output of `/did debug` from the fight, or `/did textcheck` for display problems.
+
+## Development
+
+`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the TBC client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, and the health text copy. It needs a Lua 5.1 interpreter:
+
+```sh
 lua tests/tbc_test.lua DoesItDie tests
 ```
 
-## Bugs and feedback
+See [CHANGELOG.md](CHANGELOG.md) for the history of the TBC port.
 
-Open an issue with your class, the spell, which unit frame and nameplate addons you use, and the output of `/did debug` or `/did textcheck` if relevant.
+## Credits and licence
+
+- **TBC port:** WhiteKnight / Smuggz_
+- **Original addon:** [Does It Die](https://github.com/swirllyman/DoesItDie) by **JoeGG**, made for WoW: Forever. The marker, kill icon, options window and overall design are his work.
+
+Released under the [MIT licence](LICENSE), as the original is.
+
+*World of Warcraft is a trademark of Blizzard Entertainment. This is a fan-made addon, not affiliated with Blizzard.*
