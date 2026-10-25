@@ -1,6 +1,7 @@
 # Changelog (Classic & TBC port)
 
-## v0.8.2-tbc17
+## v0.8.2-17
+- **Shields:** the kill icon is hidden while the target has a shield or immunity up (Power Word: Shield, Ice Barrier, Mana Shield, Sacrifice, the Wards, Divine Shield, Ice Block, Blessing of Protection), since it soaks your damage first. The marker still shows.
 - **PvP:** enemy players who keep getting healed back up (healers, a mage's Ice Barrier or Mana Shield) are now measured hit by hit, so their marker shows instead of staying hidden.
 - Health drained from enemy players by spells counts toward measuring their health.
 - Nameplates: the marker stays on top when Plater raises a plate (when it becomes your target, for example). Before, it could end up underneath Plater's bar.

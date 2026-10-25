@@ -1070,6 +1070,7 @@ local function targetIsDead()
 end
 
 local updateErrorShown = false
+local lastShieldTraced
 local lastTracedDamage
 local function refresh()
     local now = GetTime()
@@ -1142,7 +1143,12 @@ local function refresh()
         return hideAll()
     end
 
-    skullWindow:SetShown(db.showSkull)
+    -- A shield or immunity soaks damage first, by an amount the client doesn't give: no kill icon while it's up.
+    local shielded, shield = false, nil
+    if ns.shielded then shielded, shield = ns.shielded("target") end
+    if shielded and shield ~= lastShieldTraced then trace("SHIELD " .. tostring(shield) .. " up: kill icon hidden") end
+    lastShieldTraced = shielded and shield or nil
+    skullWindow:SetShown(db.showSkull and not shielded)
     if healthBar then
         label:SetText(perDot and breakdownText(breakdown) or string.format("DoTs: %d", damage))
         showMarkers()

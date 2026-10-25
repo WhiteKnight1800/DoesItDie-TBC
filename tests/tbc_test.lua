@@ -730,6 +730,28 @@ do
     check("skipped tooltip logged once", n, 1)
 end
 
+-- A shield on the target hides the kill icon (it soaks damage first); the marker stays -------------------------------
+local okS, errS = pcall(function()
+    local mob = "Creature-0-0000-0-0000-44444-0000AB0002"
+    targetGuid = mob; H.fire("PLAYER_TARGET_CHANGED")
+    local realHealthFn, realMaxFn = UnitHealth, UnitHealthMax
+    function UnitHealth(u) if u == "target" then return 100 end return realHealthFn(u) end
+    function UnitHealthMax(u) if u == "target" then return 1000 end return realMaxFn(u) end
+    cast(27216); applied(mob, 27216)
+    for _ = 1, 3 do H.update(0.1) end
+    check("lethal DoTs: kill icon shown", DoesItDieSkull and DoesItDieSkull.shown, true)
+    function UnitBuff(u, i) if u == "target" and i == 1 then return "Power Word: Shield" end end
+    for _ = 1, 3 do H.update(0.1) end
+    check("Power Word: Shield up: kill icon hidden", DoesItDieSkull and DoesItDieSkull.shown, false)
+    check("marker still shown under the shield", DoesItDieRemaining.shown, true)
+    UnitBuff = nil
+    for _ = 1, 3 do H.update(0.1) end
+    check("shield gone: kill icon back", DoesItDieSkull and DoesItDieSkull.shown, true)
+    UnitHealth, UnitHealthMax = realHealthFn, realMaxFn
+    log("UNIT_DIED", "", mob, 0)
+end)
+if not okS then failures = failures + 1; print("FAIL  shield test crashed: " .. tostring(errS)) end
+
 -- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------
 local okCE, errCE = pcall(function()
     local P = ns.parseDot

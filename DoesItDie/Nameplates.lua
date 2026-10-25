@@ -625,7 +625,10 @@ local function updatePlate(unit, plate, db)
     seenHosts[host] = true
     lastBarPath = path
     local w = widgetsFor(host, healthBar, host ~= plate, addonBar)
-    if drawPlate(w, entries, total, maxHealth, math.max(health, 0.01), db) and iconOnly then w.marker:Hide() end
+    if drawPlate(w, entries, total, maxHealth, math.max(health, 0.01), db) then
+        if iconOnly then w.marker:Hide() end
+        if ns.shielded and ns.shielded(unit) then w.iconWindow:Hide() end -- a shield soaks damage first
+    end
 end
 
 -- The options window's mock nameplate: { plate, healthBar } plus its preview state ({ health, dots } in % of

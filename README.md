@@ -13,7 +13,7 @@
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="Game version" src="https://img.shields.io/badge/game-1.15%20%7C%202.5-6d3bd1?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--tbc17-7cff4f?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--17-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
@@ -145,6 +145,7 @@ The game only tells addons an enemy player's health as a percentage, not in hit 
 - On a new player, chat says it's measuring, and the marker appears once they've lost about 8% of their health.
 - The size is remembered per player name, so the next fight with the same player shows the marker straight away.
 - Your ticks on players (reduced by resilience) are learned separately, so PvP never changes your PvE estimates.
+- While a shield or immunity is up (Power Word: Shield, Ice Barrier, Mana Shield, Ice Block and the like), the kill icon is hidden, since it soaks your damage first.
 - Players can heal, drink potions and use immunities, so in PvP the kill icon is a hint, not a promise.
 - Turn it off with `/did pvp` or **Advanced → Show on enemy players**.
 

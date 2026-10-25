@@ -165,6 +165,7 @@ local function refresh()
     local health, maxHealth = (ns.realHealth or function(u) return UnitHealth(u), UnitHealthMax(u) end)("focus") -- nil for an enemy player not measured yet
     if not health then return hide() end
     ns.barMarker.draw(widgets, entries, total, maxHealth, math.max(health, 0.01), focusLook)
+    if ns.shielded and ns.shielded("focus") and widgets.iconWindow then widgets.iconWindow:Hide() end
 end
 
 local driver = CreateFrame("Frame")

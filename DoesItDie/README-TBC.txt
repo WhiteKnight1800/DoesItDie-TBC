@@ -43,6 +43,9 @@ WHAT CHANGED FROM THE FOREVER VERSION
   * Classic Era: the same build loads there. Spells that don't exist in vanilla (Unstable Affliction, Seed of
     Corruption, Vampiric Touch, Lacerate) simply never show up; vanilla tooltip wording ("every second") is read.
     Vanilla has no focus frame, so the focus marker only appears if a unit frame addon provides one.
+  * Shields: while the target has a shield or immunity up (Power Word: Shield, Ice Barrier, Mana Shield, Sacrifice,
+    the mage and warlock Wards, Divine Shield, Ice Block, Blessing of Protection) the kill icon is hidden, since
+    the shield soaks damage first. The marker still shows.
   * Options page falls back to the classic Interface Options if the newer Settings panel isn't there.
   Everything else (marker, kill icon, nameplates, focus frame, looks, /did window) is the original's.
 
