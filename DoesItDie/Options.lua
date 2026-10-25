@@ -78,10 +78,28 @@ local function findEntry(list, id)
     end
 end
 
-local function setBackdrop(frame, shade, alpha)
+-- The window's look: near-black with a violet tint and violet edges, after the addon's logo.
+local ACCENT = { 0.66, 0.4, 1 }      -- violet: borders, tab underline, title
+local ACCENT_DIM = { 0.3, 0.2, 0.45 } -- panel edges
+local function setBackdrop(frame, shade, alpha, edge)
     frame:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
-    frame:SetBackdropColor(shade, shade, shade, alpha or 1)
-    frame:SetBackdropBorderColor(0.28, 0.28, 0.3, 1)
+    frame:SetBackdropColor(shade * 0.92, shade * 0.85, shade * 1.25, alpha or 1)
+    local e = edge or ACCENT_DIM
+    frame:SetBackdropBorderColor(e[1], e[2], e[3], 1)
+end
+
+-- A soft vertical colour fade on a texture (top colour to bottom colour), where the client supports it.
+local function fade(texture, top, bottom)
+    texture:SetColorTexture(1, 1, 1, 1)
+    local ok = CreateColor and pcall(texture.SetGradient, texture, "VERTICAL",
+        CreateColor(bottom[1], bottom[2], bottom[3], bottom[4]), CreateColor(top[1], top[2], top[3], top[4]))
+    if not ok then texture:SetColorTexture(top[1], top[2], top[3], (top[4] + bottom[4]) / 2) end
+end
+
+local function addonVersion()
+    local get = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+    local ok, version = pcall(function() return get and get(ADDON_NAME, "Version") end)
+    return ok and type(version) == "string" and version or nil
 end
 
 ---------------------------------------------------------------------------
@@ -758,7 +776,11 @@ local function selectTab(tab)
     for _, other in ipairs(tabs) do
         local selected = other == tab
         other.content:SetShown(selected)
-        other.button.text:SetTextColor(selected and 1 or 0.6, selected and 0.82 or 0.6, selected and 0 or 0.6)
+        if selected then
+            other.button.text:SetTextColor(1, 1, 1)
+        else
+            other.button.text:SetTextColor(0.62, 0.58, 0.7)
+        end
         other.button.underline:SetShown(selected)
         if other.footer then other.footer:SetShown(selected) end
     end
@@ -780,7 +802,7 @@ local function addTab(name)
     button:SetSize(button.text:GetStringWidth() + 12, 26)
     button.text:SetPoint("CENTER")
     button.underline = button:CreateTexture(nil, "ARTWORK")
-    button.underline:SetColorTexture(1, 0.82, 0, 1)
+    button.underline:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], 1)
     button.underline:SetHeight(2)
     button.underline:SetPoint("BOTTOMLEFT", 3, 0)
     button.underline:SetPoint("BOTTOMRIGHT", -3, 0)
@@ -1022,6 +1044,7 @@ local function buildPreview(pane)
     local title = pane:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 12, -12)
     title:SetText(T("Live preview"))
+    title:SetTextColor(0.85, 0.72, 1)
 
     -- Mock target frame: name, health bar, round portrait.
     local mock = CreateFrame("Frame", nil, pane, "BackdropTemplate")
@@ -1032,7 +1055,7 @@ local function buildPreview(pane)
     local portrait = mock:CreateTexture(nil, "ARTWORK")
     portrait:SetSize(56, 56)
     portrait:SetPoint("RIGHT", mock, "RIGHT", -12, 0)
-    portrait:SetTexture("Interface\\Icons\\Ability_Hunter_Pet_Boar")
+    portrait:SetTexture("Interface\\Icons\\Spell_Shadow_SummonVoidWalker")
     local mask = mock:CreateMaskTexture()
     mask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:SetAllPoints(portrait)
@@ -1050,7 +1073,7 @@ local function buildPreview(pane)
 
     local name = mock:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     name:SetPoint("BOTTOMLEFT", healthBar, "TOPLEFT", 0, 4)
-    name:SetText(T("Mottled Boar"))
+    name:SetText(T("Voidwalker"))
 
     window.healthBar = healthBar
     window.host = { healthBar = healthBar, portrait = portrait, layerFrame = window }
@@ -1104,7 +1127,7 @@ local function buildPreview(pane)
     mockPlate:SetPoint("TOPLEFT", plateLabel, "BOTTOMLEFT", 40, -6)
     local plateName = mockPlate:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     plateName:SetPoint("TOP", mockPlate, "TOP")
-    plateName:SetText(T("Mottled Boar"))
+    plateName:SetText(T("Voidwalker"))
     local plateBar = CreateFrame("StatusBar", nil, mockPlate)
     plateBar:SetSize(140, 10)
     plateBar:SetPoint("BOTTOM", mockPlate, "BOTTOM")
@@ -1128,7 +1151,7 @@ local function buildPreview(pane)
     local focusPortrait = mockFocus:CreateTexture(nil, "ARTWORK")
     focusPortrait:SetSize(32, 32)
     focusPortrait:SetPoint("RIGHT", mockFocus, "RIGHT", 0, 0)
-    focusPortrait:SetTexture("Interface\\Icons\\Ability_Hunter_Pet_Boar")
+    focusPortrait:SetTexture("Interface\\Icons\\Spell_Shadow_SummonVoidWalker")
     local focusMask = mockFocus:CreateMaskTexture()
     focusMask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE",
         "CLAMPTOBLACKADDITIVE")
@@ -1145,7 +1168,7 @@ local function buildPreview(pane)
     focusBack:SetColorTexture(0.25, 0.08, 0.08, 1)
     local focusName = mockFocus:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     focusName:SetPoint("BOTTOMLEFT", focusBar, "TOPLEFT", 0, 3)
-    focusName:SetText(T("Mottled Boar"))
+    focusName:SetText(T("Voidwalker"))
     window.mockFocus = mockFocus
     window.focusHealthBar = focusBar
     window.focusHost = { frame = mockFocus, healthBar = focusBar }
@@ -1170,12 +1193,35 @@ local function createWindow()
     window:RegisterForDrag("LeftButton")
     window:SetScript("OnDragStart", window.StartMoving)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
-    setBackdrop(window, 0.06, 0.97)
+    setBackdrop(window, 0.06, 0.97, ACCENT)
     table.insert(UISpecialFrames, "DoesItDieOptions") -- Escape closes it
 
+    -- Header: a violet glow fading down, the logo, the name and a credit line.
+    local glow = window:CreateTexture(nil, "BACKGROUND", nil, 1)
+    glow:SetPoint("TOPLEFT", 1, -1)
+    glow:SetPoint("TOPRIGHT", -1, -1)
+    glow:SetHeight(HEADER_HEIGHT - 4)
+    fade(glow, { 0.42, 0.18, 0.72, 0.55 }, { 0.12, 0.05, 0.2, 0 })
+    local rule = window:CreateTexture(nil, "ARTWORK")
+    rule:SetPoint("TOPLEFT", 10, -(HEADER_HEIGHT - 5))
+    rule:SetPoint("TOPRIGHT", -10, -(HEADER_HEIGHT - 5))
+    rule:SetHeight(1)
+    rule:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], 0.6)
+
+    local logo = window:CreateTexture(nil, "ARTWORK")
+    logo:SetSize(38, 38)
+    logo:SetPoint("TOPLEFT", 12, -6)
+    logo:SetTexture("Interface\\AddOns\\" .. ADDON_NAME .. "\\icon")
+
     local title = window:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -18)
-    title:SetText("DoesItDie")
+    title:SetPoint("TOPLEFT", logo, "TOPRIGHT", 10, -3)
+    title:SetText("Does It Die")
+    title:SetTextColor(0.92, 0.84, 1)
+    local credit = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    credit:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
+    local version = addonVersion()
+    credit:SetText((version and ("v" .. version .. "  |cff6e6480·|r  ") or "")
+        .. "Classic & TBC port by |cffc9a0ffWhiteKnight / Smuggz_|r")
 
     local close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -6, -12)
@@ -1200,7 +1246,7 @@ local function createWindow()
     pane:SetPoint("TOPLEFT", 10, -HEADER_HEIGHT)
     pane:SetPoint("BOTTOMLEFT", 10, 10)
     pane:SetWidth(PREVIEW_WIDTH)
-    setBackdrop(pane, 0.09)
+    setBackdrop(pane, 0.085)
     buildPreview(pane)
 
     local area = CreateFrame("Frame", nil, window, "BackdropTemplate")
@@ -1210,7 +1256,7 @@ local function createWindow()
     window.settingsArea = area
 
     local divider = area:CreateTexture(nil, "ARTWORK")
-    divider:SetColorTexture(0.28, 0.28, 0.3, 1)
+    divider:SetColorTexture(ACCENT_DIM[1], ACCENT_DIM[2], ACCENT_DIM[3], 1)
     divider:SetHeight(1)
     divider:SetPoint("TOPLEFT", 8, -34)
     divider:SetPoint("TOPRIGHT", -8, -34)
@@ -1218,6 +1264,9 @@ local function createWindow()
     buildTabs()
     local reset = pushButton(area, "Reset this tab", 120, function() resetTab(activeTab) end)
     reset:SetPoint("BOTTOMRIGHT", -10, 10)
+    local original = area:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    original:SetPoint("BOTTOMLEFT", 12, 16)
+    original:SetText("Original addon by |cffc9a0ffJoeGG|r")
 
     window:SetScript("OnShow", function()
         ns.setPreviewState(preview)

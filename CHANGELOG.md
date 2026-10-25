@@ -1,5 +1,9 @@
 # Changelog (Classic & TBC port)
 
+## v0.8.2-18
+- Refreshed `/did` window: violet theme to match the logo, the logo and version in the header, and credits for the Classic & TBC port and the original addon.
+- The preview shows a Voidwalker instead of a boar.
+
 ## v0.8.2-17
 - **Shields:** the kill icon is hidden while the target has a shield or immunity up (Power Word: Shield, Ice Barrier, Mana Shield, Sacrifice, the Wards, Divine Shield, Ice Block, Blessing of Protection), since it soaks your damage first. The marker still shows.
 - **PvP:** enemy players who keep getting healed back up (healers, a mage's Ice Barrier or Mana Shield) are now measured hit by hit, so their marker shows instead of staying hidden.
