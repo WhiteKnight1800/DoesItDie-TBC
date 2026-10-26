@@ -588,7 +588,8 @@ local okT2, errT2 = pcall(function()
     function outside.GetEffectiveScale() return 1 end
     local far = textAt(130, 507, outside)
     function outside.GetRegions() return far end
-    ns.relayer(); ns.refresh()
+    -- the interface is searched a little per check: let it get round
+    for _ = 1, 40 do ns.relayer(); ns.refresh() end
     check("text on a frame outside the target frame copied too", (ns.textMirror(far)), true)
     local report = ns.textReport()
     local joined = table.concat(report, " | ")

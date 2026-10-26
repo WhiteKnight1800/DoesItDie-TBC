@@ -282,7 +282,8 @@ local function autoHealthBar(plate, unit)
     local cached = searchCache[plate]
     local now = GetTime()
     if cached and cached.bar and barShown(cached.bar) then return cached.bar, cached.path end
-    if cached and now - cached.at < SEARCH_INTERVAL then return nil end
+    -- Nothing found last time (a plate addon we can't read): search that plate less often, it's the costly part.
+    if cached and now - cached.at < (cached.bar and SEARCH_INTERVAL or SEARCH_INTERVAL * 5) then return nil end
     local ok, bar, path = pcall(searchHealthBar, plate)
     if not ok then bar, path = nil, nil end
     if not bar then

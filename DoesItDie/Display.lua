@@ -769,9 +769,13 @@ do
     local mirrors = {}  -- original fontString -> { copy, owner, found }
     local holders = {}  -- owner frame -> our frame (parented to UIParent, scaled and shown to match the owner)
     -- Unit frame addons often keep their text on a frame outside the target frame's own tree, so every frame in the
-    -- interface is searched too (EnumerateFrames): on a new bar, then at most every FULL_SCAN_SECONDS. Frames found
-    -- holding such text are remembered and checked on every refresh in between.
-    local FULL_SCAN_SECONDS = 15
+    -- interface is searched too (EnumerateFrames): on a new bar, then again every RESCAN_SECONDS. The search is spread
+    -- over many checks, SCAN_BUDGET frames each: walking every frame at once (tens of thousands with a big UI or in a
+    -- battleground) caused a hitch every minute or so. Frames found holding such text are remembered and checked on
+    -- every refresh in between.
+    local RESCAN_SECONDS = 300
+    local SCAN_BUDGET = 250
+    local scanActive, scanCursor = false, nil
     local knownOwners = setmetatable({}, { __mode = "k" }) -- frame -> true
     local lastFullScan, fullScanBar = -math.huge, nil
     local layerStrata, layerLevel = "MEDIUM", 1
@@ -825,10 +829,13 @@ do
         local function consider(frame, depth)
             if not frame or seen[frame] or textLift.isHolder(frame) then return end
             seen[frame] = true
-            local okF, forbidden = pcall(function() return frame.IsForbidden and frame:IsForbidden() end)
-            if not okF or forbidden then return end
-            local okL, fs, fl = pcall(function() return frame:GetFrameStrata(), frame:GetFrameLevel() end)
-            if okL and not isSecret(fs) and not isSecret(fl) then
+            if frame.IsForbidden then
+                local okF, forbidden = pcall(frame.IsForbidden, frame)
+                if not okF or forbidden then return end
+            end
+            local okS, fs = pcall(frame.GetFrameStrata, frame)
+            local okL, fl = pcall(frame.GetFrameLevel, frame)
+            if okS and okL and not isSecret(fs) and not isSecret(fl) then
                 local fr = STRATA_RANK[fs] or 0
                 if (fr < rank or (fr == rank and fl <= top)) and frame:IsVisible() then
                     local scale = frame:GetEffectiveScale()
@@ -852,14 +859,19 @@ do
         for owner in pairs(knownOwners) do consider(owner, 6) end
         if EnumerateFrames then
             local now = GetTime()
-            local interval = next(knownOwners) and FULL_SCAN_SECONDS * 4 or FULL_SCAN_SECONDS
-            if fullScanBar ~= bar or now - lastFullScan >= interval then
-                lastFullScan, fullScanBar = now, bar
-                local frame = EnumerateFrames()
-                while frame do
+            if fullScanBar ~= bar or (not scanActive and now - lastFullScan >= RESCAN_SECONDS) then
+                lastFullScan, fullScanBar, scanActive, scanCursor = now, bar, true, nil
+            end
+            if scanActive then
+                local frame
+                if scanCursor then frame = EnumerateFrames(scanCursor) else frame = EnumerateFrames() end
+                local count = 0
+                while frame and count < SCAN_BUDGET do
                     if not seen[frame] then consider(frame, 6) end
+                    count, scanCursor = count + 1, frame
                     frame = EnumerateFrames(frame)
                 end
+                if not frame then scanActive, scanCursor = false, nil end
             end
         end
     end
