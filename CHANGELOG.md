@@ -1,10 +1,8 @@
 # Changelog (Classic & TBC port)
 
-## v0.8.2-19
+## v0.8.2-18
 - **Performance:** fixed a short stutter every minute or so. Finding unit frame addons' health text searched every frame in the interface at once; it now searches a little at a time, and only repeats every 5 minutes.
 - Nameplates an addon draws in a way that can't be read are searched less often.
-
-## v0.8.2-18
 - Refreshed `/did` window: violet theme to match the logo, the logo and version in the header, and credits for the Classic & TBC port and the original addon.
 - The preview shows a Voidwalker instead of a boar.
 

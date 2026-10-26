@@ -3,7 +3,7 @@
 ## Notes: Tracks your DoTs and marks the damage they still have left on your target's health bar, with a kill icon on the portrait when they'll finish it off. TBC Anniversary and Classic Era port of the WoW Forever addon. /did
 ## IconTexture: Interface\AddOns\DoesItDie\icon
 ## Author: WhiteKnight / Smuggz_ (TBC port), JoeGG (original)
-## Version: 0.8.2-19
+## Version: 0.8.2-18
 ## SavedVariables: DoesItDieDB
 
 Locale.lua
