@@ -331,6 +331,20 @@ local function findHealthBar(plate, unit)
         end
     end
 
+    -- NeatPlates / Tidy Plates: their plate frame hangs off the Blizzard plate as .extended (parented to a carrier
+    -- frame on WorldFrame, so no search inside the plate finds it), with the bar at .bars.healthbar.
+    local extended = rawget(plate, "extended")
+    if type(extended) == "table" then
+        local okBar, npBar = pcall(function()
+            local bars = extended.bars
+            return bars and (bars.healthbar or bars.health or bars.healthBar)
+        end)
+        if okBar and isStatusBar(npBar) and not forbidden(npBar) and barShown(npBar) then
+            local who = (NeatPlates and "NeatPlates") or (TidyPlates and "Tidy Plates") or "plate.extended"
+            return npBar, extended, who .. " healthbar", true
+        end
+    end
+
     local unitFrame = plate.UnitFrame
     local blizzard, blizzardPath
     if unitFrame then

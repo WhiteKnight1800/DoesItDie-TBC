@@ -1,5 +1,8 @@
 # Changelog (Classic & TBC port)
 
+## v0.8.2-21
+- **NeatPlates / Tidy Plates:** the marker and kill icon go on their own health bar (plate.extended.bars.healthbar), which the automatic search couldn't reach.
+
 ## v0.8.2-20
 - **Starshards** (night elf priest) is tracked on TBC, where it's an instant DoT. It's still ignored on Classic Era, where it's a channel.
 

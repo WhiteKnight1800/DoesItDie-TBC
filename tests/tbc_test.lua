@@ -339,6 +339,27 @@ do
     check("marker back above Plater's raised bar", marker and marker.level, 69)
 end
 
+-- 19c. NeatPlates: its frame is plate.extended, on a carrier outside the plate, bar at extended.bars.healthbar
+do
+    FakePlate.unitFrame = nil; Plater = nil
+    NeatPlates = {}
+    local carrier = CreateFrame("Frame", nil, UIParent)
+    local extended = CreateFrame("Frame", nil, carrier)
+    local hb = CreateFrame("StatusBar", nil, extended)
+    hb:SetSize(110, 10); hb:SetMinMaxValues(0, 100); hb.value = 100
+    function hb.GetEffectiveAlpha() return 1 end
+    extended.bars = { healthbar = hb }
+    FakePlate.extended = extended
+    cast(27216); applied(targetGuid, 27216)
+    step("nameplate refresh with NeatPlates", function() H.update(0.1) end)
+    check("NeatPlates' health bar used", ns.plateBarStatus(), "NeatPlates healthbar")
+    local marker
+    for _, f in ipairs(frames) do if f.parent == extended and f.kind == "StatusBar" and f.allPoints == hb then marker = f end end
+    check("marker sits on NeatPlates' bar", marker ~= nil, true)
+    FakePlate.extended = nil; NeatPlates = nil; hb:Hide()
+end
+
+
 -- 21. Drain Life while channelling: 5 ticks over 5s, pushback shortens it, stopping removes it ------------------
 do
     local channelEnd
