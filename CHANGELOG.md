@@ -1,5 +1,8 @@
 # Changelog (Classic & TBC port)
 
+## v0.8.2-20
+- **Starshards** (night elf priest) is tracked on TBC, where it's an instant DoT. It's still ignored on Classic Era, where it's a channel.
+
 ## v0.8.2-19
 - **Fixed non-English clients:** since v0.8.2-17, DoTs whose tooltip has brackets (German "Punkt(e)", as on Corruption and Curse of Agony) weren't read. Brackets are now only dropped for English tooltips.
 - Tests for German, French, Spanish and Korean tooltips.

@@ -9,6 +9,7 @@ local H = dofile(TESTDIR .. "/helpers.lua")
 -- TBC client differences ----------------------------------------------------------------------------------
 C_Spell = nil
 Settings = nil
+function GetBuildInfo() return "2.5.5", "65000", "Oct 1 2026", 20505 end
 local registeredPanel
 function InterfaceOptions_AddCategory(panel) registeredPanel = panel end
 
@@ -752,6 +753,22 @@ local okS, errS = pcall(function()
     log("UNIT_DIED", "", mob, 0)
 end)
 if not okS then failures = failures + 1; print("FAIL  shield test crashed: " .. tostring(errS)) end
+
+-- Starshards: an instant DoT on TBC (a channel only in Classic Era), English and French tooltips ----------------------
+local okSS, errSS = pcall(function()
+    SPELLS[25446] = { "Starshards", "Rains starshards down on the enemy target's head, causing 785 Arcane damage over 15 sec." }
+    SPELLS[25447] = { "Éclats stellaires", "Fait pleuvoir des éclats d'étoile sur la cible, lui infligeant 785 points de dégâts des Arcanes en 15 sec." }
+    local mob = "Creature-0-0000-0-0000-55555-0000AB0003"
+    targetGuid = mob; H.fire("PLAYER_TARGET_CHANGED")
+    cast(25446); applied(mob, 25446)
+    local _, by = remaining()
+    check("Starshards tracked on TBC: 785", by["Starshards"], 785)
+    cast(25447); applied(mob, 25447)
+    _, by = remaining()
+    check("French Starshards (Éclats stellaires) tracked: 785", by["Éclats stellaires"], 785)
+    log("UNIT_DIED", "", mob, 0)
+end)
+if not okSS then failures = failures + 1; print("FAIL  Starshards test crashed: " .. tostring(errSS)) end
 
 -- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------
 local okCE, errCE = pcall(function()

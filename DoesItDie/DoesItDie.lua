@@ -73,6 +73,12 @@ local IGNORED_SPELLS = {
     ["Mind Flay"] = true, ["Arcane Missiles"] = true, ["Starshards"] = true,
     ["Explosive Trap"] = true, ["Wyvern Sting"] = true,
 }
+-- Starshards is a channel in Classic Era but an instant DoT from TBC on ("785 Arcane damage over 15 sec"): only
+-- ignored on Classic Era.
+do
+    local okB, _, _, _, interface = pcall(GetBuildInfo)
+    if okB and type(interface) == "number" and interface >= 20000 then IGNORED_SPELLS["Starshards"] = nil end
+end
 
 -- Traps that put a DoT on the first enemy to walk in. Placing one only arms it (the trap, not the player, casts
 -- the DoT when it springs, so no cast event says when or on whom); the DoT starts on the mob that takes the

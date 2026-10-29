@@ -13,7 +13,7 @@
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="Game version" src="https://img.shields.io/badge/game-1.15%20%7C%202.5-6d3bd1?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--19-7cff4f?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--20-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
@@ -118,7 +118,7 @@ If the addon shows as out of date, tick **Load out of date AddOns** on the chara
 | Class | Spells |
 |---|---|
 | **Warlock** | Corruption, Immolate, Curse of Agony, Unstable Affliction\*, Siphon Life, Seed of Corruption\*, *Drain Life and Drain Soul (while channelling)* |
-| **Priest** | Shadow Word: Pain, Vampiric Touch\*, Devouring Plague, Holy Fire, *Mind Flay (while channelling)* |
+| **Priest** | Shadow Word: Pain, Vampiric Touch\*, Devouring Plague, Holy Fire, Starshards\*, *Mind Flay (while channelling)* |
 | **Druid** | Moonfire, Insect Swarm, Entangling Roots, Rake, Rip, Pounce, Lacerate\* |
 | **Hunter** | Serpent Sting, Immolation Trap |
 | **Mage** | Fireball and Pyroblast (their damage-over-time part) |
