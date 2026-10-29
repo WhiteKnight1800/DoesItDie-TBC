@@ -22,7 +22,7 @@ local SCHOOLS = {
 
 -- Words that may sit between the amount and "...schaden": "40 Punkt(e) Schattenschaden", "20 zusätzlichen
 -- Feuerschaden", "42 körperlichen Schaden". Longer spellings first ("zusätzlichen" before "zusätzlich").
-local FILLERS = { "Punkt%(en%)", "Punkt%(e%)", "Punkte", "zusätzlichen", "zusätzlich", "insgesamt", "körperlichen" }
+local FILLERS = { "Punkt%(en%)", "Punkt%(e%)", "Punkte", "Punkt", "zusätzlichen", "zusätzlich", "insgesamt", "körperlichen" }
 
 -- Where a DoT's duration stands before its amount: "12 Sek. lang", "im Verlauf von 12 Sek.", "über 12 Sek.",
 -- also written out ("über 8 Sekunden"). Captures: start, seconds, end.

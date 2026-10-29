@@ -315,6 +315,8 @@ local function parseDot(desc, comboPoints)
     -- Classic Era: some vanilla tooltips say "every second" where TBC says "every 1 sec".
     desc = desc:gsub("every second", "every 1 sec")
 
+    -- Brackets are only dropped for the English reader: other languages need them ("40 Punkt(e) Schattenschaden").
+    local original, english = desc, desc
     -- TBC Rend at low level: "bleed for 28 damage plus an additional 1 (based on weapon damage) over 12 sec." The
     -- weapon bonus is counted with the base, and the bracket dropped so "damage over" reads as usual.
     do
@@ -326,8 +328,9 @@ local function parseDot(desc, comboPoints)
                 return tonumber(base) + tonumber(extra), SCHOOL_MASKS.Physical, tonumber(secs)
             end
         end
-        desc = clean
+        english = clean
     end
+    desc = english
     local total, school, duration
     for amount, words, secs in desc:gmatch("(%d+)%s*([%a ]-)%s*damage over (%d+%.?%d*) sec") do
         total, school, duration = tonumber(amount), schoolFromWords(words), tonumber(secs)
@@ -347,7 +350,7 @@ local function parseDot(desc, comboPoints)
         end
     end
     -- Not English DoT wording: try the registered languages (Locale.lua).
-    return ns.locale.parseDot(desc, comboPoints or 5)
+    return ns.locale.parseDot(original, comboPoints or 5)
 end
 
 ---------------------------------------------------------------------------

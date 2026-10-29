@@ -757,6 +757,13 @@ if not okS then failures = failures + 1; print("FAIL  shield test crashed: " .. 
 local okCE, errCE = pcall(function()
     local P = ns.parseDot
     local function total(desc, cp) return (P(desc, cp)) end
+    -- Other languages go through the same reader (brackets must reach them: "Punkt(e)")
+    check("deDE Corruption (Punkt(e))", total("Verdirbt das Ziel und verursacht 18 Sek. lang 900 Punkt(e) Schattenschaden."), 900)
+    check("deDE Curse of Agony", total("Verflucht das Ziel mit Pein und verursacht im Verlauf von 24 Sek. 1.356 Schattenschaden."), 1356)
+    check("deDE Immolate", total("Verbrennt den Feind, fügt ihm 332 Feuerschaden sowie im Verlauf von 15 Sek. insgesamt 615 zusätzlichen Feuerschaden zu."), 615)
+    check("frFR Corruption", total("Corrompt la cible et lui inflige 900 points de dégâts d'Ombre en 18 sec."), 900)
+    check("esES Corruption", total("Corrompe al objetivo y le causa 900 p. de daño de las Sombras durante 18 s."), 900)
+    check("koKR Corruption", total("대상을 타락시켜 18초에 걸쳐 총 900의 암흑 피해를 입힙니다."), 900)
     check("CE Corruption", total("Corrupts the target, causing 822 Shadow damage over 18 sec."), 822)
     check("CE Immolate: periodic part", total("Burns the enemy for 279 Fire damage and then an additional 510 Fire damage over 15 sec."), 510)
     check("CE Curse of Agony", total("Curses the target with agony, causing 1044 Shadow damage over 24 sec."), 1044)

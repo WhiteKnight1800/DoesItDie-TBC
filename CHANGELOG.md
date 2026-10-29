@@ -1,5 +1,9 @@
 # Changelog (Classic & TBC port)
 
+## v0.8.2-19
+- **Fixed non-English clients:** since v0.8.2-17, DoTs whose tooltip has brackets (German "Punkt(e)", as on Corruption and Curse of Agony) weren't read. Brackets are now only dropped for English tooltips.
+- Tests for German, French, Spanish and Korean tooltips.
+
 ## v0.8.2-18
 - **Performance:** fixed a short stutter every minute or so. Finding unit frame addons' health text searched every frame in the interface at once; it now searches a little at a time, and only repeats every 5 minutes.
 - Nameplates an addon draws in a way that can't be read are searched less often.
