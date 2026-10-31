@@ -489,6 +489,7 @@ local function attachWidgets(w, healthBar, matchStrata)
     w.signature = nil -- the icon position is anchored to the bar in applyStyle
     w.marker:ClearAllPoints()
     w.marker:SetAllPoints(healthBar)
+    w.inset = nil
     w.layerKey = nil
     layerWidgets(w, healthBar, matchStrata)
 end
@@ -685,6 +686,21 @@ local function updatePlate(unit, plate, db)
     seenHosts[host] = true
     lastBarPath = path
     local w = widgetsFor(host, healthBar, host ~= plate, addonBar)
+    -- Nameplates tab > Marker height: 0 covers the bar frame's full height; otherwise the marker is that many pixels
+    -- tall, centred on the bar, full width. For plate addons whose bar frame is taller than the bar drawn in it
+    -- (NeatPlates: a 32-high frame around a bar about 7 high).
+    local height = tonumber(db.plateMarkerHeight) or 0
+    if w.inset ~= height then
+        w.inset = height
+        w.marker:ClearAllPoints()
+        if height > 0 then
+            w.marker:SetPoint("LEFT", healthBar, "LEFT")
+            w.marker:SetPoint("RIGHT", healthBar, "RIGHT")
+            w.marker:SetHeight(height)
+        else
+            w.marker:SetAllPoints(healthBar)
+        end
+    end
     if drawPlate(w, entries, total, maxHealth, math.max(health, 0.01), db) then
         if iconOnly then w.marker:Hide() end
         if ns.shielded and ns.shielded(unit) then w.iconWindow:Hide() end -- a shield soaks damage first

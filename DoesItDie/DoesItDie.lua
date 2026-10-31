@@ -175,6 +175,7 @@ local DEFAULTS = {
     nameplateIconPosition = "left", -- the level badge sits right of the bar on Forever's plates
     plateIconOffsetX = 0,
     plateIconOffsetY = 15,          -- clear of the level number, which draws over the icon
+    plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height
     plateIcon = "skull",
     plateDotColors = "school",
     plateFillTexture = "stripes",
