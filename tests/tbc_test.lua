@@ -384,9 +384,10 @@ do
     local marker
     for _, f in ipairs(frames) do if f.parent == extended and f.kind == "StatusBar" and f.allPoints == hb then marker = f end end
     check("marker sits on NeatPlates' bar", marker ~= nil, true)
-    db.plateMarkerHeight = 7
+    check("NeatPlates: marker fits its bar automatically (8 high)", marker and marker.height, 8)
+    db.plateMarkerHeight = 5
     H.update(0.1)
-    check("Marker height 7: marker is 7 high", marker and marker.height, 7)
+    check("Marker height 5: marker is 5 high", marker and marker.height, 5)
     db.plateMarkerHeight = 0
     FakePlate.extended = nil; NeatPlates = nil; hb:Hide()
 end

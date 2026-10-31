@@ -136,6 +136,7 @@ end
 -- and where it was found ("unitFrame.healthBar"). Reading every field of a frame is slow, so each plate's result
 -- is kept (searchCache) and only searched again, at most once a second, when it's gone or hidden.
 local SEARCH_DEPTH = 4
+local NEATPLATES_HEIGHT = 8 -- marker height that fits NeatPlates' default bar
 local SEARCH_INTERVAL = 1
 local searchCache = {} -- plate -> { bar, path, at }
 
@@ -690,6 +691,8 @@ local function updatePlate(unit, plate, db)
     -- tall, centred on the bar, full width. For plate addons whose bar frame is taller than the bar drawn in it
     -- (NeatPlates: a 32-high frame around a bar about 7 high).
     local height = tonumber(db.plateMarkerHeight) or 0
+    -- 0 on NeatPlates: its bar is about 8 high inside a 32-high frame (tested in game), so fit it automatically.
+    if height == 0 and type(path) == "string" and path:find("NeatPlates", 1, true) then height = NEATPLATES_HEIGHT end
     if w.inset ~= height then
         w.inset = height
         w.marker:ClearAllPoints()

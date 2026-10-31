@@ -925,9 +925,9 @@ local function buildTabs()
         { enabledIf = plateIcon, tooltip = "Pixels right (+) or left (-) of the chosen position." })
     plates:slider("plateIconOffsetY", "Icon vertical offset", -40, 40, 1,
         { enabledIf = plateIcon, tooltip = "Pixels up (+) or down (-) from the chosen position." })
-    plates:slider("plateMarkerHeight", "Marker height", 0, 32, 1, { enabledIf = platesOn, tooltip = "0 covers the "
-        .. "nameplate's whole bar. Otherwise the marker is this many pixels tall, centred on the bar. Use it when the "
-        .. "marker looks taller than the bar, as on NeatPlates (about 7 fits its default bar)." })
+    plates:slider("plateMarkerHeight", "Marker height", 0, 32, 1, { enabledIf = platesOn, tooltip = "0 is automatic: "
+        .. "the nameplate's whole bar, or 8 pixels on NeatPlates, whose bar is thinner than its frame. Otherwise the "
+        .. "marker is this many pixels tall, centred on the bar." })
     plates:gap()
     plates:choice("plateDotColors", "DoT colors", lists.dotColors, { enabledIf = platesOn })
     plates:choice("plateFillTexture", "Fill style", lists.fills, { enabledIf = platesOn })
