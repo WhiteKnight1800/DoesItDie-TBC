@@ -371,8 +371,10 @@ do
     NeatPlates = {}
     local carrier = CreateFrame("Frame", nil, UIParent)
     local extended = CreateFrame("Frame", nil, carrier)
-    local hb = CreateFrame("StatusBar", nil, extended)
-    hb:SetSize(110, 10); hb:SetMinMaxValues(0, 100); hb.value = 100
+    -- NeatPlates' own bar widget: a plain Frame with a .Bar texture, not a StatusBar
+    local hb = CreateFrame("Frame", nil, extended)
+    hb:SetSize(110, 10)
+    hb.Bar = hb:CreateTexture(nil, "ARTWORK")
     function hb.GetEffectiveAlpha() return 1 end
     extended.bars = { healthbar = hb }
     FakePlate.extended = extended

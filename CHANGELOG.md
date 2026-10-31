@@ -1,6 +1,7 @@
 # Changelog (Classic & TBC port)
 
 ## v0.8.2-22
+- **NeatPlates (Community Edition) fixed:** its health bar is its own widget rather than a standard WoW bar, so it was skipped and only a small skull showed beside the plate. The marker now sits on NeatPlates' bar.
 - **Nameplate addons that keep their frame outside the nameplate** (NeatPlates Community Edition and others) are found by following the frames the nameplate links to and picking the bar that shows the mob's health. Before, only the small kill icon showed beside the plate.
 - `/did plates` shows its results in a window you can copy from, so they can be pasted in a bug report.
 

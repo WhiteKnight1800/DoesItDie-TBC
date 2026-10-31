@@ -382,7 +382,9 @@ local function findHealthBar(plate, unit)
             local bars = extended.bars
             return bars and (bars.healthbar or bars.health or bars.healthBar)
         end)
-        if okBar and isStatusBar(npBar) and not forbidden(npBar) and barShown(npBar) then
+        -- Their bar is their own widget (a Frame with a .Bar texture and Lua SetValue), not a StatusBar: only its
+        -- position and layer are used, so any frame will do.
+        if okBar and npBar and isFrame(npBar) and not forbidden(npBar) and barShown(npBar) then
             local who = (NeatPlates and "NeatPlates") or (TidyPlates and "Tidy Plates") or "plate.extended"
             return npBar, extended, who .. " healthbar", true
         end
