@@ -312,6 +312,32 @@ do
     for _, f in ipairs(hidden) do f:Show() end
 end
 
+-- 19d. An unknown plate addon whose frame sits outside the plate, linked under any name: found by its health
+do
+    local hidden = {}
+    for _, f in ipairs(frames) do
+        if f.kind == "StatusBar" and f.shown and f.parent and f.parent.parent == FakePlate then f:Hide(); table.insert(hidden, f) end
+    end
+    local carrier = CreateFrame("Frame", nil, UIParent)
+    local inner = CreateFrame("Frame", nil, carrier)
+    local hb = CreateFrame("StatusBar", nil, inner)
+    hb:SetSize(110, 10); hb:SetMinMaxValues(0, 100); hb.value = 100
+    function hb.GetEffectiveAlpha() return 1 end
+    function carrier.GetChildren() return inner end
+    function inner.GetChildren() return hb end
+    FakePlate.someCarrier = carrier
+    local oldChildren = FakePlate.GetChildren
+    function FakePlate.GetChildren() end
+    cast(27216); applied(targetGuid, 27216)
+    step("nameplate refresh with an unknown outside plate frame", function() H.update(5.5); H.update(0.1) end)
+    local status = ns.plateBarStatus and ns.plateBarStatus() or "?"
+    print("      status: " .. tostring(status))
+    check("linked outside frame's bar found by health", status:find("linked: someCarrier", 1, true) ~= nil, true)
+    FakePlate.someCarrier = nil; FakePlate.GetChildren = oldChildren; hb:Hide()
+    for _, f in ipairs(hidden) do f:Show() end
+    cast(27216); applied(targetGuid, 27216) -- fresh DoT for the next tests
+end
+
 -- 20. Plater with "use UIParent": its unit frame is outside the Blizzard plate, linked as plate.unitFrame -----------
 do
     Plater = {}
@@ -790,6 +816,12 @@ local okSS, errSS = pcall(function()
     log("UNIT_DIED", "", mob, 0)
 end)
 if not okSS then failures = failures + 1; print("FAIL  Starshards test crashed: " .. tostring(errSS)) end
+
+-- /did plates shows its results in a copyable box
+do
+    step("/did plates with a copy box", function() SlashCmdList.DOESITDIE("plates") end)
+    check("copy box shown", DoesItDieCopyBox and DoesItDieCopyBox.shown, true)
+end
 
 -- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------
 local okCE, errCE = pcall(function()

@@ -1,5 +1,9 @@
 # Changelog (Classic & TBC port)
 
+## v0.8.2-22
+- **Nameplate addons that keep their frame outside the nameplate** (NeatPlates Community Edition and others) are found by following the frames the nameplate links to and picking the bar that shows the mob's health. Before, only the small kill icon showed beside the plate.
+- `/did plates` shows its results in a window you can copy from, so they can be pasted in a bug report.
+
 ## v0.8.2-21
 - **NeatPlates / Tidy Plates:** the marker and kill icon go on their own health bar (plate.extended.bars.healthbar), which the automatic search couldn't reach.
 

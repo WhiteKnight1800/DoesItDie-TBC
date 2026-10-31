@@ -251,7 +251,8 @@ end
 
 local function matchHealthBar(plate, unit)
     if type(unit) ~= "string" then return nil end
-    local blizzardBar = plate.UnitFrame and plate.UnitFrame.healthBar
+    local unitFrame = rawget(plate, "UnitFrame")
+    local blizzardBar = type(unitFrame) == "table" and rawget(unitFrame, "healthBar") or nil
     local best, bestWidth
     local function visit(frame, depth, path)
         local ok, children = pcall(function() return { frame:GetChildren() } end)
@@ -278,6 +279,44 @@ local function matchHealthBar(plate, unit)
     if best then return best[1], best[2] end
 end
 
+-- Plate addons that keep their frame outside the Blizzard plate (NeatPlates Community Edition, Tidy Plates, Plater
+-- on UIParent) still link it from the plate in a field. Follow the plate's own frame fields, wherever those frames
+-- sit, and find the bar showing the mob's health: on the frame, in its fields (and plain tables of them, like
+-- .bars), or among its children. The world and UI root frames are never searched.
+local function linkedHealthBar(plate, unit)
+    if type(unit) ~= "string" then return nil end
+    local okP, plateParent = pcall(plate.GetParent, plate)
+    local skip = { [UIParent or false] = true, [WorldFrame or false] = true, [plate.UnitFrame or false] = true }
+    if okP and plateParent then skip[plateParent] = true end
+    local roots = tableFields(plate, false) or {}
+    local function candidate(bar)
+        return isStatusBar(bar) and not forbidden(bar) and bar ~= (plate.UnitFrame and plate.UnitFrame.healthBar)
+            and barShown(bar) and healthMatches(bar, unit)
+    end
+    for _, field in ipairs(roots) do
+        local key, root = field[1], field[2]
+        if not skip[root] and isFrame(root) and not forbidden(root) then
+            local okC, isBar = pcall(candidate, root)
+            if okC and isBar then return root, key end
+            for _, sub in ipairs(tableFields(root, false) or {}) do
+                local subKey, value = sub[1], sub[2]
+                if not skip[value] then
+                    local okS, hit = pcall(candidate, value)
+                    if okS and hit then return value, key .. "." .. subKey end
+                    if not isFrame(value) then
+                        for _, inner in ipairs(tableFields(value, true) or {}) do
+                            local okI, hitI = pcall(candidate, inner[2])
+                            if okI and hitI then return inner[2], key .. "." .. subKey .. "." .. inner[1] end
+                        end
+                    end
+                end
+            end
+            local okM, matched, path = pcall(matchHealthBar, root, unit)
+            if okM and matched then return matched, key .. "." .. tostring(path) end
+        end
+    end
+end
+
 local function autoHealthBar(plate, unit)
     local cached = searchCache[plate]
     local now = GetTime()
@@ -289,6 +328,10 @@ local function autoHealthBar(plate, unit)
     if not bar then
         local okM, matched, matchedPath = pcall(matchHealthBar, plate, unit)
         if okM and matched then bar, path = matched, "matched by health: " .. tostring(matchedPath) end
+    end
+    if not bar then
+        local okL, linked, linkedPath = pcall(linkedHealthBar, plate, unit)
+        if okL and linked then bar, path = linked, "linked: " .. tostring(linkedPath) end
     end
     searchCache[plate] = { bar = bar, path = path, at = now }
     return bar, path
@@ -754,6 +797,50 @@ hider:SetScript("OnUpdate", function(self)
     self:Hide()
 end)
 
+-- A small window with selectable text, so results can be copied out of the game and pasted in a comment.
+local copyBox
+function ns.showCopyBox(title, text)
+    if not copyBox then
+        copyBox = CreateFrame("Frame", "DoesItDieCopyBox", UIParent, "BackdropTemplate")
+        copyBox:SetSize(620, 320)
+        copyBox:SetPoint("CENTER")
+        copyBox:SetFrameStrata("DIALOG")
+        copyBox:EnableMouse(true)
+        copyBox:SetMovable(true)
+        copyBox:RegisterForDrag("LeftButton")
+        copyBox:SetScript("OnDragStart", copyBox.StartMoving)
+        copyBox:SetScript("OnDragStop", copyBox.StopMovingOrSizing)
+        if copyBox.SetBackdrop then
+            copyBox:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+            copyBox:SetBackdropColor(0.06, 0.05, 0.08, 0.97)
+            copyBox:SetBackdropBorderColor(0.66, 0.4, 1, 1)
+        end
+        copyBox.title = copyBox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        copyBox.title:SetPoint("TOPLEFT", 12, -10)
+        copyBox.title:SetPoint("TOPRIGHT", -36, -10)
+        copyBox.title:SetJustifyH("LEFT")
+        local close = CreateFrame("Button", nil, copyBox, "UIPanelCloseButton")
+        close:SetPoint("TOPRIGHT", -2, -2)
+        local scroll = CreateFrame("ScrollFrame", nil, copyBox, "UIPanelScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", 12, -34)
+        scroll:SetPoint("BOTTOMRIGHT", -32, 12)
+        local box = CreateFrame("EditBox", nil, scroll)
+        box:SetMultiLine(true)
+        box:SetAutoFocus(false)
+        box:SetFontObject("GameFontHighlightSmall")
+        box:SetWidth(570)
+        box:SetScript("OnEscapePressed", function() copyBox:Hide() end)
+        scroll:SetScrollChild(box)
+        copyBox.box = box
+        if UISpecialFrames then table.insert(UISpecialFrames, "DoesItDieCopyBox") end
+    end
+    copyBox.title:SetText(title)
+    copyBox.box:SetText(text)
+    copyBox:Show()
+    copyBox.box:SetFocus()
+    copyBox.box:HighlightText()
+end
+
 -- Checks one nameplate unit; returns a log line and whether the test bar could be shown.
 local function probePlate(unit, index)
     local parts = { unit }
@@ -781,6 +868,20 @@ local function probePlate(unit, index)
     table.insert(parts, "forbidden=" .. tostring(forbidden))
     if forbidden then return table.concat(parts, " "), false end
 
+    -- What the plate links to (plate addons hang their frames here), for finding an unknown addon's bar.
+    local links = {}
+    for _, field in ipairs(tableFields(plate, false) or {}) do
+        local key, value = field[1], field[2]
+        local okT, kind = pcall(function() return value:GetObjectType() end)
+        local label = key .. "(" .. (okT and tostring(kind) or "table") .. ")"
+        if okT and value ~= plate.UnitFrame then
+            local okU, under = pcall(isUnder, value, plate)
+            if okU and not under then label = label .. "outside" end
+        end
+        table.insert(links, label)
+        if #links >= 15 then break end
+    end
+    table.insert(parts, "links=" .. table.concat(links, ","))
     local healthBar, host, path = findHealthBar(plate, unit)
     table.insert(parts, "healthBar=" .. path)
     if healthBar then
@@ -838,15 +939,31 @@ function ns.probeNameplates()
         tostring(inInstance), tostring(instanceType), call(UnitAffectingCombat, "player")))
     for _, bar in ipairs(testBars) do bar:Hide() end
 
-    local found, shown = 0, 0
+    local found, shown, report = 0, 0, {}
+    local addons = {}
+    for _, name in ipairs({ "Plater", "NeatPlates", "TidyPlates", "Platynator", "KuiNameplates", "ThreatPlates",
+        "EllesmereNameplates_NS", "ElvUI" }) do
+        if _G[name] then table.insert(addons, name) end
+    end
+    table.insert(report, "Does It Die " .. tostring((function()
+        local get = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+        local ok, v = pcall(function() return get and get("DoesItDie", "Version") end)
+        return ok and v or ""
+    end)()) .. " plate probe. Plate addons loaded: "
+        .. (#addons > 0 and table.concat(addons, ", ") or "none known"))
     for i = 1, MAX_PLATES do
         local unit = "nameplate" .. i
         if UnitExists(unit) then
             found = found + 1
             local line, ok = probePlate(unit, found)
             ns.trace("PLATES " .. line)
+            if found <= 3 then table.insert(report, line) end
             if ok then shown = shown + 1 end
         end
+    end
+    if ns.showCopyBox then
+        ns.showCopyBox("Nameplate probe: select all (Ctrl+A), copy (Ctrl+C) and paste it in a comment",
+            table.concat(report, "\n\n"))
     end
 
     hideTestBarsAt = GetTime() + TEST_SECONDS
