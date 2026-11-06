@@ -1634,12 +1634,11 @@ end
 ---------------------------------------------------------------------------
 
 local function applyDefaults()
-    -- v1.0.1: undo v1.0.0's Forever marker fit (height 10, offset -4, left edge 5) where it's still exactly that, so
-    -- everyone starts from the whole bar again. A fit someone chose themselves is left alone.
+    -- v1.0.1: v1.0.0 started Forever with a marker fit (height 10, offset -4, left edge 5) that put the marker below
+    -- the bar on the default UI. These options were new in v1.0.0, so the fit is reset once for everyone: the whole
+    -- bar again. Anyone who needs a fit sets it again in the Marker tab.
     if not db.fitReset101 then
-        if db.markerHeight == 10 and db.markerOffsetY == -4 and db.markerInsetLeft == 5 then
-            db.markerHeight, db.markerOffsetY, db.markerInsetLeft = 0, 0, 0
-        end
+        db.markerHeight, db.markerOffsetY, db.markerInsetLeft, db.markerInsetRight = 0, 0, 0, 0
         db.fitReset101 = true
     end
     -- Settings from earlier versions.

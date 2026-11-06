@@ -1,7 +1,7 @@
 # Changelog (Does It Die Advanced)
 
 ## v1.0.1
-- Forever: the target marker covers the whole health bar again by default. v1.0.0 started it fitted to one player's frame (height 10, offset -4, left edge 5), which put it below the bar on Blizzard's default UI. Installs still on exactly those values are reset; a fit you chose yourself is kept.
+- Forever: the target marker covers the whole health bar again by default. v1.0.0 started it fitted to one player's frame (height 10, offset -4, left edge 5), which put it below the bar on Blizzard's default UI. The Marker tab's height, offset and edge settings are reset once for everyone; set them again if your frame needs a fit.
 
 ## v1.0.0: Does It Die Advanced
 - **New name: Does It Die Advanced.** The addon's folder is now `DoesItDieAdvanced`: delete the old `DoesItDie` folder when updating. Settings start fresh.

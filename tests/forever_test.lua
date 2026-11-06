@@ -44,7 +44,7 @@ for line in toc:gmatch("[^\r\n]+") do
         end)
     end
 end
-DoesItDieAdvancedDB = { markerHeight = 10, markerOffsetY = -4, markerInsetLeft = 5 } -- a v1.0.0 install's fit
+DoesItDieAdvancedDB = { markerHeight = 10, markerOffsetY = -4, markerInsetLeft = 6 } -- a v1.0.0 install, fit adjusted
 step("ADDON_LOADED", function() H.fire("ADDON_LOADED", "DoesItDieAdvanced") end)
 local db = DoesItDieAdvancedDB
 check("recognised as Forever", ns.isForever, true)
