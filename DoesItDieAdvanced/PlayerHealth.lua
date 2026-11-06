@@ -43,6 +43,7 @@ end
 
 -- Whether the client only reports a percentage for this unit: another player (or a player's pet) outside your group.
 local function percentOnly(unit)
+    if ns.isForever then return false end -- health is secret there, not a percentage: drawn as is
     local okC, controlled = pcall(UnitPlayerControlled, unit)
     if not okC or not controlled or isSecret(controlled) then return false end
     local okP, isMe = pcall(UnitIsUnit, unit, "player")
@@ -50,7 +51,7 @@ local function percentOnly(unit)
     local okG, inGroup = pcall(function() return UnitInParty(unit) or UnitInRaid(unit) end)
     if okG and inGroup then return false end
     local okM, maxHealth = pcall(UnitHealthMax, unit)
-    return okM and maxHealth == 100
+    return okM and not isSecret(maxHealth) and maxHealth == 100
 end
 
 local function cacheKey(unit)
@@ -229,7 +230,7 @@ local HEAL = { SPELL_HEAL = true, SPELL_PERIODIC_HEAL = true }
 local LEECH = { SPELL_LEECH = true, SPELL_PERIODIC_LEECH = true, SPELL_DRAIN = true, SPELL_PERIODIC_DRAIN = true }
 
 local frame = CreateFrame("Frame")
-if type(CombatLogGetCurrentEventInfo) == "function" then
+if type(CombatLogGetCurrentEventInfo) == "function" and not ns.isForever then
     pcall(frame.RegisterEvent, frame, "COMBAT_LOG_EVENT_UNFILTERED")
 end
 frame:RegisterEvent("UNIT_HEALTH")

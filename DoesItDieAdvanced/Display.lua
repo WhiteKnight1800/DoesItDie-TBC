@@ -129,6 +129,7 @@ local function colorOf(id, opacityPercent)
 end
 
 local healthBar -- nil if the target frame's health bar wasn't found (markers unavailable)
+local anchoredHeight, anchorMarker -- the marker's height setting, applied (see anchorMarker)
 -- While the options window is open, the display is attached to its mock target frame (previewHost:
 -- { healthBar, portrait, layerFrame }) and fed its plain numbers (previewState: { health, dots }) instead.
 local previewHost, previewState
@@ -141,7 +142,7 @@ local skullTestUntil -- /did skull forces the skull visible until this time
 -- It starts sliding in at skullSize / SKULL_BAR_LENGTH short of lethal (0.2% at 20px, 1.3% at 128px).
 local SKULL_BAR_LENGTH = 10000
 
-local skullWindow = CreateFrame("Frame", "DoesItDieSkull", UIParent)
+local skullWindow = CreateFrame("Frame", "DoesItDieAdvancedSkull", UIParent)
 skullWindow:SetClipsChildren(true)
 skullWindow:Hide()
 
@@ -177,7 +178,7 @@ plainSkull:SetAllPoints()
 -- the health bar's scale. Its fill (invisible itself) spans the damage the DoTs still have to deal,
 -- measured from the bar's left edge; the visible fill, outline and flash are drawn on top of that span.
 -- If the green ends inside the marker, the current DoTs will kill the target.
-local remainingBar = CreateFrame("StatusBar", "DoesItDieRemaining", UIParent)
+local remainingBar = CreateFrame("StatusBar", "DoesItDieAdvancedRemaining", UIParent)
 remainingBar:SetStatusBarTexture(WHITE)
 remainingBar:SetStatusBarColor(0, 0, 0, 0)
 remainingBar:Hide()
@@ -720,10 +721,8 @@ local function attach(force)
     plainSkullFrame:SetPoint("BOTTOM", skullWindow, "TOP", 0, 4)
 
     healthBar = bar
-    if healthBar then
-        remainingBar:ClearAllPoints()
-        remainingBar:SetAllPoints(healthBar)
-    end
+    anchoredHeight = nil
+    anchorMarker()
     appliedSignature = nil -- re-anchor the skull, label and effects against the (new) frames
     local function describeSetting(path, found, fallback)
         if path == "" then return fallback and (" (" .. fallback .. ")") or "" end
@@ -757,6 +756,16 @@ local STRATA_RANK = {
     BACKGROUND = 1, LOW = 2, MEDIUM = 3, HIGH = 4, DIALOG = 5, FULLSCREEN = 6, FULLSCREEN_DIALOG = 7, TOOLTIP = 8,
 }
 local LAYER_CHECK_INTERVAL = 1
+-- Forever: IsVisible/IsShown can answer with a secret boolean, which can't be tested. Treated as shown.
+local function truthy(frame, method)
+    local ok, v = pcall(frame[method], frame)
+    if not ok then return false end
+    if isSecret(v) then return true end
+    return v and true or false
+end
+-- The highest strata a target frame's own parts are drawn in. Something above it in the frame's tree (a menu or
+-- tooltip another addon parents there, seen in Forever: DIALOG/501) put the marker over the whole interface.
+local TOP_STRATA_RANK = 4 -- HIGH
 
 -- Health text above the marker (TBC port). The marker is drawn above everything on the target frame, so it always
 -- shows over the bar's colour however the frame is built, but that also covers the health numbers. Moving those
@@ -837,10 +846,10 @@ do
             local okL, fl = pcall(frame.GetFrameLevel, frame)
             if okS and okL and not isSecret(fs) and not isSecret(fl) then
                 local fr = STRATA_RANK[fs] or 0
-                if (fr < rank or (fr == rank and fl <= top)) and frame:IsVisible() then
+                if (fr < rank or (fr == rank and fl <= top)) and truthy(frame, "IsVisible") then
                     local scale = frame:GetEffectiveScale()
                     for _, region in ipairs({ frame:GetRegions() }) do
-                        if region:GetObjectType() == "FontString" and region:IsShown()
+                        if region:GetObjectType() == "FontString" and truthy(region, "IsShown")
                             and centreInside(region, scale, l, r, t, b) then
                             mirror(region, frame)
                             knownOwners[frame] = true
@@ -850,6 +859,22 @@ do
             end
             if depth < 6 then
                 for _, child in ipairs({ frame:GetChildren() }) do consider(child, depth + 1) end
+            end
+        end
+        -- Blizzard's own health text, by name: on Forever a region's position can be secret, so finding text by
+        -- where it sits misses it (seen in-game: "41%" left under the stripes). These are over the bar by design.
+        for _, holder in ipairs({ bar, (pcall(bar.GetParent, bar)) and bar:GetParent() or nil }) do
+            if holder and holder ~= UIParent then
+                for _, field in ipairs({ "LeftText", "RightText", "TextString", "HealthBarText", "ManaBarText" }) do
+                    local okR, region = pcall(function() return holder[field] end)
+                    local okT, isText = pcall(function() return region and region:GetObjectType() == "FontString" end)
+                    if okR and okT and isText and field ~= "ManaBarText" then
+                        local okP, owner = pcall(region.GetParent, region)
+                        owner = okP and owner or holder
+                        mirror(region, owner)
+                        knownOwners[owner] = true
+                    end
+                end
             end
         end
         consider(bar, 0)
@@ -881,8 +906,7 @@ do
         local uiScale = UIParent:GetEffectiveScale()
         for region, m in pairs(mirrors) do
             local copy = m.copy
-            local okV, visible = pcall(region.IsVisible, region)
-            if m.found and markerShown and okV and visible then
+            if m.found and markerShown and truthy(region, "IsVisible") then
                 local holder = copy:GetParent()
                 local okS, ownerScale = pcall(m.owner.GetEffectiveScale, m.owner)
                 if okS and type(ownerScale) == "number" and uiScale and uiScale > 0 then holder:SetScale(ownerScale / uiScale) end
@@ -958,7 +982,7 @@ local function targetFrameTopLayer()
         -- Some of Blizzard's frames report a secret strata/level in Forever; those can't be compared, so skip
         -- them (their children are still visited).
         local strata, level = frame:GetFrameStrata(), frame:GetFrameLevel()
-        if not isSecret(strata) and not isSecret(level) then
+        if not isSecret(strata) and not isSecret(level) and (STRATA_RANK[strata] or 0) <= TOP_STRATA_RANK then
             local rank, topRank = STRATA_RANK[strata] or 0, STRATA_RANK[topStrata] or 0
             if rank > topRank then
                 topStrata, topLevel = strata, level
@@ -1084,8 +1108,34 @@ end
 local updateErrorShown = false
 local lastShieldTraced
 local lastTracedDamage
+-- Marker tab > Marker height: 0 covers the health bar frame; otherwise the marker is that many pixels tall, centred
+-- on it, full width. Some frame styles draw a thinner bar inside a taller frame (seen on Forever: a 20-high frame).
+-- The options preview's mock bar always gets the full height.
+anchorMarker = function()
+    if not healthBar then return end
+    local height = (not previewHost and db and tonumber(db.markerHeight)) or 0
+    local y = (not previewHost and db and tonumber(db.markerOffsetY)) or 0
+    local left = (not previewHost and db and tonumber(db.markerInsetLeft)) or 0
+    local right = (not previewHost and db and tonumber(db.markerInsetRight)) or 0
+    local key = height .. ":" .. y .. ":" .. left .. ":" .. right
+    if anchoredHeight == key then return end
+    anchoredHeight = key
+    remainingBar:ClearAllPoints()
+    if height > 0 then
+        remainingBar:SetPoint("LEFT", healthBar, "LEFT", left, y)
+        remainingBar:SetPoint("RIGHT", healthBar, "RIGHT", -right, y)
+        remainingBar:SetHeight(height)
+    elseif y ~= 0 or left ~= 0 or right ~= 0 then
+        remainingBar:SetPoint("TOPLEFT", healthBar, "TOPLEFT", left, y)
+        remainingBar:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", -right, y)
+    else
+        remainingBar:SetAllPoints(healthBar)
+    end
+end
+
 local function refresh()
     local now = GetTime()
+    anchorMarker()
     ns.tracking.housekeep(now)
     updateLayering(now)
     applyAppearance()
@@ -1140,7 +1190,7 @@ local function refresh()
 
     local perDot = db.dotColors ~= "single"
     local ok, err = pcall(function()
-        skullBar:SetMinMaxValues(0, math.max(health, 0.01))
+        skullBar:SetMinMaxValues(0, ns.atLeast(health))
         skullBar:SetValue(damage)
         if healthBar then
             setMarkerScale(maxHealth)

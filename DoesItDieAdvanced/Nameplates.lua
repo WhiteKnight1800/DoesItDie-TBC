@@ -704,7 +704,7 @@ local function updatePlate(unit, plate, db)
             w.marker:SetAllPoints(healthBar)
         end
     end
-    if drawPlate(w, entries, total, maxHealth, math.max(health, 0.01), db) then
+    if drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db) then
         if iconOnly then w.marker:Hide() end
         if ns.shielded and ns.shielded(unit) then w.iconWindow:Hide() end -- a shield soaks damage first
     end
@@ -822,7 +822,7 @@ end)
 local copyBox
 function ns.showCopyBox(title, text)
     if not copyBox then
-        copyBox = CreateFrame("Frame", "DoesItDieCopyBox", UIParent, "BackdropTemplate")
+        copyBox = CreateFrame("Frame", "DoesItDieAdvancedCopyBox", UIParent, "BackdropTemplate")
         copyBox:SetSize(620, 320)
         copyBox:SetPoint("CENTER")
         copyBox:SetFrameStrata("DIALOG")
@@ -853,7 +853,7 @@ function ns.showCopyBox(title, text)
         box:SetScript("OnEscapePressed", function() copyBox:Hide() end)
         scroll:SetScrollChild(box)
         copyBox.box = box
-        if UISpecialFrames then table.insert(UISpecialFrames, "DoesItDieCopyBox") end
+        if UISpecialFrames then table.insert(UISpecialFrames, "DoesItDieAdvancedCopyBox") end
     end
     copyBox.title:SetText(title)
     copyBox.box:SetText(text)
@@ -966,9 +966,9 @@ function ns.probeNameplates()
         "EllesmereNameplates_NS", "ElvUI" }) do
         if _G[name] then table.insert(addons, name) end
     end
-    table.insert(report, "Does It Die " .. tostring((function()
+    table.insert(report, "Does It Die Advanced " .. tostring((function()
         local get = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
-        local ok, v = pcall(function() return get and get("DoesItDie", "Version") end)
+        local ok, v = pcall(function() return get and get(ADDON_NAME, "Version") end)
         return ok and v or ""
     end)()) .. " plate probe. Plate addons loaded: "
         .. (#addons > 0 and table.concat(addons, ", ") or "none known"))

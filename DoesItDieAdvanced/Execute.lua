@@ -63,7 +63,7 @@ end
 -- Probe widgets
 ---------------------------------------------------------------------------
 
-local holder = CreateFrame("Frame", "DoesItDieExecuteProbe", UIParent)
+local holder = CreateFrame("Frame", "DoesItDieAdvancedExecuteProbe", UIParent)
 holder:SetSize(ICON_SIZE * 3 + 32, ICON_SIZE + 14)
 holder:SetFrameStrata("HIGH")
 holder:Hide()

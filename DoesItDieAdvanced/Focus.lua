@@ -164,7 +164,7 @@ local function refresh()
     updateLayering(bar, GetTime())
     local health, maxHealth = (ns.realHealth or function(u) return UnitHealth(u), UnitHealthMax(u) end)("focus") -- nil for an enemy player not measured yet
     if not health then return hide() end
-    ns.barMarker.draw(widgets, entries, total, maxHealth, math.max(health, 0.01), focusLook)
+    ns.barMarker.draw(widgets, entries, total, maxHealth, ns.atLeast(health), focusLook)
     if ns.shielded and ns.shielded("focus") and widgets.iconWindow then widgets.iconWindow:Hide() end
 end
 

@@ -1,19 +1,28 @@
-DoesItDie - TBC Anniversary & Classic Era port
-==============================================
+Does It Die Advanced
+====================
 
-Ported by WhiteKnight / Smuggz_.
+By WhiteKnight / Smuggz_, based on "Does It Die" by JoeGG (MIT licence, github.com/swirllyman/DoesItDie).
 
-A port of "Does It Die" (by JoeGG, MIT licence, github.com/swirllyman/DoesItDie, v0.8.2) from WoW Forever to
-the TBC Classic Anniversary client (interface 20505 / 20506 / 20507) and the Classic Era client (Classic Era,
-Hardcore; interface 11507 / 11508 / 11509). One download works on both.
+One download for three clients: Classic Era / Hardcore (interface 11507-11509), TBC Classic Anniversary
+(20505-20507) and WoW: Forever (16001-16003).
 
 INSTALL
-  Put the DoesItDie folder in:  World of Warcraft\_anniversary_\Interface\AddOns\  (TBC Anniversary)
-                            or:  World of Warcraft\_classic_era_\Interface\AddOns\  (Classic Era)
-  then restart the game fully. Type /did for options.
+  Put the DoesItDieAdvanced folder in your client's Interface\AddOns\ folder:
+    World of Warcraft\_classic_era_\Interface\AddOns\   (Classic Era, Hardcore)
+    World of Warcraft\_anniversary_\Interface\AddOns\   (TBC Anniversary)
+    Forever's own AddOns folder                           (WoW: Forever)
+  then restart the game fully. Type /dida for options (/did also works unless JoeGG's original is installed).
+  Updating from "Does It Die (Classic & TBC)": delete the old DoesItDie folder. Settings start fresh.
   If the addon shows as "out of date", tick "Load out of date AddOns" on the character screen.
 
-WHAT CHANGED FROM THE FOREVER VERSION
+FOREVER
+  Forever blocks the combat log and hides target health, auras, combo points and tick amounts from addons.
+  There the original's way of spotting ticks is used (school and timing), and the estimate comes from spell
+  tooltips, which leave out spell power: the marker errs low there, never showing a skull too early.
+  Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind
+  shields, /did accuracy. The target marker starts fitted to Forever's target frame (height 10, offset -4).
+
+CLASSIC ERA AND TBC: WHAT CHANGED FROM THE FOREVER VERSION
   * Uses the combat log. Forever forbids addons from reading it, so the original guesses which hit was which
     DoT tick from damage school, size and timing. TBC allows it, so this version reads every tick, miss,
     debuff application and removal of YOUR spells exactly, by name, on every mob - including mobs you have

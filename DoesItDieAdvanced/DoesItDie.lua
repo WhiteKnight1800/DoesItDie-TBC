@@ -12,6 +12,18 @@
 
 local ADDON_NAME, ns = ... -- ns is shared with Options.lua
 
+-- Which client this is. WoW: Forever (interface 16xxx) runs the modern client with Midnight's addon restrictions:
+-- the combat log is forbidden (registering it shows a "blocked" popup) and target health, spell power, combo points
+-- and auras are secret. There the original Forever tracking (UNIT_COMBAT) is used; TBC and Classic Era add the combat log.
+do
+    local okB, version, _, _, interface = pcall(GetBuildInfo)
+    interface = okB and tonumber(interface) or 0
+    local minor = okB and type(version) == "string" and tonumber(version:match("^1%.(%d+)")) or nil
+    -- Forever's client is version 1.60 and up (Classic Era is 1.15); its interface number is in the 16000s on the
+    -- beta. Either is enough.
+    ns.isForever = (minor ~= nil and minor >= 16) or (interface >= 16000 and interface < 20000)
+end
+
 local UPDATE_INTERVAL = 0.1
 local DEFAULT_TICK_INTERVAL = 3
 -- Seconds either side of an expected tick time. Observed on Forever: the first tick lands within ~0.1s of one
@@ -175,6 +187,12 @@ local DEFAULTS = {
     nameplateIconPosition = "left", -- the level badge sits right of the bar on Forever's plates
     plateIconOffsetX = 0,
     plateIconOffsetY = 15,          -- clear of the level number, which draws over the icon
+    -- Target frame marker fit (Marker tab): Forever's target frame draws a 10-high bar low inside its 20-high frame
+    -- (fitted in game, 2026-11-05), so it starts fitted there.
+    markerHeight = ns.isForever and 10 or 0, -- pixels tall, centred on the bar; 0 = the bar frame's full height
+    markerOffsetY = ns.isForever and -4 or 0, -- moved up (+) or down (-), in pixels
+    markerInsetLeft = 0,            -- left end pulled in, in pixels
+    markerInsetRight = 0,           -- right end pulled in, in pixels
     plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height
     plateIcon = "skull",
     plateDotColors = "school",
@@ -211,7 +229,7 @@ local warnedSecretGuid = false
 ---------------------------------------------------------------------------
 
 local function print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cffff6666DoesItDie|r " .. msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffb266ffDoes It Die Advanced|r " .. msg)
 end
 
 -- Always recorded to SavedVariables (db.log) for diagnosing accuracy; echoed to chat with /did debug.
@@ -1119,6 +1137,13 @@ end
 
 -- Counts a hit as the DoT's tick in slot `index`. Returns the tick's number (1 = first) and shape factor.
 local function recordTick(dot, amount, isCrit, index, now)
+    -- Accuracy report bookkeeping for clients without the combat log (Forever), where ticks come from UNIT_COMBAT:
+    -- the combat log path (onPeriodic) does this itself, with partial resists kept apart.
+    if not dot.predictedAt and (dot.ticksSeen or 0) == 0 then
+        dot.predictedAt = math.floor((ns.remainingDamageOf and ns.remainingDamageOf(dot) or 0) + 0.5)
+        dot.startPerTick = expectedTick(dot)
+    end
+    if not dot.dealtByLog then dot.dealt = (dot.dealt or 0) + (tonumber(amount) or 0) end
     local factor = tickShape(dot, tickNumberAt(dot, now))
     dot.ticksSeen = dot.ticksSeen + 1
     dot.lastTickAmount, dot.lastTickShape, dot.lastTickCrit = amount, factor, isCrit
@@ -1168,8 +1193,48 @@ end
 -- from the same token feeds another DoT, one from another token is a copy and is dropped (PR #14).
 local combatFrameAt
 local combatFrameHits = {}
+-- A tick whose amount is hidden (Forever): matched to the same-school DoT whose rhythm it fits best. Returns the
+-- mob's key when a DoT that was waiting for its first tick shows from now.
+local hiddenFrameAt, hiddenFrameHits = nil, {}
+local function onHiddenTick(key, unit, school)
+    local dots = dotsByTarget[key]
+    if not dots then return end
+    local now = GetTime()
+    if hiddenFrameAt ~= now then hiddenFrameAt, hiddenFrameHits = now, {} end
+    -- The same hit fires for target, nameplateN, ...: count it once.
+    local signature = key .. ":" .. school
+    if hiddenFrameHits[signature] and hiddenFrameHits[signature] ~= unit then return end
+    hiddenFrameHits[signature] = unit
+    local best, bestName, bestDistance, bestIndex
+    for name, dot in pairs(dots) do
+        if dot.school == school and not dot.channel then
+            local distance, index = distanceToExpectedTick(dot, now)
+            local window = dot.firstTickAt and TICK_MATCH_WINDOW_ANCHORED or TICK_MATCH_WINDOW
+            local freshSlot = not dot.firstTickAt or index > dot.lastTickIndex
+            if freshSlot and distance <= window and (not bestDistance or distance < bestDistance) then
+                best, bestName, bestDistance, bestIndex = dot, name, distance, index
+            end
+        end
+    end
+    if not best then return end
+    local wasWaiting = isWaiting(best)
+    best.sizeHidden = true
+    local tickIndex = recordTick(best, 0, false, bestIndex, now)
+    best.confirmed, best.doubtful = true, nil
+    trace(string.format("TICK %s (amount hidden) on %s (tick %d/%d)%s", bestName, unit, tickIndex, best.totalTicks,
+        wasWaiting and ", now shown" or ""))
+    if wasWaiting then return key end
+end
+
+local unitCombatSeen = 0 -- the first few UNIT_COMBAT events are logged as they come, to see what the client hides
 local function onUnitCombat(unit, action, flag, amount, school)
     if combatLog.active then return end -- the combat log does this exactly (TBC)
+    if unitCombatSeen < 8 and (unit == "target" or (type(unit) == "string" and unit:find("^nameplate"))) then
+        unitCombatSeen = unitCombatSeen + 1
+        local function show(v) if isSecret(v) then return "SECRET" end return tostring(v) end
+        trace(string.format("UNIT_COMBAT %s action=%s flag=%s amount=%s school=%s", tostring(unit), show(action),
+            show(flag), show(amount), show(school)))
+    end
     if isSecret(action) then return end
     -- A fully absorbed tick still landed (a shield ate it): it proves the DoT is on and keeps its rhythm, so ABSORB
     -- matches like WOUND, but a 0 never feeds tick sizes. With two DoTs it could be, it's ignored.
@@ -1179,6 +1244,13 @@ local function onUnitCombat(unit, action, flag, amount, school)
     if not key then return end
     if AVOIDED_ACTIONS[action] then return onAvoided(key, action, school) end
     if action == "WOUND" or absorbed then onHit(key, school) end
+    -- Forever's live client hides the amount (seen in-game, 2026-11-05: "amount=SECRET school=4"). The school and
+    -- timing are still readable, so the hit is matched to a DoT by those alone: the DoT keeps its rhythm and counts
+    -- down instead of being dropped as "never ticked". Its size can't be learned, so the estimate stays at the
+    -- tooltip's or an earlier learned size.
+    if isSecret(amount) and not isSecret(school) and type(school) == "number" and action == "WOUND" then
+        return onHiddenTick(key, unit, school)
+    end
     if isSecret(amount) or isSecret(school) or type(amount) ~= "number" then return end
     local isCrit = not isSecret(flag) and flag == "CRITICAL"
     if not dotsByTarget[key] and not armedTrap then return end
@@ -1269,7 +1341,7 @@ end
 -- dealt, and the per-tick size each came from. Kept in db.accuracy (last 20); /did accuracy prints them.
 local MAX_ACCURACY = 20
 local function noteAccuracy(dot, name, how)
-    if not dot.predictedAt or dot.channel or (dot.ticksSeen or 0) == 0 then return end
+    if not dot.predictedAt or dot.channel or (dot.ticksSeen or 0) == 0 or dot.sizeHidden then return end
     local dealt = dot.dealt or 0
     -- Off by: too high as a share of the prediction, too low as a share of what it really dealt (so a prediction
     -- of half the real damage reads "50% too low", never "-100%").
@@ -1333,6 +1405,7 @@ local function remainingDamage(dot)
     end
     return total
 end
+ns.remainingDamageOf = remainingDamage -- recordTick, defined above, needs it
 
 -- Remaining damage per DoT on a mob (by unitKey), oldest application first. DoTs still waiting for their first
 -- tick are left out. A DoT being cast on the mob replaces the one of the same name it would refresh.
@@ -1461,6 +1534,7 @@ do
             dot.predictedAt = math.floor(remainingDamage(dot) + 0.5)
             dot.startPerTick = expectedTick(dot)
         end
+        dot.dealtByLog = true
         dot.dealt = (dot.dealt or 0) + (tonumber(amount) or 0)
         dot.resisted = (dot.resisted or 0) + (tonumber(resisted) or 0) -- partial resists, for the accuracy report
         local tickIndex, factor = recordTick(dot, size, isCrit, index, now)
@@ -1547,7 +1621,7 @@ do
 
     -- Registers the combat log where the client allows it. Returns whether it's in use.
     function combatLog.start(eventFrame)
-        if type(CombatLogGetCurrentEventInfo) ~= "function" then return false end
+        if type(CombatLogGetCurrentEventInfo) ~= "function" or ns.isForever then return false end
         local ok = pcall(eventFrame.RegisterEvent, eventFrame, "COMBAT_LOG_EVENT_UNFILTERED")
         combatLog.active = ok and true or false
         return combatLog.active
@@ -1572,6 +1646,12 @@ end
 -- ns.db is set on ADDON_LOADED.
 ns.DEFAULTS = DEFAULTS
 ns.parseDot = parseDot -- tests
+-- Health for the kill icon's bar, never zero; a secret value (Forever) goes to the bar as it is, since it can't be
+-- compared.
+function ns.atLeast(health)
+    if isSecret(health) or type(health) ~= "number" then return health end
+    return math.max(health, 0.01)
+end
 
 -- Casts waiting for their tooltip text (see DESC_WAIT_SECONDS).
 local descWaiter = CreateFrame("Frame")
@@ -1683,8 +1763,8 @@ frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "ADDON_LOADED" then
         if ... ~= ADDON_NAME then return end
-        DoesItDieDB = DoesItDieDB or {}
-        db = DoesItDieDB
+        DoesItDieAdvancedDB = DoesItDieAdvancedDB or {}
+        db = DoesItDieAdvancedDB
         if db.version ~= DB_VERSION then
             db.ticks, db.intervals, db.version = nil, nil, DB_VERSION
         end
@@ -1716,6 +1796,11 @@ frame:SetScript("OnEvent", function(self, event, ...)
             print("Couldn't create the options panel; slash commands still work (/did help).")
         end
         if not ns.display.attach() then print("Target portrait not found; kill icon shown beside the target frame.") end
+        do
+            local okB, version, build, _, interface = pcall(GetBuildInfo)
+            trace(string.format("CLIENT %s (build %s, interface %s): %s", tostring(okB and version), tostring(okB and build),
+                tostring(okB and interface), ns.isForever and "Forever, ticks from UNIT_COMBAT" or "combat log where allowed"))
+        end
         if combatLog.start(self) then trace("Combat log in use: ticks, misses and removals are read exactly") end
         self:UnregisterEvent("ADDON_LOADED")
 
@@ -1812,9 +1897,16 @@ end)
 -- Slash commands
 ---------------------------------------------------------------------------
 
-SLASH_DOESITDIE1 = "/did"
-SLASH_DOESITDIE2 = "/doesitdie"
-SlashCmdList.DOESITDIE = function(msg)
+-- /dida always; /did too unless the original Does It Die (JoeGG's, folder DoesItDie) is installed, which uses it. It
+-- loads first (addons load in folder order), so it's known here.
+SLASH_DOESITDIEADVANCED1 = "/dida"
+SLASH_DOESITDIEADVANCED2 = "/doesitdieadvanced"
+do
+    local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+    local ok, original = pcall(function() return isLoaded and isLoaded("DoesItDie") end)
+    if not (ok and original) then SLASH_DOESITDIEADVANCED3 = "/did" end
+end
+SlashCmdList.DOESITDIEADVANCED = function(msg)
     local cmd = strlower(strtrim(msg or ""))
     if cmd == "" or cmd == "options" or cmd == "config" then
         ns.openOptions()

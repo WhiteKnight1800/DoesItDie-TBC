@@ -24,7 +24,7 @@ ns.locale = L
 
 -- Every field but tag is optional.
 function L.register(language)
-    assert(type(language) == "table" and type(language.tag) == "string", "DoesItDie: a language needs a tag")
+    assert(type(language) == "table" and type(language.tag) == "string", "Does It Die Advanced: a language needs a tag")
     table.insert(L.languages, language)
 end
 

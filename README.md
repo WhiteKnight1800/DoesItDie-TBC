@@ -2,7 +2,7 @@
   <img src="docs/images/logo-skull.png" alt="Does It Die logo" width="160">
 </p>
 
-<h1 align="center">Does It Die (Classic &amp; TBC)</h1>
+<h1 align="center">Does It Die Advanced</h1>
 
 <p align="center">
   <strong>Stop wasting casts on mobs that are already dead.</strong><br>
@@ -12,13 +12,13 @@
 <p align="center">
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
-  <img alt="Game version" src="https://img.shields.io/badge/game-1.15%20%7C%202.5-6d3bd1?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.8.2--22-7cff4f?style=flat-square">
+  <img alt="WoW Forever" src="https://img.shields.io/badge/WoW-Forever-c9a24b?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
 <p align="center">
-  <img src="docs/images/1-does-it-die.png" alt="Does It Die: know the moment your DoTs will finish the job. TBC Anniversary, Classic Era and Hardcore" width="860">
+  <img src="docs/images/1-does-it-die.png" alt="Does It Die Advanced: know the moment your DoTs will finish the job. Classic Era, Hardcore, TBC Anniversary and Forever" width="860">
 </p>
 
 ---
@@ -34,6 +34,7 @@
 - [How accurate is it?](#how-accurate-is-it)
 - [PvP](#pvp)
 - [Classic Era](#classic-era)
+- [Forever](#forever)
 - [Compatibility](#compatibility)
 - [Bug reports](#bug-reports)
 - [Development](#development)
@@ -48,7 +49,7 @@
 | **Nameplates** | The same marker and a small kill icon on every enemy nameplate with your DoTs on it. Made for multi-dotting. |
 | **Focus frame** | The marker on your focus's health bar, and `/cast [@focus]` DoTs are tracked on the right mob (TBC). |
 | **Per-DoT colours** | Each DoT gets its own segment, so you can see Corruption, Immolate and Agony separately. |
-| **Fully customisable** | `/did` opens an options window with a live preview: icons, fills, outlines, animations and text. |
+| **Fully customisable** | `/dida` opens an options window with a live preview: icons, fills, outlines, animations and text. |
 
 <p align="center">
   <img src="docs/images/2-how-to-read-it.png" alt="How to read the marker: if the health ends inside the marker, your DoTs will kill it" width="860">
@@ -81,20 +82,22 @@ The original addon was built for WoW: Forever, which hides most combat informati
     <td width="50%"><img src="docs/images/5-pvp.png" alt="Does It Die on an enemy player"><br><sub><b>Works on enemy players,</b> with their real health measured from the damage they take.</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/6-make-it-yours.png" alt="The /did options window with live preview"><br><sub><b>Make it yours</b> in <code>/did</code>, with a live preview and presets.</sub></td>
+    <td width="50%"><img src="docs/images/6-make-it-yours.png" alt="The /dida options window with live preview"><br><sub><b>Make it yours</b> in <code>/dida</code>, with a live preview and presets.</sub></td>
     <td width="50%"><img src="docs/images/7-everything-it-does.png" alt="Everything Does It Die does"><br><sub><b>Everything it does,</b> on Classic Era and TBC Anniversary.</sub></td>
   </tr>
 </table>
 
 ## Installation
 
-**CurseForge app:** search for **Does It Die (Classic & TBC)** and click Install, or get it from the [CurseForge page](https://www.curseforge.com/wow/addons/does-it-die-classicandtbc).
+**CurseForge app:** search for **Does It Die Advanced** and click Install, or get it from the [CurseForge page](https://www.curseforge.com/wow/addons/does-it-die-classicandtbc).
 
 **Manually:**
 
 1. Download the latest version from the [Releases](../../releases) page, or this repository as a zip (**Code → Download ZIP**).
-2. Copy the `DoesItDie` folder into `World of Warcraft\_anniversary_\Interface\AddOns\` (TBC Anniversary) or `World of Warcraft\_classic_era_\Interface\AddOns\` (Classic Era).
-3. Restart the game and type `/did` to open the options.
+2. Copy the `DoesItDieAdvanced` folder into your game's `Interface\AddOns\` folder: `_classic_era_` (Classic Era, Hardcore), `_anniversary_` (TBC Anniversary) or Forever's.
+3. Restart the game and type `/dida` to open the options. `/did` works too, unless JoeGG's original Does It Die is installed.
+
+**Updating from Does It Die (Classic & TBC):** delete the old `DoesItDie` folder from your AddOns folder. Settings start fresh.
 
 If the addon shows as out of date, tick **Load out of date AddOns** on the character selection screen.
 
@@ -102,16 +105,16 @@ If the addon shows as out of date, tick **Load out of date AddOns** on the chara
 
 | Command | What it does |
 |---|---|
-| `/did` | Open the options window (live preview) |
-| `/did accuracy` | Predicted vs real damage for your last DoTs |
-| `/did channels` | Turn Drain Life / Drain Soul / Mind Flay prediction on or off |
-| `/did pvp` | Show or hide the marker and kill icon on enemy players |
-| `/did text` | Put the health numbers above or below the marker |
-| `/did textcheck` | List the text over your target's health bar (for bug reports) |
-| `/did skull` | Show the kill icon for 5 seconds to check its position |
-| `/did ticks` | What each DoT really ticks for, compared with its tooltip |
-| `/did reset` | Forget learned tick sizes |
-| `/did debug` | Echo the tracking log to chat |
+| `/dida` | Open the options window (live preview) |
+| `/dida accuracy` | Predicted vs real damage for your last DoTs |
+| `/dida channels` | Turn Drain Life / Drain Soul / Mind Flay prediction on or off |
+| `/dida pvp` | Show or hide the marker and kill icon on enemy players |
+| `/dida text` | Put the health numbers above or below the marker |
+| `/dida textcheck` | List the text over your target's health bar (for bug reports) |
+| `/dida skull` | Show the kill icon for 5 seconds to check its position |
+| `/dida ticks` | What each DoT really ticks for, compared with its tooltip |
+| `/dida reset` | Forget learned tick sizes |
+| `/dida debug` | Echo the tracking log to chat |
 
 ## Supported DoTs
 
@@ -136,7 +139,7 @@ The addon learns from your **real ticks**, so your spell power, spell rank, tale
 
 - **Before a DoT's first tick**, the estimate is deliberately cautious: the lowest of your last few casts, scaled to your current spell power. Partial resists and debuffs on a mob can't be known until it ticks.
 - **From the first tick on**, that DoT is predicted from its own real ticks.
-- `/did accuracy` shows predicted vs real damage for your last DoTs, including anything the mob resisted.
+- `/dida accuracy` shows predicted vs real damage for your last DoTs, including anything the mob resisted.
 
 ## PvP
 
@@ -147,7 +150,7 @@ The game only tells addons an enemy player's health as a percentage, not in hit 
 - Your ticks on players (reduced by resilience) are learned separately, so PvP never changes your PvE estimates.
 - While a shield or immunity is up (Power Word: Shield, Ice Barrier, Mana Shield, Ice Block and the like), the kill icon is hidden, since it soaks your damage first.
 - Players can heal, drink potions and use immunities, so in PvP the kill icon is a hint, not a promise.
-- Turn it off with `/did pvp` or **Advanced → Show on enemy players**.
+- Turn it off with `/dida pvp` or **Advanced → Show on enemy players**.
 
 ## Classic Era
 
@@ -162,11 +165,25 @@ The same download works on Classic Era (including Hardcore). Both games run on t
 - Classic Era has no Blizzard focus frame, so the focus marker only appears if a unit frame addon provides one.
 - Season of Discovery rune DoTs aren't specifically supported yet.
 
+## Forever
+
+<p align="center">
+  <img src="docs/images/9-forever.png" alt="Does It Die Advanced on WoW: Forever: the marker on Forever's target frame and nameplates" width="860">
+</p>
+
+The same download works on WoW: Forever. Forever blocks the combat log and hides target health, auras, combo points and even each tick's damage from addons, so it works more like the original there:
+
+- Ticks are spotted by their school and timing, so DoTs count down tick by tick, on the target, focus and nameplates.
+- The estimate comes from spell tooltips, which leave out spell power, so the marker errs low: no skull too early.
+- The target marker starts fitted to Forever's target frame (Marker tab → Marker height 10, vertical offset -4).
+- Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind shields, and `/dida accuracy`.
+- Installs alongside JoeGG's original Does It Die without clashing (its own folder, settings and `/dida` command).
+
 ## Compatibility
 
 | | |
 |---|---|
-| **Client** | Classic Era and Hardcore (1.15.7 to 1.15.9), TBC Classic Anniversary (2.5.5, 2.5.6) |
+| **Client** | Classic Era and Hardcore (1.15.7 to 1.15.9), TBC Classic Anniversary (2.5.5, 2.5.6), WoW: Forever |
 | **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
 | **Nameplates** | Blizzard, Plater, Threat Plates, NeatPlates, EllesmereUI, Platynator, and most others automatically |
 
@@ -178,21 +195,22 @@ Please [open an issue](../../issues/new/choose) and include:
 
 - your class and the spell involved;
 - which unit frame and nameplate addons you use;
-- the output of `/did debug` from the fight, or `/did textcheck` for display problems.
+- the output of `/dida debug` from the fight, or `/dida textcheck` for display problems.
 
 ## Development
 
-`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the Classic client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, the health text copy, PvP health measuring, and Classic Era (vanilla) tooltips. It needs a Lua 5.1 interpreter:
+`tests/tbc_test.lua` loads every addon file in a fake WoW environment set up like the Classic client and plays scripted fights through the combat log: tick tracking, misses and resists, channels, Agony's ramp, spell power scaling, Plater, the health text copy, PvP health measuring, and Classic Era (vanilla) tooltips. `tests/forever_test.lua` does the same on a fake Forever client: no combat log, secret health and hidden tick amounts. It needs a Lua 5.1 interpreter:
 
 ```sh
-lua tests/tbc_test.lua DoesItDie tests
+lua tests/tbc_test.lua DoesItDieAdvanced tests
+lua tests/forever_test.lua DoesItDieAdvanced tests
 ```
 
 See [CHANGELOG.md](CHANGELOG.md) for the history of the port.
 
 ## Credits and licence
 
-- **Classic & TBC port:** WhiteKnight / Smuggz_
+- **Does It Die Advanced:** WhiteKnight / Smuggz_
 - **Original addon:** [Does It Die](https://github.com/swirllyman/DoesItDie) by **JoeGG**, made for WoW: Forever. The marker, kill icon, options window and overall design are his work.
 
 Released under the [MIT licence](LICENSE), as the original is.

@@ -79,7 +79,7 @@ local function step(label, fn)
 end
 
 local ns = {}
-local toc = io.open(ADDON .. "/DoesItDie.toc"):read("*a")
+local toc = io.open(ADDON .. "/DoesItDieAdvanced.toc"):read("*a")
 for line in toc:gmatch("[^\r\n]+") do
     if line:match("%.lua$") then
         step("load " .. line, function()
@@ -89,17 +89,18 @@ for line in toc:gmatch("[^\r\n]+") do
         end)
     end
 end
-step("ADDON_LOADED", function() H.fire("ADDON_LOADED", "DoesItDie") end)
-local db = DoesItDieDB
+step("ADDON_LOADED", function() H.fire("ADDON_LOADED", "DoesItDieAdvanced") end)
+local db = DoesItDieAdvancedDB
 local function logHas(text)
     for _, l in ipairs(db.log) do if l:find(text, 1, true) then return true end end
     return false
 end
 check("combat log in use", logHas("Combat log in use"), true)
+check("/did registered when the original isn't installed", SLASH_DOESITDIEADVANCED3, "/did")
 check("options page registered without the Settings API", registeredPanel ~= nil, true)
-step("/did opens the window", function() SlashCmdList.DOESITDIE("") end)
-check("options window shown", DoesItDieOptions and DoesItDieOptions.shown, true)
-step("close it", function() DoesItDieOptions:Hide() end)
+step("/did opens the window", function() SlashCmdList.DOESITDIEADVANCED("") end)
+check("options window shown", DoesItDieAdvancedOptions and DoesItDieAdvancedOptions.shown, true)
+step("close it", function() DoesItDieAdvancedOptions:Hide() end)
 
 local castCount = 0
 local function cast(spellID)
@@ -265,7 +266,7 @@ check("Immolate with no aura and no ticks dropped after 2 missed ticks", byZ["Im
 -- 18. The display loop and the marker -------------------------------------------------------------------------
 step("display loop runs with live DoTs", function() for _ = 1, 20 do H.update(0.1) end end)
 step("/did debug, /did ticks, /did help", function()
-    SlashCmdList.DOESITDIE("ticks"); SlashCmdList.DOESITDIE("help")
+    SlashCmdList.DOESITDIEADVANCED("ticks"); SlashCmdList.DOESITDIEADVANCED("help")
 end)
 
 -- 19. A nameplate addon with an unnamed health bar (Blizzard's hidden): found by matching the mob's health ------
@@ -432,10 +433,10 @@ do
     channel(25387, 3)
     _, by = remaining(); check("Mind Flay channel: 3 ticks of 176", by["Mind Flay"], 528)
     stop()
-    SlashCmdList.DOESITDIE("channels")
+    SlashCmdList.DOESITDIEADVANCED("channels")
     channel(27238, 5)
     check("/did channels turns it off", dl(), nil)
-    stop(); SlashCmdList.DOESITDIE("channels")
+    stop(); SlashCmdList.DOESITDIEADVANCED("channels")
 end
 
 -- 22. Accuracy report: a tick size learned under a +20% debuff, then a cast without it ---------------------------
@@ -451,7 +452,7 @@ do
     print("      " .. last)
     check("accuracy: predicted 1296 from the learned 216/tick", last:find("predicted 1296", 1, true) ~= nil, true)
     check("accuracy: really dealt 1080, 20% too high", last:find("dealt 1080 (17% too high)", 1, true) ~= nil, true)
-    step("/did accuracy prints", function() SlashCmdList.DOESITDIE("accuracy") end)
+    step("/did accuracy prints", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
     check("printed to chat", chat[#chat]:find("Corruption: predicted 1296", 1, true) ~= nil, true)
 end
 
@@ -509,7 +510,7 @@ do
         wait(0.5); log("SPELL_AURA_REMOVED", PLAYER, mobs.A, 27216, { "DEBUFF" })
     end
     log("UNIT_DIED", "", mobs.A, 0)
-    SlashCmdList.DOESITDIE("reset")
+    SlashCmdList.DOESITDIEADVANCED("reset")
     fullCorruption(243) -- no debuff on the mob
     fullCorruption(291) -- Shadow Vulnerability up
     cast(27216); applied(mobs.A, 27216)
@@ -584,7 +585,7 @@ local okT, errT = pcall(function()
     TargetFrameHealthBar = bar
     ns.display.attach(true)
     ns.relayer(); ns.refresh()
-    local marker = DoesItDieRemaining
+    local marker = DoesItDieAdvancedRemaining
     check("marker above everything on the frame (top 31 + 1)", marker.level, 32)
     check("marker in the frame's top strata", marker.strata, "LOW")
     targetGuid = mobs.B; H.fire("PLAYER_TARGET_CHANGED")
@@ -610,9 +611,32 @@ local okT, errT = pcall(function()
     check("setting off: copy hidden", copyOff and copyOff.shown, false)
     check("setting off: marker still above the whole frame", marker.level, 32)
     db.markerUnderText = true
-    SlashCmdList.DOESITDIE("text")
+    SlashCmdList.DOESITDIEADVANCED("text")
     check("/did text toggles it", db.markerUnderText, false)
-    SlashCmdList.DOESITDIE("text")
+    SlashCmdList.DOESITDIEADVANCED("text")
+    db.markerHeight = 8
+    ns.refresh()
+    check("Marker height 8: target marker is 8 high", DoesItDieAdvancedRemaining.height, 8)
+    db.markerOffsetY = -3
+    step("Marker vertical offset -3 applies", function() ns.refresh() end)
+    db.markerOffsetY = 0
+    db.markerHeight = 0
+    ns.refresh()
+    check("Marker height 0: covers the bar again", DoesItDieAdvancedRemaining.allPoints ~= nil, true)
+    -- A menu or tooltip parented into the target frame at DIALOG (seen in Forever: DIALOG/501) must not lift the
+    -- marker over the whole interface; and secret visibility answers (Forever) must not break the text copy.
+    local menu = CreateFrame("Frame", nil, TargetFrame)
+    menu:SetFrameStrata("DIALOG"); menu:SetFrameLevel(501)
+    local realChildren = TargetFrame.GetChildren
+    function TargetFrame.GetChildren() return bar, menu end
+    local realVisible = textFrame.IsVisible
+    textFrame.IsVisible = function() return setmetatable({}, { __secret = true }) end
+    local realSecret = issecretvalue
+    issecretvalue = function(v) return type(v) == "table" and getmetatable(v) and getmetatable(v).__secret or false end
+    for _ = 1, 3 do ns.relayer(); ns.refresh() end
+    check("a DIALOG frame in the target frame doesn't lift the marker over the UI", marker.strata, "LOW")
+    check("secret visibility: text still copied", (ns.textMirror(pct)), true)
+    issecretvalue, textFrame.IsVisible, TargetFrame.GetChildren = realSecret, realVisible, realChildren
 end)
 if not okT then failures = failures + 1; print('FAIL  layering test crashed: ' .. tostring(errT)) end
 
@@ -650,7 +674,7 @@ local okT2, errT2 = pcall(function()
     local joined = table.concat(report, " | ")
     print("      " .. joined:sub(1, 160))
     check("/did textcheck lists it as lifted", joined:find("MyUnitFramesTargetText", 1, true) ~= nil and joined:find("copied above the marker", 1, true) ~= nil, true)
-    step("/did textcheck runs", function() SlashCmdList.DOESITDIE("textcheck") end)
+    step("/did textcheck runs", function() SlashCmdList.DOESITDIEADVANCED("textcheck") end)
 end)
 if not okT2 then failures = failures + 1; print("FAIL  outside-text test crashed: " .. tostring(errT2)) end
 
@@ -670,7 +694,7 @@ local okT3, errT3 = pcall(function()
     local ticksBefore = db.ticks[27216]
     cast(27216); applied(enemy, 27216)
     for _ = 1, 3 do H.update(0.1) end
-    check("enemy player not measured yet: no marker (instead of a full bar)", DoesItDieRemaining.shown, false)
+    check("enemy player not measured yet: no marker (instead of a full bar)", DoesItDieAdvancedRemaining.shown, false)
     local told = false
     for _, line in ipairs(chat) do if line:find("measuring Gankster's health", 1, true) then told = true end end
     check("chat says it's measuring the player", told, true)
@@ -678,8 +702,8 @@ local okT3, errT3 = pcall(function()
     pct = 90; H.fire("UNIT_HEALTH", "target")
     for _ = 1, 3 do H.update(0.1) end
     check("health measured: 1200 damage moved 10% = 12000", db.playerHealth and db.playerHealth.Gankster and db.playerHealth.Gankster.est, 12000)
-    check("marker shows once the size is known", DoesItDieRemaining.shown, true)
-    local _, mx = DoesItDieRemaining:GetMinMaxValues()
+    check("marker shows once the size is known", DoesItDieAdvancedRemaining.shown, true)
+    local _, mx = DoesItDieAdvancedRemaining:GetMinMaxValues()
     check("marker scaled to the player's real health", mx, 12000, 1)
     wait(3); tick(enemy, 27216, 150)
     check("PvP tick learned separately", db.ticks["27216p"], 150)
@@ -689,14 +713,14 @@ local okT3, errT3 = pcall(function()
     enemy = "Player-1-0000BEEF"; targetGuid = enemy; pct = 100; H.fire("PLAYER_TARGET_CHANGED")
     cast(27216); applied(enemy, 27216)
     for _ = 1, 3 do H.update(0.1) end
-    check("same player again: remembered size used at once", DoesItDieRemaining.shown, true)
-    SlashCmdList.DOESITDIE("pvp")
+    check("same player again: remembered size used at once", DoesItDieAdvancedRemaining.shown, true)
+    SlashCmdList.DOESITDIEADVANCED("pvp")
     for _ = 1, 3 do H.update(0.1) end
-    check("/did pvp off: nothing drawn on the enemy player", DoesItDieRemaining.shown, false)
+    check("/did pvp off: nothing drawn on the enemy player", DoesItDieAdvancedRemaining.shown, false)
     check("setting saved", db.showOnPlayers, false)
-    SlashCmdList.DOESITDIE("pvp")
+    SlashCmdList.DOESITDIEADVANCED("pvp")
     for _ = 1, 3 do H.update(0.1) end
-    check("/did pvp on again: marker back", DoesItDieRemaining.shown, true)
+    check("/did pvp on again: marker back", DoesItDieAdvancedRemaining.shown, true)
     UnitPlayerControlled, UnitHealth, UnitHealthMax, UnitName = nil, realUnitHealth, realUnitHealthMax, realUnitName
     log("UNIT_DIED", "", enemy, 0)
 end)
@@ -727,7 +751,7 @@ local okT4, errT4 = pcall(function()
     end
     local cached = db.playerHealth and db.playerHealth.Glacier
     check("topped-up player measured hit by hit: 500 per 5% = 10000", cached and cached.est, 10000)
-    check("marker shows on the topped-up player", DoesItDieRemaining.shown, true)
+    check("marker shows on the topped-up player", DoesItDieAdvancedRemaining.shown, true)
     -- health drained by a spell (SPELL_PERIODIC_LEECH, power type -2) counts as damage
     enemy, who, pct = "Player-1-0000D00D", "Drainee", 100
     targetGuid = enemy; H.fire("PLAYER_TARGET_CHANGED")
@@ -795,14 +819,14 @@ local okS, errS = pcall(function()
     function UnitHealthMax(u) if u == "target" then return 1000 end return realMaxFn(u) end
     cast(27216); applied(mob, 27216)
     for _ = 1, 3 do H.update(0.1) end
-    check("lethal DoTs: kill icon shown", DoesItDieSkull and DoesItDieSkull.shown, true)
+    check("lethal DoTs: kill icon shown", DoesItDieAdvancedSkull and DoesItDieAdvancedSkull.shown, true)
     function UnitBuff(u, i) if u == "target" and i == 1 then return "Power Word: Shield" end end
     for _ = 1, 3 do H.update(0.1) end
-    check("Power Word: Shield up: kill icon hidden", DoesItDieSkull and DoesItDieSkull.shown, false)
-    check("marker still shown under the shield", DoesItDieRemaining.shown, true)
+    check("Power Word: Shield up: kill icon hidden", DoesItDieAdvancedSkull and DoesItDieAdvancedSkull.shown, false)
+    check("marker still shown under the shield", DoesItDieAdvancedRemaining.shown, true)
     UnitBuff = nil
     for _ = 1, 3 do H.update(0.1) end
-    check("shield gone: kill icon back", DoesItDieSkull and DoesItDieSkull.shown, true)
+    check("shield gone: kill icon back", DoesItDieAdvancedSkull and DoesItDieAdvancedSkull.shown, true)
     UnitHealth, UnitHealthMax = realHealthFn, realMaxFn
     log("UNIT_DIED", "", mob, 0)
 end)
@@ -826,8 +850,8 @@ if not okSS then failures = failures + 1; print("FAIL  Starshards test crashed: 
 
 -- /did plates shows its results in a copyable box
 do
-    step("/did plates with a copy box", function() SlashCmdList.DOESITDIE("plates") end)
-    check("copy box shown", DoesItDieCopyBox and DoesItDieCopyBox.shown, true)
+    step("/did plates with a copy box", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
+    check("copy box shown", DoesItDieAdvancedCopyBox and DoesItDieAdvancedCopyBox.shown, true)
 end
 
 -- Classic Era (vanilla tooltips, max ranks) ---------------------------------------------------------------------------

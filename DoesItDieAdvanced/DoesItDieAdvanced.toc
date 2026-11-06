@@ -1,0 +1,22 @@
+## Interface: 11507, 11508, 11509, 16001, 16002, 16003, 20505, 20506, 20507
+## Title: Does It Die Advanced
+## Notes: Shows on your target's health bar and nameplates how much damage your DoTs still have to deal, with a kill icon when they'll finish it off. Classic Era, TBC Anniversary and Forever. /dida
+## IconTexture: Interface\AddOns\DoesItDieAdvanced\icon
+## Author: WhiteKnight / Smuggz_ (based on Does It Die by JoeGG)
+## Version: 1.0.0
+## SavedVariables: DoesItDieAdvancedDB
+
+Locale.lua
+Locale_deDE.lua
+Locale_esES.lua
+Locale_frFR.lua
+Locale_koKR.lua
+DoesItDie.lua
+Display.lua
+Frames.lua
+Options.lua
+Nameplates.lua
+Focus.lua
+Execute.lua
+PlayerHealth.lua
+

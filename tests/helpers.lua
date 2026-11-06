@@ -3,7 +3,7 @@ local H = {}
 function H.load(path, src, ns)
     local fn, err = (loadstring or load)(src, "@" .. path)
     if not fn then error(err) end
-    fn("DoesItDie", ns)
+    fn("DoesItDieAdvanced", ns)
 end
 function H.fire(event, ...)
     for _, f in ipairs(frames) do

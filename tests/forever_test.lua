@@ -1,0 +1,136 @@
+-- Forever test: the same addon on a fake Forever client. GetBuildInfo says 1.60 (interface 16001), the combat log
+-- is forbidden (registering it would show a "blocked" popup), target health is secret (can't be compared or used
+-- in math), and ticks come from UNIT_COMBAT. Checks nothing errors and the marker follows the ticks.
+-- Run: lua forever_test.lua <addon dir> <test dir>
+local ADDON, TESTDIR = arg[1], arg[2]
+dofile(TESTDIR .. "/fake_wow.lua")
+local H = dofile(TESTDIR .. "/helpers.lua")
+
+C_AddOns = { IsAddOnLoaded = function(name) return name == "DoesItDie" end } -- JoeGG's original installed too
+function GetBuildInfo() return "1.60.2", "70000", "Oct 1 2026", 11600 end -- interface not in the 16000s: found by its version
+CombatLogGetCurrentEventInfo = function() error("combat log read on Forever") end
+-- Secret values: opaque tables; comparing or doing math with them errors, as on Forever.
+local secretMeta = { __lt = function() error("compared a secret value") end, __le = function() error("compared a secret value") end,
+    __add = function() error("math on a secret value") end, __sub = function() error("math on a secret value") end,
+    __mul = function() error("math on a secret value") end, __div = function() error("math on a secret value") end,
+    __unm = function() error("math on a secret value") end, __concat = function() error("concat of a secret value") end }
+local function secret(v) return setmetatable({ v = v }, secretMeta) end
+function issecretvalue(v) return getmetatable(v) == secretMeta end
+local realMathMax = math.max
+math.max = function(...) for i = 1, select("#", ...) do if issecretvalue((select(i, ...))) then error("math.max on a secret value") end end return realMathMax(...) end
+function UnitHealth(unit) if unit == "target" or unit == "nameplate1" then return secret(100) end return 100 end
+function UnitHealthMax(unit) if unit == "target" or unit == "nameplate1" then return secret(100) end return 100 end
+function GetSpellBonusDamage() return secret(300) end
+
+local failures, passes = 0, 0
+local function check(label, actual, expected)
+    local ok = actual == expected
+    if ok then passes = passes + 1 else failures = failures + 1 end
+    print(string.format("%s  %-66s %s%s", ok and "PASS" or "FAIL", label, tostring(actual),
+        ok and "" or ("   (expected " .. tostring(expected) .. ")")))
+end
+local function step(label, fn)
+    local ok, err = pcall(fn)
+    if ok then passes = passes + 1 else failures = failures + 1 end
+    print((ok and "PASS  " or "FAIL  ") .. label .. (ok and "" or ("\n      " .. tostring(err))))
+end
+
+local ns = {}
+local toc = io.open(ADDON .. "/DoesItDieAdvanced.toc"):read("*a")
+for line in toc:gmatch("[^\r\n]+") do
+    if line:match("%.lua$") then
+        step("load " .. line, function()
+            local f = assert(io.open(ADDON .. "/" .. line)); H.load(line, f:read("*a"), ns); f:close()
+        end)
+    end
+end
+step("ADDON_LOADED", function() H.fire("ADDON_LOADED", "DoesItDieAdvanced") end)
+local db = DoesItDieAdvancedDB
+check("recognised as Forever", ns.isForever, true)
+check("original Does It Die installed: /dida registered", SLASH_DOESITDIEADVANCED1, "/dida")
+check("original Does It Die installed: /did left to it", SLASH_DOESITDIEADVANCED3, nil)
+check("saved settings in their own variable", DoesItDieAdvancedDB ~= nil and DoesItDieDB == nil, true)
+local forbiddenRegistered = false
+for _, f in ipairs(frames) do if f.events and f.events.COMBAT_LOG_EVENT_UNFILTERED then forbiddenRegistered = true end end
+check("combat log never registered (no blocked popup)", forbiddenRegistered, false)
+
+local errors = {}
+local realPrint = print
+step("/did opens and closes", function() SlashCmdList.DOESITDIEADVANCED(""); DoesItDieAdvancedOptions:Hide() end)
+
+targetGuid = "Creature-0-0000-0-0000-1234-000000F0F0"
+H.fire("PLAYER_TARGET_CHANGED")
+local castCount = 0
+local function cast(id)
+    castCount = castCount + 1
+    H.fire("UNIT_SPELLCAST_SENT", "player", "Mob", "Cast-" .. castCount, id)
+    H.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-" .. castCount, id)
+end
+-- Blizzard's modern target frame, with health text whose position is secret
+TargetFrame = CreateFrame("Frame", "TargetFrame", UIParent)
+TargetFrame.TargetFrameContainer, TargetFrame.portrait, TargetFrame.healthbar = false, false, false
+TargetFrame.TargetFrameContent = CreateFrame("Frame", nil, TargetFrame)
+TargetFrame.TargetFrameContent.TargetFrameContentMain = CreateFrame("Frame", nil, TargetFrame.TargetFrameContent)
+local main = TargetFrame.TargetFrameContent.TargetFrameContentMain
+main.HealthBarsContainer = CreateFrame("Frame", nil, main)
+main.HealthBar, main.HealthBarsContainer.healthBar = false, false
+TargetFrame.TargetFrameContent.TargetFrameContentContextual = false
+local hbar = CreateFrame("StatusBar", nil, main.HealthBarsContainer)
+main.HealthBarsContainer.HealthBar = hbar
+function hbar.GetRect() return 100, 500, 126, 20 end
+function hbar.GetEffectiveScale() return 1 end
+local leftText = FakeMock("FontString", hbar)
+function leftText.GetObjectType() return "FontString" end
+function leftText.GetLeft() return secret(110) end
+function leftText.GetText() return "41%" end
+function leftText.GetFont() return "Fonts\\FRIZQT__.TTF", 10, "OUTLINE" end
+function leftText.GetTextColor() return 1, 1, 1, 1 end
+function leftText.GetDrawLayer() return "OVERLAY", 0 end
+function leftText.GetParent() return hbar end
+hbar.LeftText = leftText
+hbar.RightText, hbar.TextString, hbar.HealthBarText, hbar.ManaBarText = false, false, false, false
+main.HealthBarsContainer.LeftText, main.HealthBarsContainer.RightText, main.HealthBarsContainer.TextString = false, false, false
+main.HealthBarsContainer.HealthBarText, main.HealthBarsContainer.ManaBarText = false, false
+step("attach to the target frame", function() ns.display.attach(true); ns.relayer(); ns.refresh() end)
+step("cast Corruption", function() cast(172) end)
+step("display refresh with secret health", function() for _ = 1, 5 do H.update(0.1) end end)
+local list, total = ns.dotBreakdownForUnit("target")
+check("Corruption tracked from its tooltip: 40", math.floor(total + 0.5), 40)
+step("tick arrives through UNIT_COMBAT", function()
+    H.update(2.5) -- 3 s after the cast: on the DoT's rhythm
+    H.fire("UNIT_COMBAT", "target", "WOUND", "", 12, 32)
+    for _ = 1, 3 do H.update(0.1) end
+end)
+list, total = ns.dotBreakdownForUnit("target")
+check("Corruption follows its real tick: 3 left x 12", math.floor(total + 0.5), 36)
+-- Live Forever hides the amount: ticks still matched by school and timing, so the DoT isn't dropped
+step("cast Immolate", function() cast(348) end)
+step("Immolate ticks with hidden amounts", function()
+    for i = 1, 3 do
+        H.update(3)
+        H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(7), 4)
+        H.fire("UNIT_COMBAT", "nameplate1", "WOUND", "", secret(7), 4) -- the same hit through the plate
+    end
+    for _ = 1, 3 do H.update(0.1) end
+end)
+local _, by = nil, {}
+list = ns.dotBreakdownForUnit("target")
+for _, e in ipairs(list) do by[e.name] = math.floor(e.damage + 0.5) end
+check("Immolate kept after 3 hidden ticks: 2 of 5 left (2 x 4)", by["Immolate"], 8)
+local hiddenTicks = 0
+for _, l in ipairs(db.log) do if l:find("TICK Immolate (amount hidden)", 1, true) then hiddenTicks = hiddenTicks + 1 end end
+check("each hidden tick counted once (not once per unit)", hiddenTicks, 3)
+local dropped = false
+for _, l in ipairs(db.log) do if l:find("DROP Immolate", 1, true) then dropped = true end end
+check("Immolate not dropped as never ticked", dropped, false)
+check("Blizzard's health text found by name (position secret): copied above the marker", (ns.textMirror(leftText)), true)
+step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
+step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
+step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
+
+if os.getenv("SHOWLOG") then for _, l in ipairs(db.log) do print("LOG: " .. l) end end
+print(string.format("\n%d passed, %d failed", passes, failures))
+local errs = 0
+check("no display or update errors logged", (function() for _, l in ipairs(db.log) do if l:find("ERROR") or l:find("failed") then return false end end return true end)(), true)
+for _, l in ipairs(db.log) do if l:find("ERROR") or l:find("failed") then errs = errs + 1; print("LOG: " .. l) end end
+if failures > 0 then os.exit(1) end

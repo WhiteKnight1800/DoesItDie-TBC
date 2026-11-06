@@ -12,7 +12,7 @@ local T = ns.locale.T -- the window's text in the window language (Locale.lua)
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 -- Tall enough for the longest tabs (Nameplates, Focus: 15 rows); wide enough for the seven tab names in a row.
-local WINDOW_WIDTH, WINDOW_HEIGHT = 800, 548
+local WINDOW_WIDTH, WINDOW_HEIGHT = 800, 576 -- tall enough for the Advanced tab (15 rows and 4 gaps)
 local HEADER_HEIGHT = 52 -- title bar: title, presets, close button
 local PREVIEW_WIDTH = 290
 local ROW_HEIGHT = 26
@@ -531,7 +531,7 @@ local function showTickTooltip(row)
     local shown = GameTooltip.SetSpellByID and pcall(GameTooltip.SetSpellByID, GameTooltip, entry.spellID)
     if not shown then GameTooltip:SetText(entry.name or (T("Spell") .. " " .. entry.spellID), 1, 1, 1) end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("DoesItDie", 1, 0.82, 0)
+    GameTooltip:AddLine("Does It Die Advanced", 1, 0.82, 0)
     if entry.comboPoints then
         GameTooltip:AddDoubleLine(T("Combo points"), entry.comboPoints, 0.8, 0.8, 0.8, 1, 1, 1)
     end
@@ -653,7 +653,7 @@ end
 
 local function createTickViewer()
     local width = TICKS_COLUMNS.total[1] + TICKS_COLUMNS.total[2] + 56
-    local viewer = CreateFrame("Frame", "DoesItDieLearnedTicks", UIParent, "BackdropTemplate")
+    local viewer = CreateFrame("Frame", "DoesItDieAdvancedLearnedTicks", UIParent, "BackdropTemplate")
     viewer:Hide()
     viewer:SetSize(width, 112 + TICKS_VISIBLE_ROWS * TICKS_ROW_HEIGHT + 44)
     viewer:SetFrameStrata("DIALOG")
@@ -665,7 +665,7 @@ local function createTickViewer()
     viewer:SetScript("OnDragStart", viewer.StartMoving)
     viewer:SetScript("OnDragStop", viewer.StopMovingOrSizing)
     setBackdrop(viewer, 0.06, 0.97)
-    table.insert(UISpecialFrames, "DoesItDieLearnedTicks") -- Escape closes it
+    table.insert(UISpecialFrames, "DoesItDieAdvancedLearnedTicks") -- Escape closes it
 
     local title = viewer:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
@@ -878,6 +878,15 @@ local function buildTabs()
     marker:choice("fillColor", "Fill color", lists.colors, { enabledIf = singleColor,
         tooltip = "Used when DoT colors is set to one color." })
     marker:slider("fillOpacity", "Fill opacity", 0, 100, 5, { suffix = "%" })
+    marker:slider("markerHeight", "Marker height", 0, 40, 1, { tooltip = "0 covers the target frame's whole health "
+        .. "bar. Otherwise the marker is this many pixels tall, centred on the bar. Use it when the marker looks "
+        .. "taller than the bar, as with frame styles that draw a thin bar inside a bigger frame." })
+    marker:slider("markerOffsetY", "Marker vertical offset", -20, 20, 1, { tooltip = "Moves the marker up (+) or "
+        .. "down (-) in pixels, to line it up with the visible bar." })
+    marker:slider("markerInsetLeft", "Marker left edge", 0, 20, 1, { tooltip = "Pulls the marker's left end in, "
+        .. "in pixels, to where the visible bar starts." })
+    marker:slider("markerInsetRight", "Marker right edge", 0, 20, 1, { tooltip = "Pulls the marker's right end "
+        .. "in, in pixels, to where the visible bar ends." })
     marker:checkbox("segmentDividers", "Dividers between DoTs", { enabledIf = perDot })
     marker:gap()
     marker:choice("outlineStyle", "Outline", lists.outlines)
@@ -1184,7 +1193,7 @@ local function buildPreview(pane)
 end
 
 local function createWindow()
-    window = CreateFrame("Frame", "DoesItDieOptions", UIParent, "BackdropTemplate")
+    window = CreateFrame("Frame", "DoesItDieAdvancedOptions", UIParent, "BackdropTemplate")
     window:Hide() -- new frames start shown; ns.openOptions shows it (running OnShow)
     window:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
     window:SetPoint("CENTER")
@@ -1197,7 +1206,7 @@ local function createWindow()
     window:SetScript("OnDragStart", window.StartMoving)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     setBackdrop(window, 0.06, 0.97, ACCENT)
-    table.insert(UISpecialFrames, "DoesItDieOptions") -- Escape closes it
+    table.insert(UISpecialFrames, "DoesItDieAdvancedOptions") -- Escape closes it
 
     -- Header: a violet glow fading down, the logo, the name and a credit line.
     local glow = window:CreateTexture(nil, "BACKGROUND", nil, 1)
@@ -1218,7 +1227,7 @@ local function createWindow()
 
     local title = window:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", logo, "TOPRIGHT", 10, -3)
-    title:SetText("Does It Die")
+    title:SetText("Does It Die Advanced")
     title:SetTextColor(0.92, 0.84, 1)
     local credit = window:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     credit:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
@@ -1305,21 +1314,21 @@ function ns.registerOptions()
     local panel = CreateFrame("Frame")
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
-    title:SetText("DoesItDie")
+    title:SetText("Does It Die Advanced")
     local text = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     text:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
     text:SetText(T("Settings have their own window with a live preview. You can also type /did."))
-    local open = pushButton(panel, "Open DoesItDie options", 200, function()
+    local open = pushButton(panel, "Open Does It Die Advanced options", 200, function()
         if SettingsPanel and SettingsPanel:IsShown() then pcall(HideUIPanel, SettingsPanel) end
         if not (window and window:IsShown()) then ns.openOptions() end
     end)
     open:SetPoint("TOPLEFT", text, "BOTTOMLEFT", 0, -14)
     -- TBC clients have the modern Settings panel; older builds only have Interface Options.
     if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
-        local category = Settings.RegisterCanvasLayoutCategory(panel, "DoesItDie")
+        local category = Settings.RegisterCanvasLayoutCategory(panel, "Does It Die Advanced")
         Settings.RegisterAddOnCategory(category)
     elseif InterfaceOptions_AddCategory then
-        panel.name = "DoesItDie"
+        panel.name = "Does It Die Advanced"
         InterfaceOptions_AddCategory(panel)
     end
 end

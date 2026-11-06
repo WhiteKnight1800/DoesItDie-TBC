@@ -1,4 +1,13 @@
-# Changelog (Classic & TBC port)
+# Changelog (Does It Die Advanced)
+
+## v1.0.0: Does It Die Advanced
+- **New name: Does It Die Advanced.** The addon's folder is now `DoesItDieAdvanced`: delete the old `DoesItDie` folder when updating. Settings start fresh.
+- **WoW: Forever support.** One download for Classic Era, Hardcore, TBC Anniversary and Forever. On Forever, ticks are matched by school and timing (Forever hides their amounts), the combat log is never touched (it's blocked there), and the target marker starts fitted to Forever's target frame.
+- **Installs alongside JoeGG's original** without clashing: its own folder, saved settings and window names. The command is `/dida`; `/did` also works when the original isn't installed.
+- New Marker tab options: **Marker height**, **vertical offset**, and **left / right edge**, to fit the marker to any target frame style.
+- The marker never goes above the target frame's own layers (a menu parented into it lifted it over the whole interface on Forever).
+- Blizzard's own health text is found by name, so it stays above the marker even where its position can't be read (Forever).
+
 
 ## v0.8.2-22
 - New option Nameplates > **Marker height**: 0 (default) is automatic: the nameplate's whole bar, or 8 pixels on NeatPlates, whose frame is much taller than the bar drawn in it. Any other value sets the marker's height, centred.
