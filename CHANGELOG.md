@@ -1,8 +1,11 @@
 # Changelog (Does It Die Advanced)
 
+## v1.0.1
+- Forever: the target marker covers the whole health bar again by default. v1.0.0 started it fitted to one player's frame (height 10, offset -4, left edge 5), which put it below the bar on Blizzard's default UI. Installs still on exactly those values are reset; a fit you chose yourself is kept.
+
 ## v1.0.0: Does It Die Advanced
 - **New name: Does It Die Advanced.** The addon's folder is now `DoesItDieAdvanced`: delete the old `DoesItDie` folder when updating. Settings start fresh.
-- **WoW: Forever support.** One download for Classic Era, Hardcore, TBC Anniversary and Forever. On Forever, ticks are matched by school and timing (Forever hides their amounts), the combat log is never touched (it's blocked there), and the target marker starts fitted to Forever's target frame.
+- **WoW: Forever support.** One download for Classic Era, Hardcore, TBC Anniversary and Forever. On Forever, ticks are matched by school and timing (Forever hides their amounts), and the combat log is never touched (it's blocked there).
 - **Installs alongside JoeGG's original** without clashing: its own folder, saved settings and window names. The command is `/dida`; `/did` also works when the original isn't installed.
 - New Marker tab options: **Marker height**, **vertical offset**, and **left / right edge**, to fit the marker to any target frame style.
 - The marker never goes above the target frame's own layers (a menu parented into it lifted it over the whole interface on Forever).

@@ -44,11 +44,13 @@ for line in toc:gmatch("[^\r\n]+") do
         end)
     end
 end
+DoesItDieAdvancedDB = { markerHeight = 10, markerOffsetY = -4, markerInsetLeft = 5 } -- a v1.0.0 install's fit
 step("ADDON_LOADED", function() H.fire("ADDON_LOADED", "DoesItDieAdvanced") end)
 local db = DoesItDieAdvancedDB
 check("recognised as Forever", ns.isForever, true)
 check("original Does It Die installed: /dida registered", SLASH_DOESITDIEADVANCED1, "/dida")
 check("original Does It Die installed: /did left to it", SLASH_DOESITDIEADVANCED3, nil)
+check("v1.0.0's Forever fit reset: whole bar again", DoesItDieAdvancedDB.markerHeight == 0 and DoesItDieAdvancedDB.markerOffsetY == 0 and DoesItDieAdvancedDB.markerInsetLeft == 0, true)
 check("saved settings in their own variable", DoesItDieAdvancedDB ~= nil and DoesItDieDB == nil, true)
 local forbiddenRegistered = false
 for _, f in ipairs(frames) do if f.events and f.events.COMBAT_LOG_EVENT_UNFILTERED then forbiddenRegistered = true end end

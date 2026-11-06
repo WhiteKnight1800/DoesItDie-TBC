@@ -13,7 +13,7 @@
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="WoW Forever" src="https://img.shields.io/badge/WoW-Forever-c9a24b?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-7cff4f?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
@@ -175,7 +175,7 @@ The same download works on WoW: Forever. Forever blocks the combat log and hides
 
 - Ticks are spotted by their school and timing, so DoTs count down tick by tick, on the target, focus and nameplates.
 - The estimate comes from spell tooltips, which leave out spell power, so the marker errs low: no skull too early.
-- The target marker starts fitted to Forever's target frame (Marker tab → Marker height 10, vertical offset -4, left edge 5).
+- If your target frame draws a thinner bar, the Marker tab's height, vertical offset and edge settings fit the marker to it.
 - Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind shields, and `/dida accuracy`.
 - Installs alongside JoeGG's original Does It Die without clashing (its own folder, settings and `/dida` command).
 

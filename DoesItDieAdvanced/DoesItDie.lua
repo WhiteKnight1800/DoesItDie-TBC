@@ -187,11 +187,12 @@ local DEFAULTS = {
     nameplateIconPosition = "left", -- the level badge sits right of the bar on Forever's plates
     plateIconOffsetX = 0,
     plateIconOffsetY = 15,          -- clear of the level number, which draws over the icon
-    -- Target frame marker fit (Marker tab): Forever's target frame draws a 10-high bar low inside its 20-high frame
-    -- and 5 in from its left edge (fitted in game, 2026-11-05/06), so it starts fitted there.
-    markerHeight = ns.isForever and 10 or 0, -- pixels tall, centred on the bar; 0 = the bar frame's full height
-    markerOffsetY = ns.isForever and -4 or 0, -- moved up (+) or down (-), in pixels
-    markerInsetLeft = ns.isForever and 5 or 0, -- left end pulled in, in pixels (Forever's bar starts 5 in)
+    -- Target frame marker fit (Marker tab), for frame styles that draw a thinner or offset bar inside the bar frame.
+    -- Default: the whole bar, which fits Blizzard's default frames. (v1.0.0 started Forever at 10 / -4 / 5, fitted to
+    -- one player's frame; on another's default UI that put the marker below the bar.)
+    markerHeight = 0,               -- pixels tall, centred on the bar; 0 = the bar frame's full height
+    markerOffsetY = 0,              -- moved up (+) or down (-), in pixels
+    markerInsetLeft = 0,            -- left end pulled in, in pixels
     markerInsetRight = 0,           -- right end pulled in, in pixels
     plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height
     plateIcon = "skull",
@@ -1633,6 +1634,14 @@ end
 ---------------------------------------------------------------------------
 
 local function applyDefaults()
+    -- v1.0.1: undo v1.0.0's Forever marker fit (height 10, offset -4, left edge 5) where it's still exactly that, so
+    -- everyone starts from the whole bar again. A fit someone chose themselves is left alone.
+    if not db.fitReset101 then
+        if db.markerHeight == 10 and db.markerOffsetY == -4 and db.markerInsetLeft == 5 then
+            db.markerHeight, db.markerOffsetY, db.markerInsetLeft = 0, 0, 0
+        end
+        db.fitReset101 = true
+    end
     -- Settings from earlier versions.
     if db.showMarkers == nil and db.showLine ~= nil then db.showMarkers = db.showLine end
     db.showLine, db.showRemaining = nil, nil
