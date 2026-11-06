@@ -188,10 +188,10 @@ local DEFAULTS = {
     plateIconOffsetX = 0,
     plateIconOffsetY = 15,          -- clear of the level number, which draws over the icon
     -- Target frame marker fit (Marker tab): Forever's target frame draws a 10-high bar low inside its 20-high frame
-    -- (fitted in game, 2026-11-05), so it starts fitted there.
+    -- and 5 in from its left edge (fitted in game, 2026-11-05/06), so it starts fitted there.
     markerHeight = ns.isForever and 10 or 0, -- pixels tall, centred on the bar; 0 = the bar frame's full height
     markerOffsetY = ns.isForever and -4 or 0, -- moved up (+) or down (-), in pixels
-    markerInsetLeft = 0,            -- left end pulled in, in pixels
+    markerInsetLeft = ns.isForever and 5 or 0, -- left end pulled in, in pixels (Forever's bar starts 5 in)
     markerInsetRight = 0,           -- right end pulled in, in pixels
     plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height
     plateIcon = "skull",

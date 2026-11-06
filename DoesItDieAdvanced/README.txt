@@ -20,7 +20,7 @@ FOREVER
   There the original's way of spotting ticks is used (school and timing), and the estimate comes from spell
   tooltips, which leave out spell power: the marker errs low there, never showing a skull too early.
   Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind
-  shields, /did accuracy. The target marker starts fitted to Forever's target frame (height 10, offset -4).
+  shields, /did accuracy. The target marker starts fitted to Forever's target frame (height 10, offset -4, left edge 5).
 
 CLASSIC ERA AND TBC: WHAT CHANGED FROM THE FOREVER VERSION
   * Uses the combat log. Forever forbids addons from reading it, so the original guesses which hit was which

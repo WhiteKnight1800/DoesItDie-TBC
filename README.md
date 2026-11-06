@@ -175,7 +175,7 @@ The same download works on WoW: Forever. Forever blocks the combat log and hides
 
 - Ticks are spotted by their school and timing, so DoTs count down tick by tick, on the target, focus and nameplates.
 - The estimate comes from spell tooltips, which leave out spell power, so the marker errs low: no skull too early.
-- The target marker starts fitted to Forever's target frame (Marker tab → Marker height 10, vertical offset -4).
+- The target marker starts fitted to Forever's target frame (Marker tab → Marker height 10, vertical offset -4, left edge 5).
 - Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind shields, and `/dida accuracy`.
 - Installs alongside JoeGG's original Does It Die without clashing (its own folder, settings and `/dida` command).
 
