@@ -1233,7 +1233,7 @@ local function createWindow()
     credit:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -3)
     local version = addonVersion()
     credit:SetText((version and ("v" .. version .. "  |cff6e6480·|r  ") or "")
-        .. "Classic & TBC port by |cffc9a0ffWhiteKnight / Smuggz_|r")
+        .. "by |cffc9a0ffWhiteKnight / Smuggz_|r")
 
     local close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
     close:SetPoint("TOPRIGHT", -6, -12)
