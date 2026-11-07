@@ -128,6 +128,8 @@ check("Immolate not dropped as never ticked", dropped, false)
 check("Blizzard's health text found by name (position secret): copied above the marker", (ns.textMirror(leftText)), true)
 function hbar.GetRect() return secret(100), secret(500), secret(126), secret(20) end
 function leftText.IsVisible() return setmetatable({}, getmetatable(secret(1))) end
+step("refresh with the bar's position hidden", function() ns.relayer(); ns.refresh() end)
+check("bar position hidden: health text still copied above the marker", (ns.textMirror(leftText)), true)
 step("/dida textcheck with secret positions and visibility", function() SlashCmdList.DOESITDIEADVANCED("textcheck") end)
 local listed = false
 for _, l in ipairs(DoesItDieAdvancedDB.log) do if l:find("TEXTCHECK LeftText", 1, true) then listed = true end end

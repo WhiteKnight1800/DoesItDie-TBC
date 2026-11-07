@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.0.3
+- Forever: the health percentage no longer drops under the marker at times. When the game hid the health bar's position (in combat, on some mobs), the health text wasn't copied above the marker at all; Blizzard's own health text is now always copied.
+- The options header reads "by WhiteKnight / Smuggz_".
+
 ## v1.0.2
 - `/dida textcheck` works on Forever (it errored where a frame's position or visibility is hidden) and opens a copyable report, including Blizzard's health text and the layers the marker and the text copies use.
 

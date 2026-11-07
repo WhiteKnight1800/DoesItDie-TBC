@@ -827,6 +827,26 @@ do
     function textLift.apply(bar, strata, top, root)
         for _, m in pairs(mirrors) do m.found = false end
         if not bar then return textLift.restore() end
+        layerStrata, layerLevel = strata, top + 1
+        for _, holder in pairs(holders) do holder:SetFrameStrata(strata); holder:SetFrameLevel(top + 1) end
+        -- Blizzard's own health text, by name: on Forever a region's position can be secret, so finding text by
+        -- where it sits misses it (seen in-game: "41%" left under the stripes). These are over the bar by design.
+        for _, holder in ipairs({ bar, (pcall(bar.GetParent, bar)) and bar:GetParent() or nil }) do
+            if holder and holder ~= UIParent then
+                for _, field in ipairs({ "LeftText", "RightText", "TextString", "HealthBarText", "ManaBarText" }) do
+                    local okR, region = pcall(function() return holder[field] end)
+                    local okT, isText = pcall(function() return region and region:GetObjectType() == "FontString" end)
+                    if okR and okT and isText and field ~= "ManaBarText" then
+                        local okP, owner = pcall(region.GetParent, region)
+                        owner = okP and owner or holder
+                        mirror(region, owner)
+                        knownOwners[owner] = true
+                    end
+                end
+            end
+        end
+        -- Everything else is found by position, which Forever hides at times (in combat, on some mobs): then the
+        -- named text above is all that's copied, instead of nothing.
         local okR, l, b, w, h = pcall(bar.GetRect, bar)
         if not okR or type(l) ~= "number" or isSecret(l) or isSecret(w) then return end
         local bs = bar:GetEffectiveScale()
@@ -859,22 +879,6 @@ do
             end
             if depth < 6 then
                 for _, child in ipairs({ frame:GetChildren() }) do consider(child, depth + 1) end
-            end
-        end
-        -- Blizzard's own health text, by name: on Forever a region's position can be secret, so finding text by
-        -- where it sits misses it (seen in-game: "41%" left under the stripes). These are over the bar by design.
-        for _, holder in ipairs({ bar, (pcall(bar.GetParent, bar)) and bar:GetParent() or nil }) do
-            if holder and holder ~= UIParent then
-                for _, field in ipairs({ "LeftText", "RightText", "TextString", "HealthBarText", "ManaBarText" }) do
-                    local okR, region = pcall(function() return holder[field] end)
-                    local okT, isText = pcall(function() return region and region:GetObjectType() == "FontString" end)
-                    if okR and okT and isText and field ~= "ManaBarText" then
-                        local okP, owner = pcall(region.GetParent, region)
-                        owner = okP and owner or holder
-                        mirror(region, owner)
-                        knownOwners[owner] = true
-                    end
-                end
             end
         end
         consider(bar, 0)
