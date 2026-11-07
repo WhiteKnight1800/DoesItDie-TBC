@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.0.2
+- `/dida textcheck` works on Forever (it errored where a frame's position or visibility is hidden) and opens a copyable report, including Blizzard's health text and the layers the marker and the text copies use.
+
 ## v1.0.1
 - Forever: the target marker covers the whole health bar again by default. v1.0.0 started it fitted to one player's frame (height 10, offset -4, left edge 5), which put it below the bar on Blizzard's default UI. The Marker tab's height, offset and edge settings are reset once for everyone; set them again if your frame needs a fit.
 

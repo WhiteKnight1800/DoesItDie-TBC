@@ -126,6 +126,12 @@ local dropped = false
 for _, l in ipairs(db.log) do if l:find("DROP Immolate", 1, true) then dropped = true end end
 check("Immolate not dropped as never ticked", dropped, false)
 check("Blizzard's health text found by name (position secret): copied above the marker", (ns.textMirror(leftText)), true)
+function hbar.GetRect() return secret(100), secret(500), secret(126), secret(20) end
+function leftText.IsVisible() return setmetatable({}, getmetatable(secret(1))) end
+step("/dida textcheck with secret positions and visibility", function() SlashCmdList.DOESITDIEADVANCED("textcheck") end)
+local listed = false
+for _, l in ipairs(DoesItDieAdvancedDB.log) do if l:find("TEXTCHECK LeftText", 1, true) then listed = true end end
+check("textcheck lists Blizzard's health text", listed, true)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)

@@ -1941,7 +1941,12 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
         if db.tickHistory then wipe(db.tickHistory) end
         print("Learned tick sizes cleared.")
     elseif cmd == "textcheck" then
-        for _, line in ipairs(ns.textReport()) do print(line); trace("TEXTCHECK " .. line) end
+        local ok, report = pcall(ns.textReport)
+        if not ok then report = { "textcheck failed: " .. tostring(report) } end
+        for _, line in ipairs(report) do print(line); trace("TEXTCHECK " .. line) end
+        if ns.showCopyBox then
+            ns.showCopyBox("Text check: select all (Ctrl+A), copy (Ctrl+C) and paste it in a comment", table.concat(report, "\n"))
+        end
     elseif cmd == "pvp" then
         db.showOnPlayers = db.showOnPlayers == false
         print("Marker and kill icon on enemy players " .. (db.showOnPlayers and "ON" or "OFF") .. ".")

@@ -13,7 +13,7 @@
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="WoW Forever" src="https://img.shields.io/badge/WoW-Forever-c9a24b?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-7cff4f?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.2-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 

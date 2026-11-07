@@ -934,41 +934,62 @@ do
 
     -- /did textcheck: every text in the interface whose centre is over the health bar, where it lives, and whether
     -- it is copied above the marker. For bug reports when a unit frame addon's numbers still sit under the marker.
+    -- /dida textcheck. Everything it reads goes through pcall and secret checks: on Forever a frame's position,
+    -- strata or visibility can be secret, and testing one errors.
     function textLift.report(bar)
+        local function show(v)
+            if isSecret(v) then return "secret" end
+            return tostring(v)
+        end
+        local function call(obj, method)
+            if not obj or type(obj[method]) ~= "function" then return "?" end
+            local ok, v = pcall(obj[method], obj)
+            return ok and show(v) or "error"
+        end
         local out = {}
         if not bar then return { "No target health bar attached." } end
-        local okR, l, b, w, h = pcall(bar.GetRect, bar)
-        if not okR or type(l) ~= "number" then return { "Health bar has no position yet (target something first)." } end
+        table.insert(out, string.format("Bar %s, %s/%s, size %s x %s", call(bar, "GetDebugName"), call(bar, "GetFrameStrata"),
+            call(bar, "GetFrameLevel"), call(bar, "GetWidth"), call(bar, "GetHeight")))
+        table.insert(out, string.format("Marker %s/%s shown=%s; copies drawn at %s/%s", call(remainingBar, "GetFrameStrata"),
+            call(remainingBar, "GetFrameLevel"), call(remainingBar, "IsShown"), tostring(layerStrata), tostring(layerLevel)))
+        -- Blizzard's own health text, by name (works where positions are secret).
+        local okP, parent = pcall(bar.GetParent, bar)
+        for _, holder in ipairs({ bar, okP and parent or nil }) do
+            for _, field in ipairs({ "LeftText", "RightText", "TextString", "HealthBarText" }) do
+                local okR, region = pcall(function() return holder[field] end)
+                if okR and type(region) == "table" and type(region.GetObjectType) == "function" then
+                    local m = mirrors[region]
+                    table.insert(out, string.format("%s: text \"%s\" shown=%s, %s", field, call(region, "GetText"),
+                        call(region, "IsVisible"), m and (m.found and ("copied, copy shown=" .. call(m.copy, "IsShown"))
+                        or "copy not in use") or "NOT copied"))
+                end
+            end
+        end
+        -- Any other text over the bar, where positions can be read.
+        local okRect, l, b, w, h = pcall(bar.GetRect, bar)
+        if not okRect or type(l) ~= "number" or isSecret(l) or isSecret(w) then
+            table.insert(out, "The bar's position is hidden here, so other addons' text over it can't be listed.")
+            return out
+        end
         local bs = bar:GetEffectiveScale()
         l, b = l * bs, b * bs
         local r, t = l + w * bs, b + h * bs
-        local okN, barName = pcall(bar.GetDebugName, bar)
-        table.insert(out, string.format("Bar %s at %d,%d size %dx%d, %s/%d", okN and tostring(barName) or "?", l, b,
-            w * bs, h * bs, tostring(bar:GetFrameStrata()), bar:GetFrameLevel() or -1))
-        local found = 0
         local frame = EnumerateFrames and EnumerateFrames()
         while frame do
-            local okF, forbidden = pcall(function() return frame.IsForbidden and frame:IsForbidden() end)
-            if okF and not forbidden then
-                local okS, scale = pcall(frame.GetEffectiveScale, frame)
-                local okG, regions = pcall(function() return { frame:GetRegions() } end)
-                if okS and okG then
-                    for _, region in ipairs(regions) do
-                        local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
-                        if okT and isText and region:IsShown() and centreInside(region, scale, l, r, t, b) then
-                            found = found + 1
-                            local okD, name = pcall(frame.GetDebugName, frame)
-                            table.insert(out, string.format("Text \"%s\" on %s, %s/%d, visible=%s, %s",
-                                tostring(region:GetText() or ""), okD and tostring(name) or "?", tostring(frame:GetFrameStrata()),
-                                frame:GetFrameLevel() or -1, tostring(frame:IsVisible()),
-                                textLift.isMirrored(region) and "copied above the marker" or "NOT copied"))
-                        end
+            pcall(function()
+                if frame.IsForbidden and frame:IsForbidden() then return end
+                local scale = frame:GetEffectiveScale()
+                for _, region in ipairs({ frame:GetRegions() }) do
+                    local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
+                    if okT and isText and truthy(region, "IsShown") and centreInside(region, scale, l, r, t, b) then
+                        table.insert(out, string.format("Text \"%s\" on %s, %s/%s, %s", call(region, "GetText"),
+                            call(frame, "GetDebugName"), call(frame, "GetFrameStrata"), call(frame, "GetFrameLevel"),
+                            textLift.isMirrored(region) and "copied above the marker" or "NOT copied"))
                     end
                 end
-            end
+            end)
             frame = EnumerateFrames(frame)
         end
-        if found == 0 then table.insert(out, "No text found over the bar. Your unit frames may draw the numbers as a texture.") end
         return out
     end
 end
