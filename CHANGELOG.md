@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.1.0
+- **Enemy Frames support** (Krelock's enemy list, Forever): the marker and kill icon show on every enemy's bar in its list, so you can see which mobs in the pack your DoTs will finish. `/dida enemyframes` turns it off.
+
 ## v1.0.4
 - Forever: **Immolation Trap** is tracked. It springs on the first Fire tick on whoever walks into it, even though Forever hides the tick's amount.
 

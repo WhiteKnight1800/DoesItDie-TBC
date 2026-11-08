@@ -3,7 +3,7 @@
 ## Notes: Shows on your target's health bar and nameplates how much damage your DoTs still have to deal, with a kill icon when they'll finish it off. Classic Era, TBC Anniversary and Forever. /dida
 ## IconTexture: Interface\AddOns\DoesItDieAdvanced\icon
 ## Author: WhiteKnight / Smuggz_ (based on Does It Die by JoeGG)
-## Version: 1.0.4
+## Version: 1.1.0
 ## SavedVariables: DoesItDieAdvancedDB
 
 Locale.lua

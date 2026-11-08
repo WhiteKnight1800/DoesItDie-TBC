@@ -736,6 +736,68 @@ local function updatePreviewPlate(db)
     drawPlate(w, entries, total, 100, math.max(previewState.health, 0.01), db)
 end
 
+-- Enemy Frames (Krelock, Forever): a list with a bar per enemy nameplate. Its cells are unnamed frames on an
+-- unnamed grid under UIParent, each with .unit = "nameplateN" and its health StatusBar as a child (fed with that
+-- unit's health). Found once by those fields and kept; the marker and kill icon go on each listed enemy's bar.
+local enemyCells -- unit -> { cell, bar }, once found
+local enemyCellsSearchedAt = -math.huge
+local function enemyFramesLoaded()
+    local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+    local ok, loaded = pcall(function() return isLoaded and isLoaded("EnemyFrames") end)
+    return ok and loaded and true or false
+end
+local function findEnemyCells()
+    local found, count = {}, 0
+    local okC, roots = pcall(function() return { UIParent:GetChildren() } end)
+    if not okC then return nil end
+    for _, root in ipairs(roots) do
+        local okK, kids = pcall(function() return { root:GetChildren() } end)
+        if okK then
+            for _, cell in ipairs(kids) do
+                local okU, unit = pcall(rawget, cell, "unit")
+                if okU and type(unit) == "string" and unit:find("^nameplate%d+$") then
+                    local okB, parts = pcall(function() return { cell:GetChildren() } end)
+                    if okB then
+                        for _, child in ipairs(parts) do
+                            if isStatusBar(child) then
+                                found[unit] = { cell = cell, bar = child }
+                                count = count + 1
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if count > 0 then return found end
+    end
+    return nil
+end
+local function updateEnemyFrames(db)
+    if db.enemyFrames == false or not enemyFramesLoaded() then return end
+    if not enemyCells then
+        local now = GetTime()
+        if now - enemyCellsSearchedAt < 5 then return end
+        enemyCellsSearchedAt = now
+        enemyCells = findEnemyCells()
+        if not enemyCells then return end
+        ns.trace("ENEMYFRAMES bars found: the marker and kill icon go on its list too")
+    end
+    for unit, entry in pairs(enemyCells) do
+        if UnitExists(unit) and barShown(entry.cell) and barShown(entry.bar) and not unitIsDead(unit) then
+            local entries, total = ns.dotBreakdownForUnit(unit)
+            if total > 0 then
+                local health, maxHealth = (ns.realHealth or function(u) return UnitHealth(u), UnitHealthMax(u) end)(unit)
+                if health then
+                    seenHosts[entry.cell] = true
+                    local w = widgetsFor(entry.cell, entry.bar, true, true)
+                    drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db)
+                end
+            end
+        end
+    end
+end
+
 local function refreshPlates()
     local db = ns.db
     wipe(seenHosts)
@@ -755,6 +817,7 @@ local function refreshPlates()
             end
         end
     end
+    if db then pcall(updateEnemyFrames, db) end
     for host, w in pairs(widgetsByHost) do
         if not seenHosts[host] and not pinnedHosts[host] then hideWidgets(w) end
     end

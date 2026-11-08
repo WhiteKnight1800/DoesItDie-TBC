@@ -6,7 +6,7 @@ local ADDON, TESTDIR = arg[1], arg[2]
 dofile(TESTDIR .. "/fake_wow.lua")
 local H = dofile(TESTDIR .. "/helpers.lua")
 
-C_AddOns = { IsAddOnLoaded = function(name) return name == "DoesItDie" end } -- JoeGG's original installed too
+C_AddOns = { IsAddOnLoaded = function(name) return name == "DoesItDie" or name == "EnemyFrames" end } -- JoeGG's original installed too
 function GetBuildInfo() return "1.60.2", "70000", "Oct 1 2026", 11600 end -- interface not in the 16000s: found by its version
 CombatLogGetCurrentEventInfo = function() error("combat log read on Forever") end
 -- Secret values: opaque tables; comparing or doing math with them errors, as on Forever.
@@ -144,6 +144,27 @@ step("mob walks in: hidden Fire tick", function() H.update(3.2); H.fire("UNIT_CO
 local _, trapBy = nil, {}
 for _, e in ipairs(ns.dotBreakdownForUnit("target")) do trapBy[e.name] = math.floor(e.damage + 0.5) end
 check("Immolation Trap tracked on Forever: 4 of 5 ticks left (552)", trapBy["Immolation Trap"], 552)
+-- Enemy Frames: an unnamed grid under UIParent with a cell per nameplate unit, health bar as its child
+local efGrid = CreateFrame("Frame", nil, UIParent)
+local efCell = CreateFrame("Frame", nil, efGrid)
+efCell.unit = "nameplate1"
+local efBar = CreateFrame("StatusBar", nil, efCell)
+function efCell.GetChildren() return efBar end
+function efGrid.GetChildren() return efCell end
+function UIParent.GetChildren() return efGrid end
+function efCell.GetEffectiveAlpha() return 1 end
+function efBar.GetEffectiveAlpha() return 1 end
+step("cast Corruption for Enemy Frames", function() cast(172) end)
+-- (the fake StatusBar does maths on its min/max, which a secret value refuses: plain health for this check)
+local realUH, realUHM = UnitHealth, UnitHealthMax
+function UnitHealth() return 100 end
+function UnitHealthMax() return 100 end
+step("refresh with Enemy Frames loaded", function() H.update(5.5); H.update(0.2) end)
+UnitHealth, UnitHealthMax = realUH, realUHM
+local efMarker
+for _, f in ipairs(frames) do if f.parent == efCell and f.kind == "StatusBar" and f.allPoints == efBar then efMarker = f end end
+check("marker on Enemy Frames' bar", efMarker ~= nil, true)
+check("Enemy Frames marker shown", efMarker and efMarker.shown, true)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)

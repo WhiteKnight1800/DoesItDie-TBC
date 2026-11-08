@@ -13,7 +13,7 @@
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="WoW Forever" src="https://img.shields.io/badge/WoW-Forever-c9a24b?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.4-7cff4f?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.1.0-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
@@ -185,7 +185,7 @@ The same download works on WoW: Forever. Forever blocks the combat log and hides
 |---|---|
 | **Client** | Classic Era and Hardcore (1.15.7 to 1.15.9), TBC Classic Anniversary (2.5.5, 2.5.6), WoW: Forever |
 | **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
-| **Nameplates** | Blizzard, Plater, Threat Plates, NeatPlates, EllesmereUI, Platynator, and most others automatically |
+| **Nameplates** | Blizzard, Plater, Threat Plates, NeatPlates, Enemy Frames (list), EllesmereUI, Platynator, and most others automatically |
 
 **Known limitations:** only your own DoTs are tracked; on enemy players the marker waits until their health has been measured; proc DoTs with no cast (Deep Wounds, Ignite, poisons) aren't tracked; healing on the target isn't accounted for; Curse of Doom isn't a DoT, so it isn't shown.
 

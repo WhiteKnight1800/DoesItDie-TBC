@@ -194,6 +194,7 @@ local DEFAULTS = {
     markerOffsetY = 0,              -- moved up (+) or down (-), in pixels
     markerInsetLeft = 0,            -- left end pulled in, in pixels
     markerInsetRight = 0,           -- right end pulled in, in pixels
+    enemyFrames = true,             -- the marker and kill icon on Enemy Frames' list too (Krelock's addon, Forever)
     plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height
     plateIcon = "skull",
     plateDotColors = "school",
@@ -1958,6 +1959,9 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
         if ns.showCopyBox then
             ns.showCopyBox("Text check: select all (Ctrl+A), copy (Ctrl+C) and paste it in a comment", table.concat(report, "\n"))
         end
+    elseif cmd == "enemyframes" then
+        db.enemyFrames = db.enemyFrames == false
+        print("Marker and kill icon on Enemy Frames' list " .. (db.enemyFrames and "ON" or "OFF") .. ".")
     elseif cmd == "pvp" then
         db.showOnPlayers = db.showOnPlayers == false
         print("Marker and kill icon on enemy players " .. (db.showOnPlayers and "ON" or "OFF") .. ".")
@@ -1995,6 +1999,7 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
             "/did accuracy - show predicted vs real damage of your last DoTs",
             "/did text - put the marker under or over the health text",
             "/did pvp - show or hide the marker and kill icon on enemy players",
+            "/did enemyframes - show or hide the marker and kill icon on Enemy Frames' list",
             "/did textcheck - list the text over the target's health bar and whether it's above the marker",
         }) do print(ns.locale.T(line)) end
     end
