@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.1.2
+- EllesmereUI (Forever): the health text is drawn above the marker again. A locked frame inside EllesmereUI's target frame stopped the layering check, so nothing was copied.
+
 ## v1.1.1
 - Enemy Frames: the marker sits under the mob's name, so the name stays readable.
 

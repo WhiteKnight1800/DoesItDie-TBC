@@ -635,6 +635,17 @@ local okT, errT = pcall(function()
     issecretvalue = function(v) return type(v) == "table" and getmetatable(v) and getmetatable(v).__secret or false end
     for _ = 1, 3 do ns.relayer(); ns.refresh() end
     check("a DIALOG frame in the target frame doesn't lift the marker over the UI", marker.strata, "LOW")
+    -- A forbidden frame in the tree (EllesmereUI on Forever): skipped, the check carries on
+    local locked = CreateFrame("Frame", nil, TargetFrame)
+    function locked.IsForbidden() return true end
+    function locked.GetFrameStrata() error("Attempt to access forbidden object") end
+    function TargetFrame.GetChildren() return bar, locked end
+    local before = db.log and #db.log or 0
+    for _ = 1, 3 do ns.relayer(); ns.refresh() end
+    local failed = false
+    for i = before + 1, #db.log do if db.log[i]:find("LAYER check failed", 1, true) then failed = true end end
+    check("forbidden frame in the target frame: layering still works", failed, false)
+    check("forbidden frame: text still copied", (ns.textMirror(pct)), true)
     check("secret visibility: text still copied", (ns.textMirror(pct)), true)
     issecretvalue, textFrame.IsVisible, TargetFrame.GetChildren = realSecret, realVisible, realChildren
 end)

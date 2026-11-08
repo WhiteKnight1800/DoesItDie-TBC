@@ -1004,10 +1004,17 @@ local function targetFrameTopLayer()
     local topStrata, topLevel = "BACKGROUND", 0
     local function visit(frame, depth)
         if textLift.isHolder(frame) then return end -- our own lifted-text frame isn't part of the target frame
+        -- A forbidden frame inside the tree (EllesmereUI's target frame on Forever holds one) can't be read at all,
+        -- and reading it stopped the whole check: skipped, with everything under it.
+        if frame.IsForbidden then
+            local okF, forbidden = pcall(frame.IsForbidden, frame)
+            if not okF or forbidden then return end
+        end
         -- Some of Blizzard's frames report a secret strata/level in Forever; those can't be compared, so skip
         -- them (their children are still visited).
-        local strata, level = frame:GetFrameStrata(), frame:GetFrameLevel()
-        if not isSecret(strata) and not isSecret(level) and (STRATA_RANK[strata] or 0) <= TOP_STRATA_RANK then
+        local okS, strata = pcall(frame.GetFrameStrata, frame)
+        local okL, level = pcall(frame.GetFrameLevel, frame)
+        if okS and okL and not isSecret(strata) and not isSecret(level) and (STRATA_RANK[strata] or 0) <= TOP_STRATA_RANK then
             local rank, topRank = STRATA_RANK[strata] or 0, STRATA_RANK[topStrata] or 0
             if rank > topRank then
                 topStrata, topLevel = strata, level
@@ -1016,7 +1023,8 @@ local function targetFrameTopLayer()
             end
         end
         if depth < 6 then
-            for _, child in ipairs({ frame:GetChildren() }) do visit(child, depth + 1) end
+            local okK, kids = pcall(function() return { frame:GetChildren() } end)
+            if okK then for _, child in ipairs(kids) do visit(child, depth + 1) end end
         end
     end
     visit(layerRoot or healthBar or UIParent, 0)
