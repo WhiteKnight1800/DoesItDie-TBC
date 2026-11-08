@@ -149,6 +149,10 @@ local efGrid = CreateFrame("Frame", nil, UIParent)
 local efCell = CreateFrame("Frame", nil, efGrid)
 efCell.unit = "nameplate1"
 local efBar = CreateFrame("StatusBar", nil, efCell)
+efBar:SetFrameLevel(10)
+local efTop = CreateFrame("Frame", nil, efBar) -- its name text frame, 2 above the bar
+efTop:SetFrameLevel(12)
+function efBar.GetChildren() return efTop end
 function efCell.GetChildren() return efBar end
 function efGrid.GetChildren() return efCell end
 function UIParent.GetChildren() return efGrid end
@@ -165,6 +169,7 @@ local efMarker
 for _, f in ipairs(frames) do if f.parent == efCell and f.kind == "StatusBar" and f.allPoints == efBar then efMarker = f end end
 check("marker on Enemy Frames' bar", efMarker ~= nil, true)
 check("Enemy Frames marker shown", efMarker and efMarker.shown, true)
+check("Enemy Frames marker under the name text (level 11)", efMarker and efMarker.level, 11)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)

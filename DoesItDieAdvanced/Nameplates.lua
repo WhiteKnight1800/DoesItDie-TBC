@@ -464,6 +464,7 @@ local function layerWidgets(w, healthBar, matchStrata)
     end
     local ok, level = pcall(healthBar.GetFrameLevel, healthBar)
     if not ok or isSecret(level) or type(level) ~= "number" then level = FALLBACK_LEVEL end
+    local barLevel = level
     -- The icon sits well above: plate decorations beside the bar (the level badge) must not cover it. Above the
     -- bar's own child frames too (Plater draws its border and health text on frames inside the bar).
     local okKids, kids = pcall(function() return { healthBar:GetChildren() } end)
@@ -475,12 +476,14 @@ local function layerWidgets(w, healthBar, matchStrata)
             end
         end
     end
-    -- Our own level can move too (a parent's level change carries its children along).
+    -- Our own level can move too (a parent's level change carries its children along). underText (Enemy Frames):
+    -- the marker goes just above the bar, under the text frames on it (the mob's name), the icon still on top.
+    local markerLevel = w.underText and (barLevel + 1) or (level + 5)
     local okOwn, own = pcall(w.marker.GetFrameLevel, w.marker)
-    local key = tostring(w.appliedStrata or "") .. ":" .. level
-    if key == w.layerKey and okOwn and own == level + 5 then return end
+    local key = tostring(w.appliedStrata or "") .. ":" .. level .. ":" .. markerLevel
+    if key == w.layerKey and okOwn and own == markerLevel then return end
     w.layerKey = key
-    w.marker:SetFrameLevel(level + 5)
+    w.marker:SetFrameLevel(markerLevel)
     w.iconWindow:SetFrameLevel(level + 20)
     w.iconBar:SetFrameLevel(level + 21)
 end
@@ -791,6 +794,7 @@ local function updateEnemyFrames(db)
                 if health then
                     seenHosts[entry.cell] = true
                     local w = widgetsFor(entry.cell, entry.bar, true, true)
+                    if not w.underText then w.underText, w.layerKey = true, nil end
                     drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db)
                 end
             end

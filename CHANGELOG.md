@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.1.1
+- Enemy Frames: the marker sits under the mob's name, so the name stays readable.
+
 ## v1.1.0
 - **Enemy Frames support** (Krelock's enemy list, Forever): the marker and kill icon show on every enemy's bar in its list, so you can see which mobs in the pack your DoTs will finish. `/dida enemyframes` turns it off.
 
