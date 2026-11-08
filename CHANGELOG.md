@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.1.3
+- `/dida debug` says why a cast isn't tracked when its name or tooltip is hidden by the game, or it had no target, for bug reports.
+
 ## v1.1.2
 - EllesmereUI (Forever): the health text is drawn above the marker again. A locked frame inside EllesmereUI's target frame stopped the layering check, so nothing was copied.
 

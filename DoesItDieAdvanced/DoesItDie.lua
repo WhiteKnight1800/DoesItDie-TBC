@@ -802,7 +802,14 @@ local skippedLogged = {} -- spellID -> true once its tooltip has been logged as 
 local function onPlayerCast(spellID, castGUID, keyOverride)
     local key = keyOverride or castTargetKey(castGUID)
     local ok, name, desc = pcall(spellNameAndDescription, spellID)
-    if not ok or not name or isSecret(name) then return end
+    if not ok or not name or isSecret(name) then
+        trace(string.format("CAST id %s: its name can't be read (%s)", tostring(spellID), ok and "hidden" or tostring(name)))
+        return
+    end
+    if isSecret(desc) then
+        trace(string.format("CAST %s (id %d): its tooltip is hidden by the game, so it can't be tracked", name, spellID))
+        return
+    end
     if desc == nil or desc == "" then
         if not keyOverride and key then
             pendingDesc = { spellID = spellID, key = key, at = GetTime() }
@@ -854,7 +861,10 @@ local function onPlayerCast(spellID, castGUID, keyOverride)
         return
     end
 
-    if not key then return end
+    if not key then
+        trace(string.format("CAST %s (id %d): no target to put it on", name, spellID))
+        return
+    end
 
     dotsByTarget[key] = dotsByTarget[key] or {}
     local previous = dotsByTarget[key][name]
