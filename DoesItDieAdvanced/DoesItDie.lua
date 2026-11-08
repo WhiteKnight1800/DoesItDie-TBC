@@ -315,7 +315,8 @@ end
 -- finisher has no per-point DoT (e.g. Eviscerate).
 local function parseFinisher(desc, comboPoints)
     local byPoints, highest = {}, 0
-    for pointsText, amount, secs in desc:gmatch("(%d+) points?%s*:%s*(%d+) damage over (%d+%.?%d*) sec") do
+    -- Forever's Rip leaves out "damage": "1 point  : 8 over 1 sec" (any words, or none, between amount and "over").
+    for pointsText, amount, secs in desc:gmatch("(%d+) points?%s*:%s*(%d+)%s*[%a ]-over (%d+%.?%d*) sec") do
         local points = tonumber(pointsText)
         byPoints[points] = { total = tonumber(amount), duration = tonumber(secs) }
         highest = math.max(highest, points)
