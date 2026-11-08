@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.0.4
+- Forever: **Immolation Trap** is tracked. It springs on the first Fire tick on whoever walks into it, even though Forever hides the tick's amount.
+
 ## v1.0.3
 - Forever: the health percentage no longer drops under the marker at times. When the game hid the health bar's position (in combat, on some mobs), the health text wasn't copied above the marker at all; Blizzard's own health text is now always copied.
 - The options header reads "by WhiteKnight / Smuggz_".

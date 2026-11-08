@@ -1169,7 +1169,10 @@ local function springTrap(key, unit, amount, school, isCrit, now)
     if now < trap.placedAt + trap.interval - TICK_MATCH_WINDOW then return false end
     local dot = newDot(trap.spellID, trap.spellID, trap.name, trap.total, trap.school, trap.duration,
         trap.interval, now - trap.interval)
-    if db.ticks[trap.spellID] then
+    if amount == nil then
+        -- Forever hides the amount: any hit in the trap's school after it could have been sprung takes it.
+        dot.sizeHidden = true
+    elseif db.ticks[trap.spellID] then
         if not plausibleTickAmount(dot, amount, isCrit, 1) then return false end
     else
         local share = trap.total / dot.totalTicks
@@ -1180,9 +1183,10 @@ local function springTrap(key, unit, amount, school, isCrit, now)
     armedTrap = nil
     dotsByTarget[key] = dotsByTarget[key] or {}
     dotsByTarget[key][trap.name] = dot
-    local tickIndex = recordTick(dot, amount, isCrit, 1, now)
-    trace(string.format("TRAP %s sprung on %s: first tick %d%s %.1fs after placing (tick %d/%d)", trap.name, unit,
-        amount, isCrit and " CRIT" or "", now - trap.placedAt, tickIndex, dot.totalTicks))
+    local tickIndex = recordTick(dot, amount or 0, isCrit, 1, now)
+    dot.confirmed = true
+    trace(string.format("TRAP %s sprung on %s: first tick %s%s %.1fs after placing (tick %d/%d)", trap.name, unit,
+        amount and tostring(amount) or "(amount hidden)", isCrit and " CRIT" or "", now - trap.placedAt, tickIndex, dot.totalTicks))
     return true
 end
 
@@ -1199,8 +1203,12 @@ local combatFrameHits = {}
 local hiddenFrameAt, hiddenFrameHits = nil, {}
 local function onHiddenTick(key, unit, school)
     local dots = dotsByTarget[key]
-    if not dots then return end
     local now = GetTime()
+    if not dots then
+        -- Immolation Trap: its first tick on whoever walked into it.
+        if springTrap(key, unit, nil, school, false, now) then return key end
+        return
+    end
     if hiddenFrameAt ~= now then hiddenFrameAt, hiddenFrameHits = now, {} end
     -- The same hit fires for target, nameplateN, ...: count it once.
     local signature = key .. ":" .. school
@@ -1217,7 +1225,10 @@ local function onHiddenTick(key, unit, school)
             end
         end
     end
-    if not best then return end
+    if not best then
+        if springTrap(key, unit, nil, school, false, now) then return key end
+        return
+    end
     local wasWaiting = isWaiting(best)
     best.sizeHidden = true
     local tickIndex = recordTick(best, 0, false, bestIndex, now)

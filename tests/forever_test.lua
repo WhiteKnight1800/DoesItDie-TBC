@@ -134,6 +134,16 @@ step("/dida textcheck with secret positions and visibility", function() SlashCmd
 local listed = false
 for _, l in ipairs(DoesItDieAdvancedDB.log) do if l:find("TEXTCHECK LeftText", 1, true) then listed = true end end
 check("textcheck lists Blizzard's health text", listed, true)
+-- Immolation Trap on Forever: sprung by its first (hidden-amount) Fire tick on whoever walked in
+C_Spell.GetSpellName = (function(orig) return function(id) if id == 13795 then return "Immolation Trap" end return orig(id) end end)(C_Spell.GetSpellName)
+C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 13795 then return "Place a fire trap that will burn the first enemy to approach for 690 Fire damage over 15 sec.  Trap will exist for 1 min.  Only one trap can be active at a time." end return orig(id) end end)(C_Spell.GetSpellDescription)
+local trapMob = "Creature-0-0000-0-0000-7777-0000AB0007"
+targetGuid = trapMob; H.fire("PLAYER_TARGET_CHANGED")
+step("place Immolation Trap", function() cast(13795) end)
+step("mob walks in: hidden Fire tick", function() H.update(3.2); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(140), 4); H.update(0.1) end)
+local _, trapBy = nil, {}
+for _, e in ipairs(ns.dotBreakdownForUnit("target")) do trapBy[e.name] = math.floor(e.damage + 0.5) end
+check("Immolation Trap tracked on Forever: 4 of 5 ticks left (552)", trapBy["Immolation Trap"], 552)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
