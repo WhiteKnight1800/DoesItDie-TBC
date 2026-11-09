@@ -714,7 +714,9 @@ local function currentPower(school)
     if school == SCHOOL_MASKS.Physical then
         if not UnitAttackPower then return nil end
         local okAP, base, pos, neg = pcall(UnitAttackPower, "player")
-        ok, value = okAP, okAP and type(base) == "number" and (base + (pos or 0) + (neg or 0)) or nil
+        -- Forever hides attack power in combat: a secret part can't be added up (seen in-game on feral bleeds).
+        if not okAP or isSecret(base) or isSecret(pos) or isSecret(neg) then return nil end
+        ok, value = true, type(base) == "number" and (base + (tonumber(pos) or 0) + (tonumber(neg) or 0)) or nil
     else
         local index = SPELL_SCHOOL_INDEX[school]
         if not index and school then -- combined schools: the highest of their parts
@@ -1983,7 +1985,10 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
         print("Marker " .. (db.markerUnderText and "under" or "over") .. " the health text.")
     elseif cmd == "accuracy" then
         local list = db.accuracy or {}
-        if #list == 0 then
+        if ns.isForever then
+            print("Not available on Forever: the game hides how much each tick hits for, so there's nothing to compare the "
+                .. "prediction with. Your ticks are still counted, and the marker still counts down.")
+        elseif #list == 0 then
             print("No finished DoTs recorded yet. Let a few DoTs run their full duration, then try again.")
         else
             print("Last DoTs: predicted when it landed vs really dealt.")

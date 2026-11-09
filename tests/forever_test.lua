@@ -21,6 +21,7 @@ math.max = function(...) for i = 1, select("#", ...) do if issecretvalue((select
 function UnitHealth(unit) if unit == "target" or unit == "nameplate1" then return secret(100) end return 100 end
 function UnitHealthMax(unit) if unit == "target" or unit == "nameplate1" then return secret(100) end return 100 end
 function GetSpellBonusDamage() return secret(300) end
+function UnitAttackPower() return secret(500), secret(20), 0 end
 
 local failures, passes = 0, 0
 local function check(label, actual, expected)
@@ -170,6 +171,13 @@ for _, f in ipairs(frames) do if f.parent == efCell and f.kind == "StatusBar" an
 check("marker on Enemy Frames' bar", efMarker ~= nil, true)
 check("Enemy Frames marker shown", efMarker and efMarker.shown, true)
 check("Enemy Frames marker under the name text (level 11)", efMarker and efMarker.level, 11)
+-- Feral bleeds scale with attack power, which Forever hides in combat
+C_Spell.GetSpellName = (function(orig) return function(id) if id == 1822 then return "Rake" end return orig(id) end end)(C_Spell.GetSpellName)
+C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 1822 then return "Rake the target for 10 Bleed damage and an additional 57 Bleed damage over 15 sec.\r\n\r\nAwards 1 combo point." end return orig(id) end end)(C_Spell.GetSpellDescription)
+step("Rake with secret attack power", function() cast(1822); H.update(0.2) end)
+local rakeBy = {}
+for _, e in ipairs(ns.dotBreakdownForUnit("target")) do rakeBy[e.name] = math.floor(e.damage + 0.5) end
+check("Rake tracked on Forever: 57", rakeBy["Rake"], 57)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
