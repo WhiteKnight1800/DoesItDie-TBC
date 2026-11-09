@@ -912,6 +912,7 @@ local okCE, errCE = pcall(function()
 end)
 if not okCE then failures = failures + 1; print("FAIL  Classic Era test crashed: " .. tostring(errCE)) end
 
+check("other addons' health text on by default on TBC/Classic", db.markerUnderTextAddons, true)
 print(string.format("\n%d passed, %d failed", passes, failures))
 if failures > 0 then
     print("--- last log lines ---")

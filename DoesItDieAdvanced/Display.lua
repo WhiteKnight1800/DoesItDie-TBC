@@ -846,7 +846,9 @@ do
             end
         end
         -- Everything else is found by position, which Forever hides at times (in combat, on some mobs): then the
-        -- named text above is all that's copied, instead of nothing.
+        -- named text above is all that's copied, instead of nothing. "Other addons' health text too" turns the
+        -- search off (the default on Forever).
+        if db.markerUnderTextAddons == false then return end
         local okR, l, b, w, h = pcall(bar.GetRect, bar)
         if not okR or type(l) ~= "number" or isSecret(l) or isSecret(w) then return end
         local bs = bar:GetEffectiveScale()

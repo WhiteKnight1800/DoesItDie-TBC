@@ -21,6 +21,14 @@ FOREVER
   tooltips, which leave out spell power: the marker errs low there, never showing a skull too early.
   Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind
   shields, /did accuracy.
+  After each fight the addon reads Forever's damage meter to learn what your DoTs really tick for, so the
+  marker gets closer to your real damage as you play.
+  Health text: Blizzard's own target frame numbers are always drawn above the marker. Other unit frame
+  addons' numbers are off by default here (Advanced > "Other addons' health text too").
+
+LANGUAGES
+  English, German, Spanish, French, Korean, Russian, Chinese (Simplified and Traditional) and Portuguese
+  tooltips are read. Russian (translated by donesvad), Chinese and Portuguese come from JoeGG's Does It Die.
 
 CLASSIC ERA AND TBC: WHAT CHANGED FROM THE FOREVER VERSION
   * Uses the combat log. Forever forbids addons from reading it, so the original guesses which hit was which

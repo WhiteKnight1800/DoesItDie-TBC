@@ -192,9 +192,61 @@ H.update(3.0) -- 14.2s after the cast: tick 5 lands at 15s
 local lastBy = {}
 for _, e in ipairs(ns.dotBreakdownForUnit("target")) do lastBy[e.name] = e.damage end
 check("bleed timing kept: last tick still to come", lastBy["Rake"] ~= nil and lastBy["Rake"] > 0, true)
+-- Damage meter learning: Corruption (40 over 12s, 10 per tick by its tooltip) ticks 4 times with hidden amounts;
+-- after combat the meter says it really did 64 in all, so 16 per tick is learned
+local meterMob = "Creature-0-0000-0-0000-9999-0000AB0009"
+targetGuid = meterMob; H.fire("PLAYER_TARGET_CHANGED")
+H.fire("PLAYER_REGEN_ENABLED") -- the earlier fights end here (their tally is set aside)
+combat = true
+step("Corruption in combat, 4 hidden ticks", function()
+    cast(172)
+    for _ = 1, 4 do H.update(3); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(16), 32) end
+end)
+combat = false
+local meterTotal = nil -- hidden at first, then readable
+C_DamageMeter = { GetCombatSessionSourceFromType = function()
+    if not meterTotal then return nil end
+    return { combatSpells = { { spellID = 172, totalAmount = meterTotal } } }
+end }
+Enum = Enum or {}
+local timers = {}
+local realAfter = C_Timer.After
+C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+local function runTimers() local due = timers; timers = {}; for _, fn in ipairs(due) do fn() end end
+step("combat ends", function() H.fire("PLAYER_REGEN_ENABLED") end)
+step("meter hidden at first, readable a moment later", function() runTimers(); meterTotal = 64; runTimers() end)
+C_Timer.After = realAfter
+check("real Corruption tick learned from the damage meter: 16", DoesItDieAdvancedDB.ticks[172], 16)
+targetGuid = "Creature-0-0000-0-0000-9999-0000AB0010"; H.fire("PLAYER_TARGET_CHANGED")
+step("next Corruption", function() cast(172) end)
+local nextBy = {}
+for _, e in ipairs(ns.dotBreakdownForUnit("target")) do nextBy[e.name] = math.floor(e.damage + 0.5) end
+check("next Corruption uses the learned size: 4 x 16", nextBy["Corruption"], 64)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
+
+-- v1.2.0: other addons' health text is off by default on Forever (Blizzard's own is still copied, checked above)
+check("other addons' health text off by default on Forever", DoesItDieAdvancedDB.markerUnderTextAddons, false)
+
+-- v1.2.0: Russian, Chinese and Portuguese tooltips (JoeGG's locale files)
+local function parsed(desc) local t, school, d = ns.parseDot(desc, 5); return tostring(t) .. "/" .. tostring(school) .. "/" .. tostring(d) end
+check("Russian Corruption", parsed("Поражает цель порчей, нанося 40 ед. урона от темной магии за 12 сек."), "40/32/12")
+check("Russian Rip 5 points", parsed("Завершающий прием. 1 прием: 44 ед. урона за 12 сек. 5 приемов: 189 ед. урона за 12 сек."), "189/1/12")
+check("Chinese Corruption", parsed("使目标受到腐蚀，在12秒内造成总计40点暗影伤害。"), "40/32/12")
+check("Portuguese Immolate", parsed("Queima o inimigo causando 11 de dano de Fogo e mais 20 de dano de Fogo ao longo de 15 s."), "20/4/15")
+
+-- v1.2.0: with the last kill's corpse still targeted, a cast goes to the next mob (the soft enemy)
+local corpse, nextMob = targetGuid, "Creature-0-0000-0-0000-9999-0000AB0011"
+local realGUID, realDead, realName = UnitGUID, UnitIsDeadOrGhost, UnitName
+UnitGUID = function(unit) if unit == "softenemy" then return nextMob end return realGUID(unit) end
+UnitIsDeadOrGhost = function(unit) return unit == "target" end
+UnitName = function(unit) if unit == "target" or unit == "softenemy" then return "Mob" end end
+step("cast Corruption with a corpse targeted", function() cast(172) end)
+local onNext = 0
+for _, e in ipairs(ns.dotBreakdownForUnit("softenemy")) do if e.name == "Corruption" then onNext = onNext + 1 end end
+check("corpse targeted: Corruption goes on the next mob", onNext, 1)
+UnitGUID, UnitIsDeadOrGhost, UnitName = realGUID, realDead, realName
 
 if os.getenv("SHOWLOG") then for _, l in ipairs(db.log) do print("LOG: " .. l) end end
 print(string.format("\n%d passed, %d failed", passes, failures))

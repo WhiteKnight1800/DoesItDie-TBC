@@ -12,7 +12,7 @@ local T = ns.locale.T -- the window's text in the window language (Locale.lua)
 
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 -- Tall enough for the longest tabs (Nameplates, Focus: 15 rows); wide enough for the seven tab names in a row.
-local WINDOW_WIDTH, WINDOW_HEIGHT = 800, 576 -- tall enough for the Advanced tab (15 rows and 4 gaps)
+local WINDOW_WIDTH, WINDOW_HEIGHT = 800, 602 -- tall enough for the Advanced tab (16 rows and 4 gaps)
 local HEADER_HEIGHT = 52 -- title bar: title, presets, close button
 local PREVIEW_WIDTH = 290
 local ROW_HEIGHT = 26
@@ -212,6 +212,7 @@ end
 
 local function changed()
     ns.reattach() -- refreshes; re-attaches only if a custom frame setting changed what to attach to
+    if ns.relayer then ns.relayer() end -- settings like "Health text above marker" apply at once
     refreshControls()
 end
 
@@ -1014,6 +1015,10 @@ local function buildTabs()
     advanced:checkbox("markerUnderText", "Health text above marker", { tooltip = "Keeps your target frame's "
         .. "health numbers readable: the marker stays over the bar's colour and the numbers are drawn on top of it. "
         .. "Untick to let the marker cover the numbers, as the original addon did." })
+    advanced:checkbox("markerUnderTextAddons", "Other addons' health text too", { enabledIf = function(d)
+        return d.markerUnderText ~= false end, tooltip = "Also draws other unit frame addons' health numbers on top "
+        .. "of the marker, found by where they sit over the bar. Blizzard's own target frame is always covered. Off by "
+        .. "default on Forever, where the game often hides where things are and the search can miss or stutter." })
     advanced:checkbox("debug", "Echo trace log to chat",
         { tooltip = "Prints each DoT cast, matched tick and estimate to chat." })
     local learned = advanced:action("Learned tick sizes", "View", toggleTickViewer, { tooltip = "What each of your "

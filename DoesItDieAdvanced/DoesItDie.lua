@@ -178,6 +178,9 @@ local DEFAULTS = {
     waitFirstTick = "off",
     estimateDuringCast = true,
     markerUnderText = true,
+    -- Health text of other unit frame addons too, found by where it sits. Off by default on Forever: positions are
+    -- often hidden there and the search can't reach some addons' frames, so only Blizzard's own text is copied.
+    markerUnderTextAddons = not ns.isForever,
     showOnPlayers = true,   -- TBC port: marker and kill icon on enemy players too (their health is measured) -- TBC port: the marker sits under the target frame's health text, not over it
     trackChannels = true, -- Drain Life, Drain Soul, Mind Flay while channelling (TBC port; /did channels)
     uiLanguage = "auto", -- the options window's language (Locale.lua): "auto" or a language tag
@@ -537,8 +540,12 @@ end
 -- A friendly hard target never takes a cast: with one selected, the soft enemy is the cast's default mob (PR #14).
 local function sentTargetKey(targetName)
     local okAttack, attackable = pcall(UnitCanAttack, "player", "target")
+    -- With action targeting the corpse of the last kill can stay the hard target while the next mob (often of the
+    -- same name) is the soft enemy: a corpse can't be cast at, so the cast goes to the soft enemy.
+    local okDead, dead = pcall(UnitIsDeadOrGhost, "target")
+    local targetDead = okDead and not isSecret(dead) and dead == true
     local targetKey
-    if okAttack and not isSecret(attackable) and attackable == false then
+    if (okAttack and not isSecret(attackable) and attackable == false) or targetDead then
         targetKey = unitKey("softenemy")
     else
         -- Attackable, or the client cannot say: keep the old target behaviour.
@@ -549,7 +556,7 @@ local function sentTargetKey(targetName)
         local ok, name = pcall(UnitName, unit)
         if ok and type(name) == "string" and not isSecret(name) then return name end
     end
-    if nameOf("target") == targetName then return targetKey end
+    if not targetDead and nameOf("target") == targetName then return targetKey end
     if nameOf("focus") == targetName then return unitKey("focus") or false end
     -- A mouseover/soft-target cast names the soft enemy even while an attackable hard target is selected.
     if nameOf("softenemy") == targetName then return unitKey("softenemy") or false end
@@ -797,6 +804,43 @@ local function newDot(spellID, tickKey, name, total, school, duration, statedInt
 end
 
 -- Returns the target key the DoT was applied to, or nil if the cast wasn't a tracked DoT.
+-- Forever: real tick sizes from Blizzard's damage meter (idea from JoeGG's Does It Die v0.9.1). Forever hides each
+-- tick's amount, so a DoT's ticks are counted (school and timing) but teach no size, and the estimate stays at the
+-- tooltip's, which leaves out spell and attack power. After combat the damage meter's per-spell totals can be read:
+-- a spell's total over the ticks counted this combat is its real tick (an upfront hit, like Immolate's, is split off
+-- by the tooltip's numbers). It's only learned when the two can match: every cast this combat was on a known mob and
+-- showed its ticks.
+local meterTally, meterUntracked = {}, {} -- this combat: tickKey -> counts; spellIDs cast at no known mob
+
+local function meterTallyFor(dot)
+    if not ns.isForever or not dot.tickKey then return nil end
+    local t = meterTally[dot.tickKey]
+    if not t then
+        t = { spellID = dot.spellID, name = dot.name or tostring(dot.spellID), factors = 0, ticks = 0, direct = 0,
+            descTick = dot.total / dot.totalTicks, dots = {} }
+        meterTally[dot.tickKey] = t
+    end
+    return t
+end
+
+-- The upfront hit in an English tooltip, before the DoT's clause ("Burns the enemy for 11 Fire damage and then an
+-- additional 20 Fire damage over 15 sec": 11; "44 to 52": their middle). nil: another language, can't tell.
+local function directPart(desc)
+    if type(desc) ~= "string" or isSecret(desc) or not desc:find("damage") then return nil end
+    local clauseAt
+    for at in desc:gmatch("()%d+[%a ]-damage over %d") do clauseAt = at end
+    if not clauseAt then return 0 end
+    local head = desc:sub(1, clauseAt - 1)
+    local lo, hi = head:match("(%d+) to (%d+)")
+    if lo then return (tonumber(lo) + tonumber(hi)) / 2 end
+    return tonumber(head:match("(%d+)[^%d]-damage")) or 0
+end
+
+local function meterCountTick(dot, factor)
+    local t = meterTallyFor(dot)
+    if t then t.factors, t.ticks = t.factors + (factor or 1), t.ticks + 1 end
+end
+
 -- A spell's tooltip text can be missing the first time it's cast (the client loads spell data on demand, seen on
 -- a fresh character): the cast waits up to DESC_WAIT_SECONDS for it, then is tracked as if it had just landed.
 local DESC_WAIT_SECONDS = 3
@@ -866,12 +910,22 @@ local function onPlayerCast(spellID, castGUID, keyOverride)
 
     if not key then
         trace(string.format("CAST %s (id %d): no target to put it on", name, spellID))
+        meterUntracked[spellID] = true
         return
     end
 
     dotsByTarget[key] = dotsByTarget[key] or {}
     local previous = dotsByTarget[key][name]
     local dot = newDot(spellID, tickKey, name, total, school, duration, statedInterval, now)
+    dot.name = name
+    do
+        local t = meterTallyFor(dot)
+        if t then
+            t.dots[#t.dots + 1] = dot
+            local direct = isFinisher and 0 or directPart(desc)
+            if direct == nil then t.unclear = true else t.direct = t.direct + direct end
+        end
+    end
     dotsByTarget[key][name] = dot
     lastDotCast = { key = key, name = name, dot = dot, previous = previous, at = now }
     local learned = dot.learnedAtApply and math.floor(dot.learnedAtApply * 10 + 0.5) / 10
@@ -1266,6 +1320,7 @@ local function onHiddenTick(key, unit, school)
         tickIndex = recordTick(best, 0, false, bestIndex, now)
     end
     best.confirmed, best.doubtful = true, nil
+    meterCountTick(best, tickShape(best, tickIndex))
     trace(string.format("TICK %s (amount hidden) on %s (tick %d/%d)%s", bestName, unit, tickIndex, best.totalTicks,
         wasWaiting and ", now shown" or ""))
     if wasWaiting then return key end
@@ -1698,6 +1753,116 @@ end
 -- ns.db is set on ADDON_LOADED.
 ns.DEFAULTS = DEFAULTS
 ns.parseDot = parseDot -- tests
+
+-- Learning from the damage meter after combat (see meterTally).
+local LEARN_MIN_TICKS = 2                 -- at least two ticks' worth this combat
+local LEARN_RATIO_MIN, LEARN_RATIO_MAX = 0.5, 2.5 -- real vs tooltip outside this: something else got mixed in
+local LEARN_WEIGHT_CAP = 20               -- older fights count as at most this many ticks, so gear changes catch up
+local METER_TRIES, METER_RETRY_SECONDS = 20, 0.5 -- the totals take a moment to show (and stop being hidden)
+
+local function readableTable(v)
+    if isSecret(v) or type(v) ~= "table" then return false end
+    if type(canaccesstable) ~= "function" then return true end
+    local ok, allowed = pcall(canaccesstable, v)
+    return ok and allowed == true
+end
+
+-- The damage meter's rows for the combat that just ended: spellID -> total, or nil and why.
+local function meterTotals()
+    local DM = C_DamageMeter
+    if type(DM) ~= "table" or type(DM.GetCombatSessionSourceFromType) ~= "function" then return nil, "no damage meter" end
+    if type(DM.IsDamageMeterAvailable) == "function" then
+        local ok, available = pcall(DM.IsDamageMeterAvailable)
+        if ok and available == false then return nil, "switched off" end
+    end
+    local dmgType = Enum and Enum.DamageMeterType and Enum.DamageMeterType.DamageDone or 0
+    local current = Enum and Enum.DamageMeterSessionType and Enum.DamageMeterSessionType.Current or 1
+    local ok, totals, why = pcall(function()
+        local src = DM.GetCombatSessionSourceFromType(current, dmgType, UnitGUID("player"))
+        if not readableTable(src) or not readableTable(src.combatSpells) then return nil, "wait" end
+        local list = src.combatSpells
+        local n = #list
+        if isSecret(n) or type(n) ~= "number" or n == 0 then return nil, "wait" end
+        local found = {}
+        for i = 1, n do
+            local row = list[i]
+            if readableTable(row) then
+                if isSecret(row.totalAmount) or isSecret(row.spellID) then return nil, "wait" end
+                if type(row.totalAmount) == "number" then found[row.spellID] = row.totalAmount end
+            end
+        end
+        return found
+    end)
+    if not ok then return nil, "unreadable" end
+    return totals, why
+end
+
+local function learnFromMeter(totals, tally, untracked)
+    db.tickWeights = db.tickWeights or {}
+    local perSpell = {}
+    for _, t in pairs(tally) do perSpell[t.spellID] = (perSpell[t.spellID] or 0) + 1 end
+    for key, t in pairs(tally) do
+        local skip
+        if t.factors < LEARN_MIN_TICKS then skip = t.ticks > 0 and string.format("only %d tick(s) counted", t.ticks) or ""
+        elseif t.unclear then skip = "its upfront hit can't be told apart in this language"
+        elseif #t.dots == 0 then skip = "not cast this combat"
+        elseif untracked[t.spellID] then skip = "a cast had no known target"
+        elseif not totals[t.spellID] then skip = "no damage meter total"
+        elseif perSpell[t.spellID] > 1 then skip = "several combo point sizes share one total"
+        else
+            for _, dot in ipairs(t.dots) do
+                if dot.ticksSeen == 0 then skip = "a cast showed no ticks (out of sight, or the mob died first)" end
+            end
+        end
+        if skip then
+            if skip ~= "" then trace(string.format("LEARN %s skipped: %s", t.name, skip)) end
+        else
+            local total = totals[t.spellID]
+            local ratio = total / (t.direct + t.descTick * t.factors)
+            if ratio < LEARN_RATIO_MIN or ratio > LEARN_RATIO_MAX then
+                trace(string.format("LEARN %s skipped: damage meter %d is %.2fx the tooltip", t.name, total, ratio))
+            else
+                local tick = ratio * t.descTick
+                local old = db.ticks[key]
+                local weight = old and math.min(db.tickWeights[key] or 0, LEARN_WEIGHT_CAP) or 0
+                db.ticks[key] = math.floor(((old or 0) * weight + tick * t.factors) / (weight + t.factors) * 10 + 0.5) / 10
+                db.tickWeights[key] = weight + t.factors
+                if db.tickPower then db.tickPower[key] = nil end
+                db.tickHistory = db.tickHistory or {}
+                db.tickHistory[key] = { { avg = db.ticks[key] } } -- the cautious estimate starts from this
+                trace(string.format("LEARN %s: damage meter %d over %d tick(s) = %.1f per tick (tooltip %.1f), saved %.1f",
+                    t.name, total, t.ticks, tick, t.descTick, db.ticks[key]))
+            end
+        end
+    end
+end
+ns.learnFromMeter = learnFromMeter -- tests
+
+local function learnAfterCombat(tally, untracked, triesLeft)
+    if InCombatLockdown() then
+        trace("LEARN skipped: a new fight started before the damage meter could be read")
+        return
+    end
+    local totals, why = meterTotals()
+    if not totals and why == "wait" and triesLeft > 0 then
+        C_Timer.After(METER_RETRY_SECONDS, function() learnAfterCombat(tally, untracked, triesLeft - 1) end)
+        return
+    end
+    if not totals then
+        trace("LEARN skipped: damage meter " .. (why == "wait" and "still empty or hidden" or tostring(why)))
+        return
+    end
+    learnFromMeter(totals, tally, untracked)
+end
+
+local meterFrame = CreateFrame("Frame")
+meterFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+meterFrame:SetScript("OnEvent", function()
+    local tally, untracked = meterTally, meterUntracked
+    meterTally, meterUntracked = {}, {}
+    if not db or not ns.isForever or next(tally) == nil then return end
+    C_Timer.After(METER_RETRY_SECONDS, function() learnAfterCombat(tally, untracked, METER_TRIES) end)
+end)
 -- Health for the kill icon's bar, never zero; a secret value (Forever) goes to the bar as it is, since it can't be
 -- compared.
 function ns.atLeast(health)

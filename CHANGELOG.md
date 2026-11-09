@@ -1,5 +1,12 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.0
+- **Restart the game fully after updating** (new files were added).
+- Forever: **learns your real tick sizes from the damage meter.** Forever hides each tick's damage, but after a fight the addon reads the game's damage meter and works out what each DoT really ticked for, so the next cast's marker matches your real damage (spell power, talents and buffs included).
+- **Russian, Chinese and Portuguese** spell tooltips are read, from JoeGG's Does It Die (Russian translated by donesvad).
+- Action targeting: when the last kill's corpse is still your target, a DoT cast on the next mob goes on that mob, not the corpse.
+- Forever: other unit frame addons' health text is no longer copied above the marker by default (Blizzard's own always is). Turn it on in **Advanced → Other addons' health text too**. TBC and Classic are unchanged.
+
 ## v1.1.5
 - Forever: fixed errors on feral bleeds (Rake, Rip). Forever hides attack power in combat, and it was being added up.
 - Forever: `/dida accuracy` explains that it isn't available there, instead of saying no DoTs finished.

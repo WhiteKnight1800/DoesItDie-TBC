@@ -13,7 +13,7 @@
   <img alt="WoW Classic Era" src="https://img.shields.io/badge/WoW-Classic%20Era-c9a24b?style=flat-square">
   <img alt="WoW TBC Classic Anniversary" src="https://img.shields.io/badge/WoW-TBC%20Anniversary-c9a24b?style=flat-square">
   <img alt="WoW Forever" src="https://img.shields.io/badge/WoW-Forever-c9a24b?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.1.5-7cff4f?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.2.0-7cff4f?style=flat-square">
   <img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square">
 </p>
 
@@ -176,6 +176,8 @@ The same download works on WoW: Forever. Forever blocks the combat log and hides
 - Ticks are spotted by their school and timing, so DoTs count down tick by tick, on the target, focus and nameplates.
 - The estimate comes from spell tooltips, which leave out spell power, so the marker errs low: no skull too early.
 - If your target frame draws a thinner bar, the Marker tab's height, vertical offset and edge settings fit the marker to it.
+- After each fight the addon reads Forever's damage meter to learn what your DoTs really tick for, so the estimate gets closer to your real damage as you play.
+- Blizzard's own health numbers are always drawn above the marker; other unit frame addons' numbers are off by default on Forever (**Advanced → Other addons' health text too**).
 - Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind shields, and `/dida accuracy`.
 - Installs alongside JoeGG's original Does It Die without clashing (its own folder, settings and `/dida` command).
 
@@ -184,6 +186,7 @@ The same download works on WoW: Forever. Forever blocks the combat log and hides
 | | |
 |---|---|
 | **Client** | Classic Era and Hardcore (1.15.7 to 1.15.9), TBC Classic Anniversary (2.5.5, 2.5.6), WoW: Forever |
+| **Languages** | English, German, Spanish, French, Korean, Russian, Chinese and Portuguese tooltips |
 | **Target frames** | Blizzard, BetterBlizzFrames, EllesmereUI, and others via **Advanced → custom frame path** |
 | **Nameplates** | Blizzard, Plater, Threat Plates, NeatPlates, Enemy Frames (list), EllesmereUI, Platynator, and most others automatically |
 
@@ -212,6 +215,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the history of the port.
 
 - **Does It Die Advanced:** WhiteKnight / Smuggz_
 - **Original addon:** [Does It Die](https://github.com/swirllyman/DoesItDie) by **JoeGG**, made for WoW: Forever. The marker, kill icon, options window and overall design are his work.
+- **Russian, Chinese and Portuguese tooltips:** from JoeGG's Does It Die (Russian translated by donesvad).
 
 Released under the [MIT licence](LICENSE), as the original is.
 
