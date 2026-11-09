@@ -1233,7 +1233,12 @@ local function onHiddenTick(key, unit, school)
         if dot.school == school and not dot.channel then
             local distance, index = distanceToExpectedTick(dot, now)
             local window = dot.firstTickAt and TICK_MATCH_WINDOW_ANCHORED or TICK_MATCH_WINDOW
-            local freshSlot = not dot.firstTickAt or index > dot.lastTickIndex
+            local freshSlot
+            if dot.firstTickAt then
+                freshSlot = index > dot.lastTickIndex
+            else
+                freshSlot = index > (dot.hiddenSlot or 0)
+            end
             if freshSlot and distance <= window and (not bestDistance or distance < bestDistance) then
                 best, bestName, bestDistance, bestIndex = dot, name, distance, index
             end
@@ -1245,7 +1250,21 @@ local function onHiddenTick(key, unit, school)
     end
     local wasWaiting = isWaiting(best)
     best.sizeHidden = true
-    local tickIndex = recordTick(best, 0, false, bestIndex, now)
+    local tickIndex
+    if school == SCHOOL_MASKS.Physical and not best.firstTickAt then
+        -- Bleeds: a melee white hit is Physical too and can land in a tick's window, so with the amount hidden the
+        -- hit may not be the tick. Re-timing the bleed on such hits pulled it earlier until the marker ran out a tick
+        -- before the bleed did. Its ticks are counted on the schedule from the cast instead (the first lands within
+        -- ~0.1s of one interval after it), and its timing never moves.
+        best.missed = 0
+        best.hiddenSlot = bestIndex
+        best.ticksSeen = best.ticksSeen + 1
+        local nextTickAt = best.appliedAt + (bestIndex + 1) * best.interval
+        if nextTickAt > best.nextTickAt then best.nextTickAt = nextTickAt end
+        tickIndex = bestIndex
+    else
+        tickIndex = recordTick(best, 0, false, bestIndex, now)
+    end
     best.confirmed, best.doubtful = true, nil
     trace(string.format("TICK %s (amount hidden) on %s (tick %d/%d)%s", bestName, unit, tickIndex, best.totalTicks,
         wasWaiting and ", now shown" or ""))

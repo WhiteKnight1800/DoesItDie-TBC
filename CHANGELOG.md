@@ -3,6 +3,7 @@
 ## v1.1.5
 - Forever: fixed errors on feral bleeds (Rake, Rip). Forever hides attack power in combat, and it was being added up.
 - Forever: `/dida accuracy` explains that it isn't available there, instead of saying no DoTs finished.
+- Forever: bleeds (Rake, Rip, Rend, Garrote, Rupture) keep the timing from when they were cast, so melee hits landing near a tick can't pull them early.
 
 ## v1.1.4
 - Forever: **Rip** is read (its tooltip leaves out the word "damage").

@@ -178,6 +178,20 @@ step("Rake with secret attack power", function() cast(1822); H.update(0.2) end)
 local rakeBy = {}
 for _, e in ipairs(ns.dotBreakdownForUnit("target")) do rakeBy[e.name] = math.floor(e.damage + 0.5) end
 check("Rake tracked on Forever: 57", rakeBy["Rake"], 57)
+-- White hits (Physical too) landing just before each tick must not pull the bleed's timing earlier: after four
+-- early hits the last tick is still to come
+local bleedMob = "Creature-0-0000-0-0000-8888-0000AB0008"
+targetGuid = bleedMob; H.fire("PLAYER_TARGET_CHANGED")
+step("Rake on a new mob", function() cast(1822) end)
+step("white hits landing a little earlier each tick", function()
+    -- at 2.8, 5.6, 8.4, 11.2s: each within the window, each 0.2s earlier than the last one's rhythm
+    H.update(2.8); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(9), 1)
+    for _ = 1, 3 do H.update(2.8); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(9), 1) end
+end)
+H.update(3.0) -- 14.2s after the cast: tick 5 lands at 15s
+local lastBy = {}
+for _, e in ipairs(ns.dotBreakdownForUnit("target")) do lastBy[e.name] = e.damage end
+check("bleed timing kept: last tick still to come", lastBy["Rake"] ~= nil and lastBy["Rake"] > 0, true)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
