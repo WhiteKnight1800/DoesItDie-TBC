@@ -744,7 +744,7 @@ end
 -- unnamed grid under UIParent, each with .unit = "nameplateN" and its health StatusBar as a child (fed with that
 -- unit's health). Found once by those fields and kept; the marker and kill icon go on each listed enemy's bar.
 local enemyCells -- unit -> { cell, bar }, once found
-local cellTopLevel, cellText
+local cellTopLevel
 local enemyCellsSearchedAt = -math.huge
 local function enemyFramesLoaded()
     local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
@@ -778,10 +778,10 @@ local function findEnemyCells()
     end
     return nil
 end
--- The marker is drawn over the whole cell (health bar and cast bar), so the cell's text (the mob's name, the
--- spell it's casting) is copied above the marker: same font, colour and position, following the original.
+-- The marker is drawn over the whole cell, cast bar included (it covers the health bar while the mob casts or
+-- is crowd controlled), so whether a mob is dotted always shows.
 local function isOurs(w, frame)
-    return frame == w.marker or frame == w.iconWindow or frame == w.iconBar or frame == w.textHolder
+    return frame == w.marker or frame == w.iconWindow or frame == w.iconBar
 end
 local function cellFrames(cell, w, visit)
     local function walk(frame, depth)
@@ -801,53 +801,6 @@ cellTopLevel = function(cell)
         if ok and type(level) == "number" and not isSecret(level) and (not top or level > top) then top = level end
     end)
     return top
-end
-local CELL_TEXT_RESCAN = 5
-cellText = function(w, cell)
-    if not w.textHolder then
-        w.textHolder = CreateFrame("Frame", nil, w.marker)
-        w.textHolder:SetAllPoints(cell)
-        w.textCopies = {}
-    end
-    local okL, level = pcall(w.marker.GetFrameLevel, w.marker)
-    if okL and type(level) == "number" and not isSecret(level) then w.textHolder:SetFrameLevel(level + 4) end
-    local now = GetTime()
-    if not w.textScannedAt or now - w.textScannedAt >= CELL_TEXT_RESCAN then
-        w.textScannedAt = now
-        cellFrames(cell, w, function(frame)
-            local ok, regions = pcall(function() return { frame:GetRegions() } end)
-            if not ok then return end
-            for _, region in ipairs(regions) do
-                local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
-                if okT and isText and not w.textCopies[region] then
-                    local okD, layer = pcall(region.GetDrawLayer, region)
-                    local copy = w.textHolder:CreateFontString(nil, okD and type(layer) == "string" and layer or "OVERLAY")
-                    copy:SetFontObject(GameFontHighlightSmall or GameFontNormalSmall)
-                    copy:SetAllPoints(region)
-                    w.textCopies[region] = copy
-                end
-            end
-        end)
-    end
-    for region, copy in pairs(w.textCopies) do
-        local okV, visible = pcall(region.IsVisible, region)
-        if okV and (isSecret(visible) or visible) then
-            -- Each part on its own: on Forever any of them can be secret (passed on as is, never tested).
-            pcall(function() local font, size, flags = region:GetFont(); if isSecret(font) or font then copy:SetFont(font, size, flags) end end)
-            pcall(function() copy:SetTextColor(region:GetTextColor()) end)
-            pcall(function() copy:SetShadowColor(region:GetShadowColor()) end)
-            pcall(function() copy:SetShadowOffset(region:GetShadowOffset()) end)
-            pcall(function() copy:SetJustifyH(region:GetJustifyH()) end)
-            pcall(function() copy:SetJustifyV(region:GetJustifyV()) end)
-            pcall(function()
-                local text = region:GetText()
-                if isSecret(text) then copy:SetText(text) else copy:SetText(text or "") end
-            end)
-            copy:Show()
-        else
-            copy:Hide()
-        end
-    end
 end
 local function updateEnemyFrames(db)
     if db.enemyFrames == false or not enemyFramesLoaded() then return end
@@ -872,7 +825,6 @@ local function updateEnemyFrames(db)
                     w = widgetsFor(entry.cell, entry.bar, true, true)
                     if w.levelFloor ~= floor then w.levelFloor, w.layerKey = floor, nil; layerWidgets(w, entry.bar, true) end
                     drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db)
-                    cellText(w, entry.cell)
                 end
             end
         end

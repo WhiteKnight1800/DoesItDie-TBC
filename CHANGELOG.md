@@ -1,7 +1,7 @@
 # Changelog (Does It Die Advanced)
 
 ## v1.2.1
-- Enemy Frames: the marker shows while a mob is casting or crowd controlled (feared, stunned and so on). Before, the cast bar covered it, so you couldn't see whether the mob was dotted. The mob's name and the spell it's casting are drawn on top of the marker, so they stay readable.
+- Enemy Frames: the marker shows while a mob is casting or crowd controlled (feared, stunned and so on). Before, the cast bar covered it, so you couldn't see whether the mob was dotted. The stripes now sit on top of the whole row, cast bar included.
 
 ## v1.2.0
 - **Restart the game fully after updating** (new files were added).
