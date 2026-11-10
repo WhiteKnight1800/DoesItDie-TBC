@@ -154,7 +154,14 @@ efBar:SetFrameLevel(10)
 local efTop = CreateFrame("Frame", nil, efBar) -- its name text frame, 2 above the bar
 efTop:SetFrameLevel(12)
 function efBar.GetChildren() return efTop end
-function efCell.GetChildren() return efBar end
+local efName = FakeMock("FontString", efTop)
+function efName.GetObjectType() return "FontString" end
+function efName.GetText() return "Venom Spitter" end
+function efName.GetDrawLayer() return "OVERLAY", 0 end
+function efTop.GetRegions() return efName end
+local efCast = CreateFrame("StatusBar", nil, efCell) -- its cast bar, drawn over the health bar while casting
+efCast:SetFrameLevel(14)
+function efCell.GetChildren() return efBar, efCast end
 function efGrid.GetChildren() return efCell end
 function UIParent.GetChildren() return efGrid end
 function efCell.GetEffectiveAlpha() return 1 end
@@ -170,7 +177,11 @@ local efMarker
 for _, f in ipairs(frames) do if f.parent == efCell and f.kind == "StatusBar" and f.allPoints == efBar then efMarker = f end end
 check("marker on Enemy Frames' bar", efMarker ~= nil, true)
 check("Enemy Frames marker shown", efMarker and efMarker.shown, true)
-check("Enemy Frames marker under the name text (level 11)", efMarker and efMarker.level, 11)
+check("Enemy Frames marker above the cast bar too (level 14 + 5)", efMarker and efMarker.level, 19)
+local efCopy
+for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == efName then efCopy = f end end
+check("mob's name copied above the marker", efCopy and efCopy.text, "Venom Spitter")
+check("name copy shown", efCopy and efCopy.shown, true)
 -- Feral bleeds scale with attack power, which Forever hides in combat
 C_Spell.GetSpellName = (function(orig) return function(id) if id == 1822 then return "Rake" end return orig(id) end end)(C_Spell.GetSpellName)
 C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 1822 then return "Rake the target for 10 Bleed damage and an additional 57 Bleed damage over 15 sec.\r\n\r\nAwards 1 combo point." end return orig(id) end end)(C_Spell.GetSpellDescription)

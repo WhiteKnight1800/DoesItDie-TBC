@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.1
+- Enemy Frames: the marker shows while a mob is casting or crowd controlled (feared, stunned and so on). Before, the cast bar covered it, so you couldn't see whether the mob was dotted. The mob's name and the spell it's casting are drawn on top of the marker, so they stay readable.
+
 ## v1.2.0
 - **Restart the game fully after updating** (new files were added).
 - Forever: **learns your real tick sizes from the damage meter.** Forever hides each tick's damage, but after a fight the addon reads the game's damage meter and works out what each DoT really ticked for, so the next cast's marker matches your real damage (spell power, talents and buffs included).
