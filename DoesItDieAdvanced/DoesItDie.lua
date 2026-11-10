@@ -958,7 +958,7 @@ local function meterTallyFor(dot)
     if not ns.isForever or not dot.tickKey then return nil end
     local t = meterTally[dot.tickKey]
     if not t then
-        t = { spellID = dot.spellID, name = dot.name or tostring(dot.spellID), school = dot.school, factors = 0, ticks = 0, direct = 0,
+        t = { spellID = dot.spellID, name = dot.name or tostring(dot.spellID), school = dot.school, shaped = dot.shape ~= nil, factors = 0, ticks = 0, direct = 0,
             descTick = dot.total / dot.totalTicks, dots = {} }
         meterTally[dot.tickKey] = t
     end
@@ -1887,11 +1887,11 @@ local function applyDefaults()
         db.markerHeight, db.markerOffsetY, db.markerInsetLeft, db.markerInsetRight = 0, 0, 0, 0
         db.fitReset101 = true
     end
-    -- Forever: the damage meter learning in v1.2.0-1.2.4 could learn tick sizes too big (a tick it didn't pick out, or crits
+    -- Forever: the damage meter learning in v1.2.0-1.2.5 could learn tick sizes too big (a tick it didn't pick out, or crits
     -- was still in the meter's total), so the skull showed on mobs that lived. Those sizes are forgotten once.
-    if ns.isForever and not db.meterReset125 then
+    if ns.isForever and not db.meterReset126 then
         db.ticks, db.tickWeights, db.tickHistory, db.tickPower = {}, {}, {}, {}
-        db.meterReset125 = true
+        db.meterReset126 = true
     end
     -- Settings from earlier versions.
     if db.showMarkers == nil and db.showLine ~= nil then db.showMarkers = db.showLine end
@@ -1985,18 +1985,26 @@ local function learnFromMeter(totals, tally, untracked)
             -- A tick the addon didn't pick out still went into the meter's total: dividing by too few ticks made
             -- the size too big (seen: Corruption learned 132, real ticks 112). Every tick up to the last one seen
             -- landed (the mob was alive then), so those count even when one was missed.
-            local due = 0
+            local due, dueCount = 0, 0
             for _, dot in ipairs(t.dots) do
                 for i = 1, math.min(dot.meterLastTick or 0, dot.totalTicks) do
                     due = due + tickShape(dot, i) * (dot.curseNow or 1)
+                    dueCount = dueCount + (dot.curseNow or 1)
                 end
             end
+            local count = t.ticks
             if due > t.factors then
                 trace(string.format("LEARN %s: %d tick(s) picked out, %.1f were due: using the due ticks", t.name, t.ticks, due))
-                t.factors = due
+                t.factors, count = due, dueCount
             end
             local total = totals[t.spellID]
             local ratio = total / (t.direct + t.descTick * t.factors)
+            -- Agony: only the tooltip's base ramps up, the spell power bonus is the same on every tick (see
+            -- shapedTick). Scaling the whole total by the ramp made fights that ended early (small ticks only)
+            -- learn far too much. Bonus per tick = what's left after the ramped base, over the ticks.
+            if t.shaped and count > 0 then
+                ratio = (t.descTick + (total - t.direct - t.descTick * t.factors) / count) / t.descTick
+            end
             if ratio < LEARN_RATIO_MIN or ratio > LEARN_RATIO_MAX then
                 trace(string.format("LEARN %s skipped: damage meter %d is %.2fx the tooltip", t.name, total, ratio))
             else

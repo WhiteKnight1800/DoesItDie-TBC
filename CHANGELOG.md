@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.6
+- Forever: Bane of Agony's tick size is learned right when the mob dies early. Its ticks start small and build up, but your spell power adds the same to every tick; the learning scaled the whole thing by the ramp, so short fights (small early ticks only) learned it far too high. Learned tick sizes are forgotten once more on Forever.
+
 ## v1.2.5
 - Forever: DoT ticks can crit there, and crits were counted into the learned tick sizes (Immolate learned 56 when it normally ticks for about 50). Crits are now taken out, so the skull only shows when your normal ticks will kill. Learned tick sizes are forgotten once more on Forever to relearn without the crits.
 

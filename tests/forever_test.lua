@@ -267,6 +267,27 @@ step("combat ends, meter says 67.2", function() H.fire("PLAYER_REGEN_ENABLED"); 
 C_Timer.After = realAfter
 GetSpellCritChance = nil
 check("crits taken out of the learned size: still 16", DoesItDieAdvancedDB.ticks[172], 16)
+-- Bane of Agony: the base ramps (0.5x early), spell power is the same on every tick. Tooltip 725 over 24s (60.4 a
+-- tick); bonus 20 a tick, so early ticks are 30.2 + 20. A mob that dies after 4 ticks: the average is 80.4, not 100
+C_Spell.GetSpellName = (function(orig) return function(id) if id == 1014 then return "Bane of Agony" end return orig(id) end end)(C_Spell.GetSpellName)
+C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 1014 then return "Banes the target with agony, causing 725 Shadow damage over 24 sec.  This damage is dealt slowly at first, and builds up as the Bane reaches its full duration." end return orig(id) end end)(C_Spell.GetSpellDescription)
+targetGuid = "Creature-0-0000-0-0000-9999-0000AB0039"; H.fire("PLAYER_TARGET_CHANGED")
+combat = true
+step("Bane of Agony, 4 early ticks then the mob dies", function()
+    cast(1014)
+    for _ = 1, 4 do H.update(2); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(50), 32) end
+end)
+combat = false
+C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+step("combat ends, meter says 200.8", function()
+    H.fire("PLAYER_REGEN_ENABLED")
+    C_DamageMeter.GetCombatSessionSourceFromType = function()
+        return { combatSpells = { { spellID = 1014, totalAmount = 200.8 } } }
+    end
+    runTimers(); runTimers()
+end)
+C_Timer.After = realAfter
+check("Bane of Agony learns its average (60.4 + 20), not the early ramp scaled up", DoesItDieAdvancedDB.ticks[1014], 80.4)
 targetGuid = "Creature-0-0000-0-0000-9999-0000AB0010"; H.fire("PLAYER_TARGET_CHANGED")
 step("next Corruption", function() cast(172) end)
 local nextBy = {}
