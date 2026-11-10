@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.3
+- **Curse of the Elements and Curse of Shadow put on after your DoTs now raise their remaining damage.** DoT ticks get bigger when the curse lands, and the marker now follows. The percentage and schools are read from the curse's own tooltip, so every rank is right on every client (on Forever: 4%, 6%, 8% or 10% on all Magic damage). On Forever, where the game hides debuffs on mobs, your own curse cast counts; casting another curse on the mob replaces it.
+
 ## v1.2.2
 - Enemy Frames: the marker also shows over the crowd control bar (Fear and so on), not only the cast bar.
 - New `/dida efcheck`: lists what's in an Enemy Frames row, for bug reports if the marker is ever hidden there.

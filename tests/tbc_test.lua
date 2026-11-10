@@ -16,6 +16,7 @@ function InterfaceOptions_AddCategory(panel) registeredPanel = panel end
 -- TBC tooltips (max rank wording, base numbers).
 local SPELLS = {
     [27216] = { "Corruption", "Corrupts the target, causing 900 Shadow damage over 18 sec." },
+    [27228] = { "Curse of the Elements", "Curses the target for 5 min, reducing Arcane, Fire, Frost, and Shadow resistances by 88 and increasing Arcane, Fire, Frost, and Shadow damage taken by 10%.  Only one Curse per Warlock can be active on any one target." },
     [27215] = { "Immolate", "Burns the enemy for 332 Fire damage and then an additional 615 Fire damage over 15 sec." },
     [27218] = { "Curse of Agony", "Curses the target with agony, causing 1356 Shadow damage over 24 sec.  This damage is dealt slowly at first, and builds up as the Curse reaches its full duration.  Only one Curse per Warlock can be active on any one target." },
     [30405] = { "Unstable Affliction", "Shadow energy slowly destroys the target, causing 1050 damage over 18 sec.  In addition, if the Unstable Affliction is dispelled it will cause 1575 damage to the dispeller and silence them for 5 sec." },
@@ -525,6 +526,42 @@ do
     cast(27216); applied(mobs.A, 27216)
     _, by = remaining()
     check("history of 5: old low cast forgotten, 6 x 291", by["Corruption"], 1746)
+    log("UNIT_DIED", "", mobs.A, 0)
+end
+-- 26. Curse of the Elements put on after the DoTs: their remaining ticks are 10% bigger -------------------------------
+do
+    log("UNIT_DIED", "", mobs.A, 0)
+    SlashCmdList.DOESITDIEADVANCED("reset")
+    local curseUp = false
+    UnitDebuff = function(unit, i)
+        if unit == "target" and curseUp and i == 1 then
+            return "Curse of the Elements", nil, 0, "Curse", 300, 0, "player", false, false, 27228
+        end
+    end
+    cast(27216); applied(mobs.A, 27216)
+    for _ = 1, 2 do wait(3); tick(mobs.A, 27216, 200) end
+    local _, by = remaining()
+    check("Corruption, 2 of 6 ticks of 200 in: 4 x 200", by["Corruption"], 800)
+    curseUp = true; wait(0.3)
+    _, by = remaining()
+    check("Curse of the Elements on after it: 4 x 220", by["Corruption"], 880)
+    wait(2.7); tick(mobs.A, 27216, 220)
+    _, by = remaining()
+    check("a cursed tick (220) doesn't count the curse twice: 3 x 220", by["Corruption"], 660)
+    curseUp = false; wait(0.3)
+    _, by = remaining()
+    check("curse gone: 3 x 200", by["Corruption"], 600)
+    log("UNIT_DIED", "", mobs.A, 0)
+    -- No aura reading (as on Forever): the player's own curse cast counts
+    UnitDebuff = nil
+    cast(27216); applied(mobs.A, 27216)
+    wait(3); tick(mobs.A, 27216, 200)
+    cast(27228); wait(0.3)
+    _, by = remaining()
+    check("own Curse of the Elements cast counts when auras can't be read: 5 x 220", by["Corruption"], 1100)
+    cast(27218); wait(0.3) -- Curse of Agony replaces it (one curse per warlock)
+    _, by = remaining()
+    check("Curse of Agony replaces it: 5 x 200", by["Corruption"], 1000)
     log("UNIT_DIED", "", mobs.A, 0)
 end
 

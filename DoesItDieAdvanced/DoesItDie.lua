@@ -388,6 +388,147 @@ end
 -- DoT tracking
 ---------------------------------------------------------------------------
 
+-- Curses that raise a school's damage taken (Curse of the Elements, Curse of Shadow). DoT ticks are worked out per
+-- tick, so a curse that lands after the DoTs makes their remaining ticks bigger. Estimates are kept curse-free (ticks
+-- are divided by the curse that was up when they landed) and the curse on the mob now is multiplied back in.
+-- Schools are bits: fire 4, frost 16, shadow 32, arcane 64.
+local CURSE_EFFECTS
+do
+    local okB, _, _, _, interface = pcall(GetBuildInfo)
+    local tbc = okB and type(interface) == "number" and interface >= 20000 and interface < 30000
+    if tbc then
+        -- TBC: Curse of the Elements took over Curse of Shadow's schools.
+        local all = 4 + 16 + 32 + 64
+        CURSE_EFFECTS = { [1490] = { 0.06, all }, [11721] = { 0.08, all }, [11722] = { 0.10, all },
+            [27228] = { 0.10, all } }
+    else
+        CURSE_EFFECTS = { [1490] = { 0.06, 4 + 16 }, [11721] = { 0.08, 4 + 16 }, [11722] = { 0.10, 4 + 16 },
+            [17862] = { 0.08, 32 + 64 }, [17937] = { 0.10, 32 + 64 } }
+    end
+end
+local CURSE_SECONDS = 300
+local CURSE_SCAN_SECONDS = 0.25
+-- Per mob (unitKey): seen = curses read from its debuffs (when the game shows them) and when; cast = the player's own
+-- curse cast on it (Forever hides auras: then this is all there is). A warlock has one curse per mob, so a new
+-- curse cast replaces the old one.
+local cursesByKey = {}
+local cursesKeptAt = 0
+
+-- A curse's effect from its tooltip, so every rank on every client is right (Forever's Curse of the Elements has 4
+-- ranks, 4-10%, on all Magic damage): "increasing Magic damage taken by 4%", "increasing Fire and Frost damage taken
+-- by 10%". Other languages, or no tooltip: the table above.
+local CURSE_SCHOOL_WORDS = { Magic = 2 + 4 + 8 + 16 + 32 + 64, Holy = 2, Fire = 4, Nature = 8, Frost = 16, Shadow = 32,
+    Arcane = 64 }
+local curseEffectCache = {}
+local function curseEffect(spellID, name)
+    if type(spellID) ~= "number" or isSecret(spellID) then return nil end
+    local cached = curseEffectCache[spellID]
+    if cached ~= nil then return cached or nil end
+    local effect = CURSE_EFFECTS[spellID]
+    local ok, spellName, desc = pcall(spellNameAndDescription, spellID)
+    if ok and type(desc) == "string" and not isSecret(desc) then
+        local schools, pct = desc:match("[Ii]ncreas%a* (.-) damage taken by (%d+)%%")
+        if schools and pct then
+            local mask = 0
+            for word, bit in pairs(CURSE_SCHOOL_WORDS) do
+                if schools:find(word) then mask = mask + (word == "Magic" and 0 or bit) end
+            end
+            if schools:find("Magic") then mask = CURSE_SCHOOL_WORDS.Magic end
+            if mask > 0 then effect = { tonumber(pct) / 100, mask } end
+        end
+    elseif not ok or desc == nil or desc == "" then
+        return effect -- tooltip not loaded yet: don't cache, try again next time
+    end
+    curseEffectCache[spellID] = effect or false
+    return effect
+end
+
+local function debuffSpellID(unit, i)
+    if UnitDebuff then
+        local ok, name, _, _, _, _, _, _, _, _, id = pcall(UnitDebuff, unit, i)
+        if ok then
+            if name == nil then return nil, true end
+            return id, false
+        end
+    end
+    if C_UnitAuras and C_UnitAuras.GetDebuffDataByIndex then
+        local ok, data = pcall(C_UnitAuras.GetDebuffDataByIndex, unit, i)
+        if ok then
+            if data == nil then return nil, true end
+            if type(data) == "table" then return data.spellId, false end
+        end
+    end
+    return nil, true
+end
+
+local function scanCurses(unit, key)
+    if not unit or not key then return end
+    if not UnitDebuff and not (C_UnitAuras and C_UnitAuras.GetDebuffDataByIndex) then return end
+    local now = GetTime()
+    local entry = cursesByKey[key]
+    if entry and entry.seenAt and now - entry.seenAt < CURSE_SCAN_SECONDS then return end
+    local seen, readable = {}, true
+    for i = 1, 40 do
+        local id, done = debuffSpellID(unit, i)
+        if done then break end
+        if isSecret(id) then readable = false break end
+        local effect = id and curseEffect(id)
+        if effect then table.insert(seen, effect) end
+    end
+    if not readable then return end
+    entry = entry or {}
+    entry.seen, entry.seenAt = seen, now
+    cursesByKey[key] = entry
+end
+
+local function onCurseCast(key, spellID, name)
+    if not key then return end
+    local effect = curseEffect(spellID)
+    local isCurse = effect or (type(name) == "string" and name:find("^Curse of "))
+    if not isCurse then return end
+    local entry = cursesByKey[key] or {}
+    entry.cast = effect and { effect = effect, at = GetTime(), expiresAt = GetTime() + CURSE_SECONDS } or nil
+    cursesByKey[key] = entry
+end
+
+local function sharesSchool(a, b)
+    if bit and bit.band then return bit.band(a, b) ~= 0 end
+    for i = 0, 6 do
+        local flag = 2 ^ i
+        if a % (flag * 2) >= flag and b % (flag * 2) >= flag then return true end
+    end
+    return false
+end
+
+-- The damage taken multiplier for `school` on the mob now (1 = no curse).
+local function curseMultiplier(key, school)
+    local entry = key and cursesByKey[key]
+    if not entry or type(school) ~= "number" then return 1 end
+    local now, best = GetTime(), 0
+    -- What the mob's debuffs show wins (a resisted or replaced curse). On Forever enemy auras may be hidden without
+    -- saying so, so the player's own cast still counts there.
+    local list = {}
+    local fresh = entry.seenAt and now - entry.seenAt < 5
+    if fresh then for _, effect in ipairs(entry.seen) do table.insert(list, effect) end end
+    local cast = entry.cast
+    if cast and cast.expiresAt > now and (ns.isForever or not fresh or cast.at > entry.seenAt) then
+        table.insert(list, cast.effect)
+    end
+    for _, effect in ipairs(list) do
+        if sharesSchool(effect[2], school) and effect[1] > best then best = effect[1] end
+    end
+    if now - cursesKeptAt > 60 then -- forget long-gone mobs now and then
+        cursesKeptAt = now
+        for k, e in pairs(cursesByKey) do
+            if (not e.seenAt or now - e.seenAt > CURSE_SECONDS) and (not e.cast or e.cast.expiresAt < now) then
+                cursesByKey[k] = nil
+            end
+        end
+    end
+    return 1 + best
+end
+ns.curseMultiplier = curseMultiplier
+
 -- Best known average damage per tick: observed average of non-crit ticks, else learned from earlier casts,
 -- else the description. Crits are one-offs, so they never raise the expectation for later ticks. For shaped
 -- DoTs (TICK_SHAPES) ticks are stored divided by their factor, so this is the average tick, not the latest.
@@ -422,6 +563,7 @@ end
 
 -- The average tick a tick of `amount` with this factor stands for (the inverse of shapedTick).
 local function averageFromTick(dot, amount, factor)
+    amount = amount / (dot.curseNow or 1) -- kept curse-free (see CURSE_EFFECTS)
     if not dot.shape or factor == 1 then return amount / factor end
     local base = dot.total / dot.totalTicks
     return amount - base * factor + base
@@ -872,6 +1014,7 @@ local function onPlayerCast(spellID, castGUID, keyOverride)
         -- TBC words it "Place a fire trap ... Only one trap can be active at a time".
         if armedTrap and (desc:find("[Ff]ire trap") or desc:find("[Oo]nly one trap")) then armedTrap = nil end
     end
+    onCurseCast(key, spellID, name)
     if IGNORED_SPELLS[name] then return end
     local isFinisher = isFinisherDescription(desc)
     local comboPoints, comboSource
@@ -1320,7 +1463,7 @@ local function onHiddenTick(key, unit, school)
         tickIndex = recordTick(best, 0, false, bestIndex, now)
     end
     best.confirmed, best.doubtful = true, nil
-    meterCountTick(best, tickShape(best, tickIndex))
+    meterCountTick(best, tickShape(best, tickIndex) * (best.curseNow or 1))
     trace(string.format("TICK %s (amount hidden) on %s (tick %d/%d)%s", bestName, unit, tickIndex, best.totalTicks,
         wasWaiting and ", now shown" or ""))
     if wasWaiting then return key end
@@ -1509,20 +1652,23 @@ ns.remainingDamageOf = remainingDamage -- recordTick, defined above, needs it
 
 -- Remaining damage per DoT on a mob (by unitKey), oldest application first. DoTs still waiting for their first
 -- tick are left out. A DoT being cast on the mob replaces the one of the same name it would refresh.
-local function dotBreakdown(key)
+local function dotBreakdown(key, unit)
+    scanCurses(unit, key)
     local dots = key and dotsByTarget[key]
     local cast = key and castInProgress and castInProgress.key == key and castInProgress or nil
     local list = {}
     if not dots and not cast then return list end
     for name, dot in pairs(dots or {}) do
+        dot.curseNow = curseMultiplier(key, dot.school)
         if not isWaiting(dot) and not (cast and name == cast.name) then
             table.insert(list, { name = name, school = dot.school, appliedAt = dot.appliedAt,
-                damage = remainingDamage(dot) })
+                damage = remainingDamage(dot) * dot.curseNow })
         end
     end
     if cast and not isWaiting(cast.dot) then
+        cast.dot.curseNow = curseMultiplier(key, cast.dot.school)
         table.insert(list, { name = cast.name, school = cast.dot.school, appliedAt = cast.dot.appliedAt,
-            damage = remainingDamage(cast.dot), provisional = true })
+            damage = remainingDamage(cast.dot) * cast.dot.curseNow, provisional = true })
     end
     table.sort(list, function(a, b) return a.appliedAt < b.appliedAt end)
     return list
@@ -1531,7 +1677,7 @@ end
 -- Returns what the target's DoTs still have to deal, how many DoTs count toward it, and the per-DoT
 -- breakdown (see dotBreakdown).
 local function targetRemainingDamage()
-    local list = dotBreakdown(unitKey("target"))
+    local list = dotBreakdown(unitKey("target"), "target")
     local total = 0
     for _, entry in ipairs(list) do total = total + entry.damage end
     return math.floor(total + 0.5), #list, list
@@ -1892,7 +2038,7 @@ ns.tracking = { housekeep = housekeep, targetRemainingDamage = targetRemainingDa
 
 -- The DoTs on the mob behind `unit` (e.g. "nameplate3"): per-DoT breakdown and total remaining damage.
 function ns.dotBreakdownForUnit(unit)
-    local list = dotBreakdown(unitKey(unit))
+    local list = dotBreakdown(unitKey(unit), unit)
     local total = 0
     for _, entry in ipairs(list) do total = total + entry.damage end
     return list, total

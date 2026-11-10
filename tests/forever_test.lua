@@ -246,6 +246,13 @@ step("next Corruption", function() cast(172) end)
 local nextBy = {}
 for _, e in ipairs(ns.dotBreakdownForUnit("target")) do nextBy[e.name] = math.floor(e.damage + 0.5) end
 check("next Corruption uses the learned size: 4 x 16", nextBy["Corruption"], 64)
+-- Forever's Curse of the Elements (rank 1: 4% on all Magic damage), cast after the DoT: auras are hidden, the cast counts
+C_Spell.GetSpellName = (function(orig) return function(id) if id == 1490 then return "Curse of the Elements" end return orig(id) end end)(C_Spell.GetSpellName)
+C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 1490 then return "Curses the target for 5 min, reducing Magic resistances by 30 and increases Magic damage taken by 4%.  Only one Curse per Warlock can be active on any one target." end return orig(id) end end)(C_Spell.GetSpellDescription)
+step("cast Curse of the Elements rank 1", function() cast(1490) end)
+nextBy = {}
+for _, e in ipairs(ns.dotBreakdownForUnit("target")) do nextBy[e.name] = math.floor(e.damage + 0.5) end
+check("Forever CoE rank 1 (4%, Magic) raises Corruption: 64 x 1.04", nextBy["Corruption"], 67)
 step("nameplates and focus refresh with secret health", function() for _ = 1, 15 do H.update(0.1) end end)
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
