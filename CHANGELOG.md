@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.2
+- Enemy Frames: the marker also shows over the crowd control bar (Fear and so on), not only the cast bar.
+- New `/dida efcheck`: lists what's in an Enemy Frames row, for bug reports if the marker is ever hidden there.
+
 ## v1.2.1
 - Enemy Frames: the marker shows while a mob is casting or crowd controlled (feared, stunned and so on). Before, the cast bar covered it, so you couldn't see whether the mob was dotted. The stripes now sit on top of the whole row, cast bar included.
 

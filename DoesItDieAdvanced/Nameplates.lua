@@ -455,6 +455,7 @@ end
 local function layerWidgets(w, healthBar, matchStrata)
     local strataOf = matchStrata and healthBar or w.host
     local okStrata, strata = pcall(strataOf.GetFrameStrata, strataOf)
+    if w.strataFloor then okStrata, strata = true, w.strataFloor end -- Enemy Frames: the cell's highest strata
     if (matchStrata or w.strataSet) and okStrata and type(strata) == "string" and not isSecret(strata)
         and strata ~= w.appliedStrata then
         w.marker:SetFrameStrata(strata)
@@ -787,20 +788,62 @@ local function cellFrames(cell, w, visit)
     local function walk(frame, depth)
         if (w and isOurs(w, frame)) or (frame.IsForbidden and select(2, pcall(frame.IsForbidden, frame)) == true) then return end
         visit(frame)
-        if depth < 4 then
+        if depth < 8 then
             local ok, kids = pcall(function() return { frame:GetChildren() } end)
             if ok then for _, kid in ipairs(kids) do walk(kid, depth + 1) end end
         end
     end
     walk(cell, 0)
 end
+local CELL_STRATA_RANK = { BACKGROUND = 1, LOW = 2, MEDIUM = 3, HIGH = 4, DIALOG = 5 } -- higher isn't followed
+-- The highest strata and level of anything in the cell (its crowd control bar can be drawn in a higher strata
+-- than the health bar): the marker goes there, above it.
 cellTopLevel = function(cell)
-    local w, top = widgetsByHost[cell], nil
+    local w, topStrata, topRank, top = widgetsByHost[cell], nil, 0, nil
     cellFrames(cell, w, function(frame)
-        local ok, level = pcall(frame.GetFrameLevel, frame)
-        if ok and type(level) == "number" and not isSecret(level) and (not top or level > top) then top = level end
+        local okS, strata = pcall(frame.GetFrameStrata, frame)
+        local okL, level = pcall(frame.GetFrameLevel, frame)
+        if okS and okL and type(level) == "number" and not isSecret(level) and type(strata) == "string"
+            and not isSecret(strata) then
+            local rank = CELL_STRATA_RANK[strata] or 0
+            if rank > topRank or (rank == topRank and (not top or level > top)) then
+                topStrata, topRank, top = strata, rank, level
+            end
+        end
     end)
-    return top
+    return top, topStrata
+end
+-- /dida efcheck: every frame in the first Enemy Frames cells, to see what covers the marker.
+function ns.enemyFramesReport()
+    local report = {}
+    if not enemyFramesLoaded() then return { "Enemy Frames isn't loaded." } end
+    if not enemyCells then return { "No Enemy Frames cells found yet: get an enemy in the list and try again." } end
+    local count = 0
+    for unit, entry in pairs(enemyCells) do
+        count = count + 1
+        if count > 2 then break end
+        local w = widgetsByHost[entry.cell]
+        local function describe(frame)
+            local function get(m) local ok, v = pcall(frame[m], frame); if not ok then return "?" end
+                if isSecret(v) then return "secret" end return tostring(v) end
+            return string.format("%s %s/%s shown=%s", get("GetObjectType"), get("GetFrameStrata"), get("GetFrameLevel"),
+                get("IsShown"))
+        end
+        table.insert(report, unit .. " cell: " .. describe(entry.cell))
+        local function walk(frame, depth)
+            local tag = ""
+            if w and frame == w.marker then tag = "  <- our marker"
+            elseif w and (frame == w.iconWindow or frame == w.iconBar) then tag = "  <- our icon"
+            elseif frame == entry.bar then tag = "  <- health bar" end
+            if depth > 0 then table.insert(report, string.rep("  ", depth) .. describe(frame) .. tag) end
+            if depth < 8 then
+                local ok, kids = pcall(function() return { frame:GetChildren() } end)
+                if ok then for _, kid in ipairs(kids) do walk(kid, depth + 1) end end
+            end
+        end
+        walk(entry.cell, 0)
+    end
+    return report
 end
 local function updateEnemyFrames(db)
     if db.enemyFrames == false or not enemyFramesLoaded() then return end
@@ -819,11 +862,16 @@ local function updateEnemyFrames(db)
                 local health, maxHealth = (ns.realHealth or function(u) return UnitHealth(u), UnitHealthMax(u) end)(unit)
                 if health then
                     seenHosts[entry.cell] = true
-                    local floor = cellTopLevel(entry.cell)
+                    local floor, floorStrata = cellTopLevel(entry.cell)
                     local w = widgetsByHost[entry.cell]
-                    if w and w.levelFloor ~= floor then w.levelFloor, w.layerKey = floor, nil end
+                    if w and (w.levelFloor ~= floor or w.strataFloor ~= floorStrata) then
+                        w.levelFloor, w.strataFloor, w.layerKey, w.appliedStrata = floor, floorStrata, nil, nil
+                    end
                     w = widgetsFor(entry.cell, entry.bar, true, true)
-                    if w.levelFloor ~= floor then w.levelFloor, w.layerKey = floor, nil; layerWidgets(w, entry.bar, true) end
+                    if w.levelFloor ~= floor or w.strataFloor ~= floorStrata then
+                        w.levelFloor, w.strataFloor, w.layerKey, w.appliedStrata = floor, floorStrata, nil, nil
+                        layerWidgets(w, entry.bar, true)
+                    end
                     drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db)
                 end
             end

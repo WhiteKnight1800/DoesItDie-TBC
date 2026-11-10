@@ -181,6 +181,20 @@ check("Enemy Frames marker above the cast bar too (level 14 + 5)", efMarker and 
 local efCopy
 for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == efName then efCopy = f end end
 check("no copy of the mob's name drawn over the marker", efCopy, nil)
+-- its crowd control bar (Fear) in a higher strata than the health bar: the marker follows it up
+local efCC = CreateFrame("StatusBar", nil, efTop)
+efCC:SetFrameStrata("HIGH"); efCC:SetFrameLevel(3)
+function efTop.GetChildren() return efCC end
+step("refresh with a crowd control bar in HIGH", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("Enemy Frames marker follows the CC bar's strata", efMarker and efMarker.strata, "HIGH")
+check("Enemy Frames marker above the CC bar (above level 3)", efMarker and efMarker.level > 3, true)
+local okEF, efReport = pcall(ns.enemyFramesReport)
+check("/dida efcheck report", okEF and type(efReport) == "table" and #efReport > 3, true)
 -- Feral bleeds scale with attack power, which Forever hides in combat
 C_Spell.GetSpellName = (function(orig) return function(id) if id == 1822 then return "Rake" end return orig(id) end end)(C_Spell.GetSpellName)
 C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 1822 then return "Rake the target for 10 Bleed damage and an additional 57 Bleed damage over 15 sec.\r\n\r\nAwards 1 combo point." end return orig(id) end end)(C_Spell.GetSpellDescription)

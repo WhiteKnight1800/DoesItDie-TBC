@@ -2156,6 +2156,13 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
         if ns.showCopyBox then
             ns.showCopyBox("Text check: select all (Ctrl+A), copy (Ctrl+C) and paste it in a comment", table.concat(report, "\n"))
         end
+    elseif cmd == "efcheck" then
+        local ok, report = pcall(ns.enemyFramesReport)
+        if not ok then report = { "efcheck failed: " .. tostring(report) } end
+        for _, line in ipairs(report) do trace("EFCHECK " .. line) end
+        if ns.showCopyBox then
+            ns.showCopyBox("Enemy Frames check: select all (Ctrl+A), copy (Ctrl+C) and paste it in a comment", table.concat(report, "\n"))
+        end
     elseif cmd == "enemyframes" then
         db.enemyFrames = db.enemyFrames == false
         print("Marker and kill icon on Enemy Frames' list " .. (db.enemyFrames and "ON" or "OFF") .. ".")
