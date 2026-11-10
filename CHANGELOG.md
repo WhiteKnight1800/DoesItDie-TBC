@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.5
+- Forever: DoT ticks can crit there, and crits were counted into the learned tick sizes (Immolate learned 56 when it normally ticks for about 50). Crits are now taken out, so the skull only shows when your normal ticks will kill. Learned tick sizes are forgotten once more on Forever to relearn without the crits.
+
 ## v1.2.4
 - Forever: **fixed the skull showing on mobs that didn't die.** Learning from the damage meter could make your DoTs' tick sizes too big (e.g. Corruption 132 when it really ticks for 112), because a tick the addon didn't spot was still in the meter's total. It now counts every tick that was due. Tick sizes learned by earlier versions are forgotten once on Forever, so they're relearned correctly.
 

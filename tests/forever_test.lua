@@ -253,6 +253,20 @@ C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
 step("combat ends, meter says 64", function() H.fire("PLAYER_REGEN_ENABLED"); meterTotal = 64; runTimers(); runTimers() end)
 C_Timer.After = realAfter
 check("missed tick doesn't inflate the learned size: still 16", DoesItDieAdvancedDB.ticks[172], 16)
+-- Ticks can crit on Forever: with 10% shadow crit the meter's 4 ticks come to 67.2; the normal tick (16) is learned
+targetGuid = "Creature-0-0000-0-0000-9999-0000AB0029"; H.fire("PLAYER_TARGET_CHANGED")
+combat = true
+step("Corruption again, one tick crits", function()
+    cast(172)
+    for _ = 1, 4 do H.update(3); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(16), 32) end
+end)
+combat = false
+GetSpellCritChance = function(index) return index == 6 and 10 or 0 end
+C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+step("combat ends, meter says 67.2", function() H.fire("PLAYER_REGEN_ENABLED"); meterTotal = 67.2; runTimers(); runTimers() end)
+C_Timer.After = realAfter
+GetSpellCritChance = nil
+check("crits taken out of the learned size: still 16", DoesItDieAdvancedDB.ticks[172], 16)
 targetGuid = "Creature-0-0000-0-0000-9999-0000AB0010"; H.fire("PLAYER_TARGET_CHANGED")
 step("next Corruption", function() cast(172) end)
 local nextBy = {}

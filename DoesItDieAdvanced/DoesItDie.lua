@@ -958,7 +958,7 @@ local function meterTallyFor(dot)
     if not ns.isForever or not dot.tickKey then return nil end
     local t = meterTally[dot.tickKey]
     if not t then
-        t = { spellID = dot.spellID, name = dot.name or tostring(dot.spellID), factors = 0, ticks = 0, direct = 0,
+        t = { spellID = dot.spellID, name = dot.name or tostring(dot.spellID), school = dot.school, factors = 0, ticks = 0, direct = 0,
             descTick = dot.total / dot.totalTicks, dots = {} }
         meterTally[dot.tickKey] = t
     end
@@ -1887,11 +1887,11 @@ local function applyDefaults()
         db.markerHeight, db.markerOffsetY, db.markerInsetLeft, db.markerInsetRight = 0, 0, 0, 0
         db.fitReset101 = true
     end
-    -- Forever: the damage meter learning in v1.2.0-1.2.3 could learn tick sizes too big (a tick it didn't pick out
+    -- Forever: the damage meter learning in v1.2.0-1.2.4 could learn tick sizes too big (a tick it didn't pick out, or crits
     -- was still in the meter's total), so the skull showed on mobs that lived. Those sizes are forgotten once.
-    if ns.isForever and not db.meterReset124 then
+    if ns.isForever and not db.meterReset125 then
         db.ticks, db.tickWeights, db.tickHistory, db.tickPower = {}, {}, {}, {}
-        db.meterReset124 = true
+        db.meterReset125 = true
     end
     -- Settings from earlier versions.
     if db.showMarkers == nil and db.showLine ~= nil then db.showMarkers = db.showLine end
@@ -1950,6 +1950,18 @@ local function meterTotals()
     return totals, why
 end
 
+-- On Forever DoT ticks can crit (seen: Immolate ticks of 50, and 75 critical), and the meter's total includes the
+-- crits. The skull shouldn't count on crits (no false skulls), so the learned size is the normal hit: the average
+-- with the player's spell crit chance taken out (crits x1.5). Unknown or hidden crit chance: left as is.
+local SCHOOL_CRIT_INDEX = { [2] = 2, [4] = 3, [8] = 4, [16] = 5, [32] = 6, [64] = 7 }
+local function critShare(school)
+    local index = SCHOOL_CRIT_INDEX[school]
+    if not index or type(GetSpellCritChance) ~= "function" then return 0 end
+    local ok, chance = pcall(GetSpellCritChance, index)
+    if not ok or isSecret(chance) or type(chance) ~= "number" or chance <= 0 or chance > 60 then return 0 end
+    return chance / 100
+end
+
 local function learnFromMeter(totals, tally, untracked)
     db.tickWeights = db.tickWeights or {}
     local perSpell = {}
@@ -1988,7 +2000,9 @@ local function learnFromMeter(totals, tally, untracked)
             if ratio < LEARN_RATIO_MIN or ratio > LEARN_RATIO_MAX then
                 trace(string.format("LEARN %s skipped: damage meter %d is %.2fx the tooltip", t.name, total, ratio))
             else
-                local tick = ratio * t.descTick
+                local crit = critShare(t.school)
+                local tick = ratio * t.descTick / (1 + crit * 0.5)
+                if crit > 0 then trace(string.format("LEARN %s: %.1f%% spell crit taken out", t.name, crit * 100)) end
                 local old = db.ticks[key]
                 local weight = old and math.min(db.tickWeights[key] or 0, LEARN_WEIGHT_CAP) or 0
                 db.ticks[key] = math.floor(((old or 0) * weight + tick * t.factors) / (weight + t.factors) * 10 + 0.5) / 10
