@@ -1,23 +1,14 @@
 # Changelog (Does It Die Advanced)
 
-## v1.2.6
-- Forever: Bane of Agony's tick size is learned right when the mob dies early. Its ticks start small and build up, but your spell power adds the same to every tick; the learning scaled the whole thing by the ramp, so short fights (small early ticks only) learned it far too high. Learned tick sizes are forgotten once more on Forever.
-
-## v1.2.5
-- Forever: DoT ticks can crit there, and crits were counted into the learned tick sizes (Immolate learned 56 when it normally ticks for about 50). Crits are now taken out, so the skull only shows when your normal ticks will kill. Learned tick sizes are forgotten once more on Forever to relearn without the crits.
-
 ## v1.2.4
-- Forever: **fixed the skull showing on mobs that didn't die.** Learning from the damage meter could make your DoTs' tick sizes too big (e.g. Corruption 132 when it really ticks for 112), because a tick the addon didn't spot was still in the meter's total. It now counts every tick that was due. Tick sizes learned by earlier versions are forgotten once on Forever, so they're relearned correctly.
-
-## v1.2.3
-- **Curse of the Elements and Curse of Shadow put on after your DoTs now raise their remaining damage.** DoT ticks get bigger when the curse lands, and the marker now follows. The percentage and schools are read from the curse's own tooltip, so every rank is right on every client (on Forever: 4%, 6%, 8% or 10% on all Magic damage). On Forever, where the game hides debuffs on mobs, your own curse cast counts; casting another curse on the mob replaces it.
-
-## v1.2.2
-- Enemy Frames: the marker also shows over the crowd control bar (Fear and so on), not only the cast bar.
+- **Curse of the Elements and Curse of Shadow put on after your DoTs now raise their remaining damage.** The % and schools are read from the curse's own tooltip, so every rank is right (on Forever: 4%, 6%, 8% or 10% on all Magic damage). On Forever, where the game hides debuffs on mobs, your own curse cast counts; casting another curse on the mob replaces it.
+- Forever: **fixed the skull showing on mobs that didn't die.** Tick sizes learned from the damage meter could come out too big:
+  - a tick the addon didn't spot was still in the meter's total (Corruption learned 132 when it ticks for 112). Every tick that was due is now counted.
+  - DoT ticks can crit on Forever, and crits were counted in (Immolate learned 56 when it normally ticks for about 50). Crits are now taken out, so the skull only shows when your normal ticks will kill.
+  - Bane of Agony learned far too high from fights that ended early (small early ticks only). Its ramp and your spell power are now learned separately.
+  - Tick sizes learned by v1.2.0 are forgotten once on Forever, so they're relearned correctly.
+- Enemy Frames: the marker shows while a mob is casting or crowd controlled (Fear and so on). Before, the cast bar covered it, so you couldn't see whether the mob was dotted.
 - New `/dida efcheck`: lists what's in an Enemy Frames row, for bug reports if the marker is ever hidden there.
-
-## v1.2.1
-- Enemy Frames: the marker shows while a mob is casting or crowd controlled (feared, stunned and so on). Before, the cast bar covered it, so you couldn't see whether the mob was dotted. The stripes now sit on top of the whole row, cast bar included.
 
 ## v1.2.0
 - **Restart the game fully after updating** (new files were added).

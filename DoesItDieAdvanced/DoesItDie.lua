@@ -1887,7 +1887,7 @@ local function applyDefaults()
         db.markerHeight, db.markerOffsetY, db.markerInsetLeft, db.markerInsetRight = 0, 0, 0, 0
         db.fitReset101 = true
     end
-    -- Forever: the damage meter learning in v1.2.0-1.2.5 could learn tick sizes too big (a tick it didn't pick out, or crits
+    -- Forever: the damage meter learning in v1.2.0 could learn tick sizes too big (a tick it didn't pick out, or crits
     -- was still in the meter's total), so the skull showed on mobs that lived. Those sizes are forgotten once.
     if ns.isForever and not db.meterReset126 then
         db.ticks, db.tickWeights, db.tickHistory, db.tickPower = {}, {}, {}, {}
