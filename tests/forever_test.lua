@@ -241,6 +241,18 @@ step("combat ends", function() H.fire("PLAYER_REGEN_ENABLED") end)
 step("meter hidden at first, readable a moment later", function() runTimers(); meterTotal = 64; runTimers() end)
 C_Timer.After = realAfter
 check("real Corruption tick learned from the damage meter: 16", DoesItDieAdvancedDB.ticks[172], 16)
+-- A tick the addon didn't pick out (the 2nd) still counts toward the meter's 64: 4 ticks of 16, not 3 of 21
+targetGuid = "Creature-0-0000-0-0000-9999-0000AB0019"; H.fire("PLAYER_TARGET_CHANGED")
+combat = true
+step("Corruption again, its 2nd hidden tick not picked out", function()
+    cast(172)
+    for i = 1, 4 do H.update(3); if i ~= 2 then H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(16), 32) end end
+end)
+combat = false
+C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+step("combat ends, meter says 64", function() H.fire("PLAYER_REGEN_ENABLED"); meterTotal = 64; runTimers(); runTimers() end)
+C_Timer.After = realAfter
+check("missed tick doesn't inflate the learned size: still 16", DoesItDieAdvancedDB.ticks[172], 16)
 targetGuid = "Creature-0-0000-0-0000-9999-0000AB0010"; H.fire("PLAYER_TARGET_CHANGED")
 step("next Corruption", function() cast(172) end)
 local nextBy = {}

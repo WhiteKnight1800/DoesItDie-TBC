@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.4
+- Forever: **fixed the skull showing on mobs that didn't die.** Learning from the damage meter could make your DoTs' tick sizes too big (e.g. Corruption 132 when it really ticks for 112), because a tick the addon didn't spot was still in the meter's total. It now counts every tick that was due. Tick sizes learned by earlier versions are forgotten once on Forever, so they're relearned correctly.
+
 ## v1.2.3
 - **Curse of the Elements and Curse of Shadow put on after your DoTs now raise their remaining damage.** DoT ticks get bigger when the curse lands, and the marker now follows. The percentage and schools are read from the curse's own tooltip, so every rank is right on every client (on Forever: 4%, 6%, 8% or 10% on all Magic damage). On Forever, where the game hides debuffs on mobs, your own curse cast counts; casting another curse on the mob replaces it.
 

@@ -978,9 +978,10 @@ local function directPart(desc)
     return tonumber(head:match("(%d+)[^%d]-damage")) or 0
 end
 
-local function meterCountTick(dot, factor)
+local function meterCountTick(dot, factor, tickIndex)
     local t = meterTallyFor(dot)
     if t then t.factors, t.ticks = t.factors + (factor or 1), t.ticks + 1 end
+    if tickIndex then dot.meterLastTick = math.max(dot.meterLastTick or 0, tickIndex) end
 end
 
 -- A spell's tooltip text can be missing the first time it's cast (the client loads spell data on demand, seen on
@@ -1463,7 +1464,7 @@ local function onHiddenTick(key, unit, school)
         tickIndex = recordTick(best, 0, false, bestIndex, now)
     end
     best.confirmed, best.doubtful = true, nil
-    meterCountTick(best, tickShape(best, tickIndex) * (best.curseNow or 1))
+    meterCountTick(best, tickShape(best, tickIndex) * (best.curseNow or 1), tickIndex)
     trace(string.format("TICK %s (amount hidden) on %s (tick %d/%d)%s", bestName, unit, tickIndex, best.totalTicks,
         wasWaiting and ", now shown" or ""))
     if wasWaiting then return key end
@@ -1886,6 +1887,12 @@ local function applyDefaults()
         db.markerHeight, db.markerOffsetY, db.markerInsetLeft, db.markerInsetRight = 0, 0, 0, 0
         db.fitReset101 = true
     end
+    -- Forever: the damage meter learning in v1.2.0-1.2.3 could learn tick sizes too big (a tick it didn't pick out
+    -- was still in the meter's total), so the skull showed on mobs that lived. Those sizes are forgotten once.
+    if ns.isForever and not db.meterReset124 then
+        db.ticks, db.tickWeights, db.tickHistory, db.tickPower = {}, {}, {}, {}
+        db.meterReset124 = true
+    end
     -- Settings from earlier versions.
     if db.showMarkers == nil and db.showLine ~= nil then db.showMarkers = db.showLine end
     db.showLine, db.showRemaining = nil, nil
@@ -1963,6 +1970,19 @@ local function learnFromMeter(totals, tally, untracked)
         if skip then
             if skip ~= "" then trace(string.format("LEARN %s skipped: %s", t.name, skip)) end
         else
+            -- A tick the addon didn't pick out still went into the meter's total: dividing by too few ticks made
+            -- the size too big (seen: Corruption learned 132, real ticks 112). Every tick up to the last one seen
+            -- landed (the mob was alive then), so those count even when one was missed.
+            local due = 0
+            for _, dot in ipairs(t.dots) do
+                for i = 1, math.min(dot.meterLastTick or 0, dot.totalTicks) do
+                    due = due + tickShape(dot, i) * (dot.curseNow or 1)
+                end
+            end
+            if due > t.factors then
+                trace(string.format("LEARN %s: %d tick(s) picked out, %.1f were due: using the due ticks", t.name, t.ticks, due))
+                t.factors = due
+            end
             local total = totals[t.spellID]
             local ratio = total / (t.direct + t.descTick * t.factors)
             if ratio < LEARN_RATIO_MIN or ratio > LEARN_RATIO_MAX then
