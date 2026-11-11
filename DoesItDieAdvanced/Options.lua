@@ -1017,8 +1017,7 @@ local function buildTabs()
         .. "Untick to let the marker cover the numbers, as the original addon did." })
     advanced:checkbox("markerUnderTextAddons", "Other addons' health text too", { enabledIf = function(d)
         return d.markerUnderText ~= false end, tooltip = "Also draws other unit frame addons' health numbers on top "
-        .. "of the marker, found by where they sit over the bar. Blizzard's own target frame is always covered. Off by "
-        .. "default on Forever, where the game often hides where things are and the search can miss or stutter." })
+        .. "of the marker, found by where they sit over the bar. Blizzard's own target frame is always covered." })
     advanced:checkbox("debug", "Echo trace log to chat",
         { tooltip = "Prints each DoT cast, matched tick and estimate to chat." })
     local learned = advanced:action("Learned tick sizes", "View", toggleTickViewer, { tooltip = "What each of your "

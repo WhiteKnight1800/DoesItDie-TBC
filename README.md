@@ -177,7 +177,6 @@ The same download works on WoW: Forever. Forever blocks the combat log and hides
 - The estimate comes from spell tooltips, which leave out spell power, so the marker errs low: no skull too early.
 - If your target frame draws a thinner bar, the Marker tab's height, vertical offset and edge settings fit the marker to it.
 - After each fight the addon reads Forever's damage meter to learn what your DoTs really tick for, so the estimate gets closer to your real damage as you play.
-- Blizzard's own health numbers are always drawn above the marker; other unit frame addons' numbers are off by default on Forever (**Advanced → Other addons' health text too**).
 - Not available on Forever: exact combat log tracking, enemy players' real health, hiding the skull behind shields, and `/dida accuracy`.
 - Installs alongside JoeGG's original Does It Die without clashing (its own folder, settings and `/dida` command).
 

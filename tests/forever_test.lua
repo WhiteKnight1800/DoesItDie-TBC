@@ -288,6 +288,29 @@ step("combat ends, meter says 200.8", function()
 end)
 C_Timer.After = realAfter
 check("Bane of Agony learns its average (60.4 + 20), not the early ramp scaled up", DoesItDieAdvancedDB.ticks[1014], 80.4)
+-- The pet's melee miss right after a cast makes it doubtful; it really missed (no first tick), the recast landed:
+-- the miss doesn't stop learning (Rost4Love's log: "LEARN skipped: a cast showed no ticks")
+targetGuid = "Creature-0-0000-0-0000-9999-0000AB0049"; H.fire("PLAYER_TARGET_CHANGED")
+combat = true
+step("Corruption missed (a melee miss at the same moment), recast, 4 ticks", function()
+    cast(172); H.fire("UNIT_COMBAT", "target", "MISS", "", 0, 1)
+    H.update(2); H.update(2) -- its first tick was due at 3s and didn't come
+    cast(172)
+    for _ = 1, 4 do H.update(3); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(16), 32) end
+end)
+combat = false
+local learnedBefore = DoesItDieAdvancedDB.tickWeights[172]
+C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+step("combat ends, meter says 64", function()
+    H.fire("PLAYER_REGEN_ENABLED")
+    C_DamageMeter.GetCombatSessionSourceFromType = function()
+        return { combatSpells = { { spellID = 172, totalAmount = 64 } } }
+    end
+    runTimers(); runTimers()
+end)
+C_Timer.After = realAfter
+check("a cast that missed doesn't stop learning", DoesItDieAdvancedDB.tickWeights[172] > learnedBefore, true)
+check("and the size is still 16", DoesItDieAdvancedDB.ticks[172], 16)
 targetGuid = "Creature-0-0000-0-0000-9999-0000AB0010"; H.fire("PLAYER_TARGET_CHANGED")
 step("next Corruption", function() cast(172) end)
 local nextBy = {}
@@ -304,8 +327,8 @@ step("nameplates and focus refresh with secret health", function() for _ = 1, 15
 step("/did plates", function() SlashCmdList.DOESITDIEADVANCED("plates") end)
 step("/did accuracy", function() SlashCmdList.DOESITDIEADVANCED("accuracy") end)
 
--- v1.2.0: other addons' health text is off by default on Forever (Blizzard's own is still copied, checked above)
-check("other addons' health text off by default on Forever", DoesItDieAdvancedDB.markerUnderTextAddons, false)
+-- v1.2.4: other addons' health text is on by default on Forever again
+check("other addons' health text on by default on Forever", DoesItDieAdvancedDB.markerUnderTextAddons, true)
 
 -- v1.2.0: Russian, Chinese and Portuguese tooltips (JoeGG's locale files)
 local function parsed(desc) local t, school, d = ns.parseDot(desc, 5); return tostring(t) .. "/" .. tostring(school) .. "/" .. tostring(d) end

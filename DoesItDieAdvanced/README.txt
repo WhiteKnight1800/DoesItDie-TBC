@@ -23,8 +23,6 @@ FOREVER
   shields, /did accuracy.
   After each fight the addon reads Forever's damage meter to learn what your DoTs really tick for, so the
   marker gets closer to your real damage as you play.
-  Health text: Blizzard's own target frame numbers are always drawn above the marker. Other unit frame
-  addons' numbers are off by default here (Advanced > "Other addons' health text too").
 
 LANGUAGES
   English, German, Spanish, French, Korean, Russian, Chinese (Simplified and Traditional) and Portuguese

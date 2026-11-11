@@ -178,9 +178,8 @@ local DEFAULTS = {
     waitFirstTick = "off",
     estimateDuringCast = true,
     markerUnderText = true,
-    -- Health text of other unit frame addons too, found by where it sits. Off by default on Forever: positions are
-    -- often hidden there and the search can't reach some addons' frames, so only Blizzard's own text is copied.
-    markerUnderTextAddons = not ns.isForever,
+    -- Health text of other unit frame addons too, found by where it sits (Blizzard's own is always copied).
+    markerUnderTextAddons = true,
     showOnPlayers = true,   -- TBC port: marker and kill icon on enemy players too (their health is measured) -- TBC port: the marker sits under the target frame's health text, not over it
     trackChannels = true, -- Drain Life, Drain Soul, Mind Flay while channelling (TBC port; /did channels)
     uiLanguage = "auto", -- the options window's language (Locale.lua): "auto" or a language tag
@@ -776,10 +775,12 @@ local function removeAvoidedDot(cast, action, school)
         end
     end
     if cast.previous then
+        -- (Not marked discarded: if the recast did land, its later ticks are in the damage meter's total.)
         dots[cast.name] = cast.previous
         trace(string.format("AVOID %s (school %s) right after %s recast; keeping the earlier one", action,
             tostring(school), cast.name))
     else
+        dot.discarded = true -- never on the mob: the damage meter learning leaves it out
         dots[cast.name] = nil
         trace(string.format("AVOID %s (school %s) right after %s; dropped", action, tostring(school), cast.name))
     end
@@ -1060,6 +1061,11 @@ local function onPlayerCast(spellID, castGUID, keyOverride)
 
     dotsByTarget[key] = dotsByTarget[key] or {}
     local previous = dotsByTarget[key][name]
+    -- A doubtful cast (see removeAvoidedDot) whose first tick was due in sight and didn't come, recast: its miss
+    -- was real, it never landed.
+    if previous and previous.doubtful and previous.ticksSeen == 0 and previous.missed >= 1 then
+        previous.discarded = true
+    end
     local dot = newDot(spellID, tickKey, name, total, school, duration, statedInterval, now)
     dot.name = name
     do
@@ -1618,6 +1624,7 @@ local function housekeep(now)
                 trace("EXPIRE " .. name)
                 noteAccuracy(dot, name, "ran out")
             elseif dot.ticksSeen == 0 and dot.missed >= MISSED_TICKS_BEFORE_DROP then
+                dot.discarded = true
                 dots[name] = nil
                 trace("DROP " .. name .. " never ticked (resisted or immune?)")
             end
@@ -1889,6 +1896,12 @@ local function applyDefaults()
     end
     -- Forever: the damage meter learning in v1.2.0 could learn tick sizes too big (a tick it didn't pick out, or crits
     -- was still in the meter's total), so the skull showed on mobs that lived. Those sizes are forgotten once.
+    -- Forever: v1.2.0 turned other addons' health text off by default there; it works (EllesmereUI, seen in-game), so
+    -- it's back on once.
+    if ns.isForever and not db.textAddonsOn124 then
+        db.markerUnderTextAddons = true
+        db.textAddonsOn124 = true
+    end
     if ns.isForever and not db.meterReset126 then
         db.ticks, db.tickWeights, db.tickHistory, db.tickPower = {}, {}, {}, {}
         db.meterReset126 = true
@@ -1976,7 +1989,10 @@ local function learnFromMeter(totals, tally, untracked)
         elseif perSpell[t.spellID] > 1 then skip = "several combo point sizes share one total"
         else
             for _, dot in ipairs(t.dots) do
-                if dot.ticksSeen == 0 then skip = "a cast showed no ticks (out of sight, or the mob died first)" end
+                -- (A cast that was missed, resisted or replaced before it landed did no damage: it doesn't count.)
+                if dot.ticksSeen == 0 and not dot.discarded then
+                    skip = "a cast showed no ticks (out of sight, or the mob died first)"
+                end
             end
         end
         if skip then
