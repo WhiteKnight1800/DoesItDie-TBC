@@ -93,13 +93,32 @@ local SCHOOL_COLORS = {
     [64] = { 1, 0.55, 1 },      -- Arcane
 }
 
--- "Different color per DoT": each spell keeps the palette color it got when first seen this session, so
--- colors don't shuffle when DoTs are recast or expire.
+-- "Different color per DoT": common DoTs always get the same color (Corruption purple, Agony green, Immolate
+-- orange...), so you learn them. Any other spell takes the first palette color no DoT is using yet this session,
+-- and keeps it, so colors don't shuffle when DoTs are recast or expire, and no two DoTs share one.
 local DOT_PALETTE = {
-    { 0.95, 0.3, 0.3 }, { 0.3, 0.75, 1 }, { 1, 0.8, 0.2 }, { 0.45, 1, 0.45 },
-    { 0.85, 0.4, 1 }, { 1, 0.55, 0.15 }, { 0.3, 1, 0.9 }, { 1, 0.45, 0.75 },
+    { 0.95, 0.3, 0.3 },  -- 1 red
+    { 0.3, 0.75, 1 },    -- 2 blue
+    { 1, 0.85, 0.2 },    -- 3 yellow
+    { 0.45, 1, 0.45 },   -- 4 green
+    { 0.75, 0.4, 1 },    -- 5 purple
+    { 1, 0.55, 0.15 },   -- 6 orange
+    { 0.3, 1, 0.9 },     -- 7 teal
+    { 1, 0.45, 0.75 },   -- 8 pink
+    { 1, 1, 1 },         -- 9 white
+    { 0.55, 0.55, 1 },   -- 10 periwinkle
 }
-local paletteIndexByName, nextPaletteIndex = {}, 1
+local PREFERRED_COLOR = {
+    ["Corruption"] = 5, ["Curse of Agony"] = 4, ["Bane of Agony"] = 4, ["Immolate"] = 6, ["Siphon Life"] = 7,
+    ["Unstable Affliction"] = 2, ["Seed of Corruption"] = 8, ["Drain Life"] = 1, ["Drain Soul"] = 10,
+    ["Shadow Word: Pain"] = 5, ["Vampiric Touch"] = 2, ["Devouring Plague"] = 4, ["Holy Fire"] = 3,
+    ["Mind Flay"] = 8,
+    ["Moonfire"] = 2, ["Insect Swarm"] = 4, ["Rake"] = 6, ["Rip"] = 1, ["Lacerate"] = 8, ["Pounce"] = 3,
+    ["Serpent Sting"] = 4, ["Immolation Trap"] = 6, ["Rend"] = 1, ["Rupture"] = 1, ["Garrote"] = 8,
+    ["Flame Shock"] = 6, ["Fireball"] = 3, ["Pyroblast"] = 6,
+}
+local paletteIndexByName, paletteTaken = {}, {}
+function ns.resetDotColors() paletteIndexByName, paletteTaken = {}, {} end -- tests
 
 -- mode: "school" or "each"; defaults to the target marker's setting (nameplates pass their own).
 local function dotColor(entry, mode)
@@ -108,8 +127,20 @@ local function dotColor(entry, mode)
     end
     local index = paletteIndexByName[entry.name]
     if not index then
-        index = (nextPaletteIndex - 1) % #DOT_PALETTE + 1
-        paletteIndexByName[entry.name], nextPaletteIndex = index, nextPaletteIndex + 1
+        -- English names (the tracker's key); in other languages every DoT takes the first free color instead.
+        index = PREFERRED_COLOR[entry.name]
+        if index and paletteTaken[index] then index = nil end
+        if not index then
+            for i = 1, #DOT_PALETTE do
+                local reserved = false
+                for _, preferred in pairs(PREFERRED_COLOR) do if preferred == i then reserved = true break end end
+                if not paletteTaken[i] and not reserved then index = i break end
+            end
+            if not index then for i = 1, #DOT_PALETTE do if not paletteTaken[i] then index = i break end end end
+            index = index or (#paletteTaken % #DOT_PALETTE) + 1
+        end
+        paletteIndexByName[entry.name] = index
+        paletteTaken[index] = (paletteTaken[index] or 0) + 1
     end
     return DOT_PALETTE[index]
 end

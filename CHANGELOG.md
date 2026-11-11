@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.6
+- **No two DoTs share a color any more, and common DoTs always get the same one:** Corruption purple, Agony green, Immolate orange, Siphon Life teal, Unstable Affliction blue (and set colors for the other classes' DoTs). Other spells take a color no DoT is using.
+- Nameplates and the focus frame now give each DoT its own color too. They used to color by spell school, where Corruption and Agony are both purple. (Changed once for everyone; "By spell school" is still in the options.)
+
 ## v1.2.5
 - Forever: learning tick sizes from the damage meter is no longer skipped after a DoT that missed (e.g. when your pet's melee missed at the same moment and the DoT was recast).
 - Forever: other unit frame addons' health text (EllesmereUI and others) is drawn above the marker again by default. 1.2.0 turned it off there, but it's been confirmed working. Turn it off in **Advanced → Other addons' health text too**.

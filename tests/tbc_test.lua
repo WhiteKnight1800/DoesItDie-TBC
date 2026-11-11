@@ -950,6 +950,19 @@ end)
 if not okCE then failures = failures + 1; print("FAIL  Classic Era test crashed: " .. tostring(errCE)) end
 
 check("other addons' health text on by default on TBC/Classic", db.markerUnderTextAddons, true)
+do -- every DoT its own color, the same each session; an unknown spell takes a free one
+    ns.resetDotColors()
+    local function c(name) local col = ns.dotColor({ name = name, school = 32 }, "each"); return table.concat(col, ",") end
+    check("Corruption is purple", c("Corruption"), "0.75,0.4,1")
+    check("Bane of Agony green", c("Bane of Agony"), "0.45,1,0.45")
+    check("Immolate orange", c("Immolate"), "1,0.55,0.15")
+    local unknown1, unknown2 = c("Some New DoT"), c("Another DoT")
+    local all = { c("Corruption"), c("Bane of Agony"), c("Immolate"), unknown1, unknown2 }
+    local seen, clash = {}, false
+    for _, v in ipairs(all) do if seen[v] then clash = true end seen[v] = true end
+    check("no two DoTs share a color", clash, false)
+    check("plates default to a color per DoT", db.plateDotColors, "each")
+end
 print(string.format("\n%d passed, %d failed", passes, failures))
 if failures > 0 then
     print("--- last log lines ---")

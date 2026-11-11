@@ -165,7 +165,7 @@ local DEFAULTS = {
     focusIconPosition = "left", -- the portrait is on the right of Blizzard's focus frame
     focusIconOffsetX = 0,
     focusIconOffsetY = 0,
-    focusDotColors = "school",
+    focusDotColors = "each",
     focusFillTexture = "stripes",
     focusFillColor = "white",
     focusFillOpacity = 40,
@@ -199,7 +199,7 @@ local DEFAULTS = {
     enemyFrames = true,             -- the marker and kill icon on Enemy Frames' list too (Krelock's addon, Forever)
     plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height
     plateIcon = "skull",
-    plateDotColors = "school",
+    plateDotColors = "each",
     plateFillTexture = "stripes",
     plateFillColor = "white",
     plateFillOpacity = 40,
@@ -1898,6 +1898,13 @@ local function applyDefaults()
     -- was still in the meter's total), so the skull showed on mobs that lived. Those sizes are forgotten once.
     -- Forever: v1.2.0 turned other addons' health text off by default there; it works (EllesmereUI, seen in-game), so
     -- it's back on once.
+    -- v1.2.6: nameplates and focus used school colors by default, where Corruption and Agony are both purple:
+    -- now every DoT has its own color everywhere (the same as on the target frame).
+    if not db.dotColorsEach126 then
+        if db.plateDotColors == "school" then db.plateDotColors = "each" end
+        if db.focusDotColors == "school" then db.focusDotColors = "each" end
+        db.dotColorsEach126 = true
+    end
     if ns.isForever and not db.textAddonsOn124 then
         db.markerUnderTextAddons = true
         db.textAddonsOn124 = true
