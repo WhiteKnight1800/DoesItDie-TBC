@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.5
+- Forever: learning tick sizes from the damage meter is no longer skipped after a DoT that missed (e.g. when your pet's melee missed at the same moment and the DoT was recast).
+- Forever: other unit frame addons' health text (EllesmereUI and others) is drawn above the marker again by default. 1.2.0 turned it off there, but it's been confirmed working. Turn it off in **Advanced → Other addons' health text too**.
+
 ## v1.2.4
 - **Curse of the Elements and Curse of Shadow put on after your DoTs now raise their remaining damage.** The % and schools are read from the curse's own tooltip, so every rank is right (on Forever: 4%, 6%, 8% or 10% on all Magic damage). On Forever, where the game hides debuffs on mobs, your own curse cast counts; casting another curse on the mob replaces it.
 - Forever: **fixed the skull showing on mobs that didn't die.** Tick sizes learned from the damage meter could come out too big:
@@ -9,8 +13,6 @@
   - Tick sizes learned by v1.2.0 are forgotten once on Forever, so they're relearned correctly.
 - Enemy Frames: the marker shows while a mob is casting or crowd controlled (Fear and so on). Before, the cast bar covered it, so you couldn't see whether the mob was dotted.
 - New `/dida efcheck`: lists what's in an Enemy Frames row, for bug reports if the marker is ever hidden there.
-- Forever: learning tick sizes from the damage meter is no longer skipped after a DoT that missed (e.g. when your pet's melee missed at the same moment and the DoT was recast).
-- Forever: other unit frame addons' health text (EllesmereUI and others) is drawn above the marker again by default. 1.2.0 turned it off there, but it's been confirmed working. Turn it off in **Advanced → Other addons' health text too**.
 
 ## v1.2.0
 - **Restart the game fully after updating** (new files were added).
