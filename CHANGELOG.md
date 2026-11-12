@@ -2,7 +2,7 @@
 
 ## v1.3.1
 - Enemy Frames: **fixed the marker missing from dotted mobs.** Enemy Frames reuses its rows as mobs come and go, and the addon kept drawing on the row a mob had when it was first seen, which could later be hidden or showing another mob. It now follows each mob to whichever row it's in.
-- Enemy Frames: the mob's name and health text are drawn on top of the stripes, so they stay readable. While the mob casts or is crowd controlled, the spell's name is shown instead (the mob's name is under the cast bar then).
+- Enemy Frames: the mob's name and health text are drawn on top of the stripes, so they stay readable. While the mob casts or is crowd controlled, the spell's name and icon are shown on top instead (the mob's name is under the cast bar then).
 - `/dida efcheck` lists the rows on screen (the ones with the marker first).
 
 ## v1.3.0

@@ -737,6 +737,21 @@ local function copyText(w, root, healthBar, cell)
             local ok, regions = pcall(function() return { frame:GetRegions() } end)
             for _, region in ipairs(ok and regions or {}) do
                 local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
+                -- The spell's icon on a cast bar (square, inside the row): copied too, so the stripes don't cover it.
+                local okI, isTexture = pcall(function() return region:GetObjectType() == "Texture" end)
+                if okI and isTexture and cell and group and group ~= healthBar and not w.textCopies[region] then
+                    local okW, width, height = pcall(function() return region:GetWidth(), region:GetHeight() end)
+                    local okS, barTexture = pcall(function() return frame.GetStatusBarTexture and frame:GetStatusBarTexture() end)
+                    if okW and type(width) == "number" and type(height) == "number" and not isSecret(width)
+                        and not isSecret(height) and width > 4 and math.abs(width - height) <= 2
+                        and not (okS and barTexture == region) then
+                        local okD, layer, sub = pcall(region.GetDrawLayer, region)
+                        local copy = w.textHolder:CreateTexture(nil, okD and type(layer) == "string" and layer or "ARTWORK",
+                            nil, okD and type(sub) == "number" and sub or 0)
+                        copy:SetAllPoints(region)
+                        w.textCopies[region] = { copy = copy, owner = frame, group = group, texture = true }
+                    end
+                end
                 if okT and isText and not w.textCopies[region] then
                     local okD, layer = pcall(region.GetDrawLayer, region)
                     local copy = w.textHolder:CreateFontString(nil, okD and type(layer) == "string" and layer or "OVERLAY")
@@ -784,7 +799,14 @@ local function copyText(w, root, healthBar, cell)
             show = okV and (isSecret(visible) or visible)
         end
         c.shown = show
-        if show then
+        if show and c.texture then
+            pcall(function() copy:SetTexture(region:GetTexture()) end)
+            pcall(function() copy:SetTexCoord(region:GetTexCoord()) end)
+            pcall(function() copy:SetVertexColor(region:GetVertexColor()) end)
+            pcall(function() copy:SetDesaturated(region:IsDesaturated()) end)
+            copy:SetAlpha(effectiveAlpha(region, c.owner))
+            copy:Show()
+        elseif show then
             -- Each part on its own: on Forever any of them can be secret (passed on as is, never tested).
             pcall(function() local font, size, flags = region:GetFont(); if isSecret(font) or font then copy:SetFont(font, size, flags) end end)
             pcall(function() copy:SetTextColor(region:GetTextColor()) end)
