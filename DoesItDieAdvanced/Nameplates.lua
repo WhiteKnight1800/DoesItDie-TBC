@@ -829,6 +829,13 @@ local function copyText(w, root, healthBar, cell)
                 overlayShown = true
             end
         end
+        -- A feared (or sapped, polymorphed...) mob has no target, and Enemy Frames hides its target's name then
+        -- (seen: "Zahwen" shown=false while feared). Only dotted mobs get here, and those are fighting, so no target
+        -- means it's crowd controlled.
+        if not overlayShown and mob and w.unit then
+            local okT, hasTarget = pcall(UnitExists, w.unit .. "target")
+            if okT and not isSecret(hasTarget) and not hasTarget then overlayShown = true end
+        end
     end
     for region, c in pairs(w.textCopies) do
         local copy = c.copy
@@ -1040,6 +1047,15 @@ function ns.enemyFramesReport()
                 get("IsShown"))
         end
         table.insert(report, unit .. " cell: " .. describe(entry.cell))
+        do
+            local function show(v) if isSecret(v) then return "secret" end return tostring(v) end
+            local okC, r, g, b = pcall(entry.bar.GetStatusBarColor, entry.bar)
+            local okT, hasTarget = pcall(UnitExists, unit .. "target")
+            local okP, isPlayer = pcall(UnitIsPlayer, unit)
+            table.insert(report, string.format("  health bar color %s/%s/%s, has a target: %s, player: %s",
+                okC and show(r) or "?", okC and show(g) or "?", okC and show(b) or "?", okT and show(hasTarget) or "?",
+                okP and show(isPlayer) or "?"))
+        end
         local function walk(frame, depth)
             local tag = ""
             if w and frame == w.marker then tag = "  <- our marker"

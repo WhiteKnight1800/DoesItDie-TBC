@@ -117,7 +117,11 @@ C_Spell = {
 Enum = { PowerType = { ComboPoints = 4 } }
 function GetTime() return now end
 targetGuid = nil -- set later: the target and nameplate1 are then the same mob
-function UnitExists(unit) return unit == "nameplate1" or (unit == "target" and targetGuid ~= nil) end
+fakeMobHasTarget = true -- nameplate1's mob is fighting someone
+function UnitExists(unit)
+    if unit == "nameplate1target" then return fakeMobHasTarget end
+    return unit == "nameplate1" or (unit == "target" and targetGuid ~= nil)
+end
 function UnitCanAttack() return true end
 function IsInInstance() return false, "none" end
 local plate = mock("Frame")

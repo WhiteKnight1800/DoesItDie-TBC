@@ -248,6 +248,23 @@ step("fear over, bar red again", function()
     UnitHealth, UnitHealthMax = realUH, realUHM
 end)
 check("red health bar: name back on top", efCopy and efCopy.shown, true)
+-- Feared as Enemy Frames really shows it: no other bar, the bar isn't blue to us, but the mob has no target
+fakeMobHasTarget = false
+step("feared: the mob loses its target", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("no target (feared): name not drawn over \"Fear\"", efCopy and efCopy.shown, false)
+fakeMobHasTarget = true
+step("fear over: target again", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("target again: name back on top", efCopy and efCopy.shown, true)
 function efCell.GetChildren() return efBar, efCast end
 -- its crowd control bar (Fear) in a higher strata than the health bar: the marker follows it up
 local efCC = CreateFrame("StatusBar", nil, efTop)
