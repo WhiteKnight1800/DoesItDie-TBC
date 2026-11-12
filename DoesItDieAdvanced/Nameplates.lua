@@ -815,30 +815,48 @@ local function enemyFramesLoaded()
     local ok, loaded = pcall(function() return isLoaded and isLoaded("EnemyFrames") end)
     return ok and loaded and true or false
 end
-local function findEnemyCells()
+-- Enemy Frames reuses its rows: a row shows one mob now and another later (its .unit changes), and rows are added
+-- as the list grows. So the rows are read again every refresh (cheap: the list's own frame and its children), and
+-- each row's unit is read as it is now. (Before v1.3.1 the rows were mapped once, so the marker could go on a row
+-- that had moved on to another mob or was hidden.)
+local enemyRoot -- the frame holding the rows, once found
+local function cellsOf(root)
     local found, count = {}, 0
-    local okC, roots = pcall(function() return { UIParent:GetChildren() } end)
-    if not okC then return nil end
-    for _, root in ipairs(roots) do
-        local okK, kids = pcall(function() return { root:GetChildren() } end)
-        if okK then
-            for _, cell in ipairs(kids) do
-                local okU, unit = pcall(rawget, cell, "unit")
-                if okU and type(unit) == "string" and unit:find("^nameplate%d+$") then
-                    local okB, parts = pcall(function() return { cell:GetChildren() } end)
-                    if okB then
-                        for _, child in ipairs(parts) do
-                            if isStatusBar(child) then
-                                found[unit] = { cell = cell, bar = child }
-                                count = count + 1
-                                break
-                            end
-                        end
+    local okK, kids = pcall(function() return { root:GetChildren() } end)
+    if not okK then return found, 0 end
+    for _, cell in ipairs(kids) do
+        local okU, unit = pcall(rawget, cell, "unit")
+        if okU and type(unit) == "string" and unit:find("^nameplate%d+$") then
+            local okB, parts = pcall(function() return { cell:GetChildren() } end)
+            if okB then
+                for _, child in ipairs(parts) do
+                    if isStatusBar(child) then
+                        -- Two rows on one unit (one hidden, left over): the shown one wins.
+                        local entry = { cell = cell, bar = child }
+                        if not found[unit] or (not barShown(found[unit].cell) and barShown(cell)) then found[unit] = entry end
+                        count = count + 1
+                        break
                     end
                 end
             end
         end
+    end
+    return found, count
+end
+local function findEnemyCells()
+    if enemyRoot then
+        local found, count = cellsOf(enemyRoot)
         if count > 0 then return found end
+        enemyRoot = nil
+    end
+    local okC, roots = pcall(function() return { UIParent:GetChildren() } end)
+    if not okC then return nil end
+    for _, root in ipairs(roots) do
+        local found, count = cellsOf(root)
+        if count > 0 then
+            enemyRoot = root
+            return found
+        end
     end
     return nil
 end
@@ -881,10 +899,17 @@ function ns.enemyFramesReport()
     local report = {}
     if not enemyFramesLoaded() then return { "Enemy Frames isn't loaded." } end
     if not enemyCells then return { "No Enemy Frames cells found yet: get an enemy in the list and try again." } end
-    local count = 0
+    enemyCells = findEnemyCells() or enemyCells
+    -- The rows on screen, the ones with our marker first.
+    local rows = {}
     for unit, entry in pairs(enemyCells) do
-        count = count + 1
-        if count > 2 then break end
+        if barShown(entry.cell) then table.insert(rows, { unit = unit, entry = entry }) end
+    end
+    table.sort(rows, function(a, b) return (widgetsByHost[a.entry.cell] and 1 or 0) > (widgetsByHost[b.entry.cell] and 1 or 0) end)
+    if #rows == 0 then table.insert(report, "No Enemy Frames rows on screen right now.") end
+    for index, row in ipairs(rows) do
+        if index > 2 then break end
+        local unit, entry = row.unit, row.entry
         local w = widgetsByHost[entry.cell]
         local function describe(frame)
             local function get(m) local ok, v = pcall(frame[m], frame); if not ok then return "?" end
@@ -910,14 +935,14 @@ function ns.enemyFramesReport()
 end
 local function updateEnemyFrames(db)
     if db.enemyFrames == false or not enemyFramesLoaded() then return end
-    if not enemyCells then
-        local now = GetTime()
-        if now - enemyCellsSearchedAt < 5 then return end
+    local now = GetTime()
+    if enemyRoot or now - enemyCellsSearchedAt >= 5 then -- known list: read its rows now; not yet: look every 5s
         enemyCellsSearchedAt = now
+        local hadRoot = enemyRoot
         enemyCells = findEnemyCells()
-        if not enemyCells then return end
-        ns.trace("ENEMYFRAMES bars found: the marker and kill icon go on its list too")
+        if enemyRoot and not hadRoot then ns.trace("ENEMYFRAMES bars found: the marker and kill icon go on its list too") end
     end
+    if not enemyCells then return end
     for unit, entry in pairs(enemyCells) do
         if UnitExists(unit) and barShown(entry.cell) and barShown(entry.bar) and not unitIsDead(unit) then
             local entries, total = ns.dotBreakdownForUnit(unit)

@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.1
+- Enemy Frames: **fixed the marker missing from dotted mobs.** Enemy Frames reuses its rows as mobs come and go, and the addon kept drawing on the row a mob had when it was first seen, which could later be hidden or showing another mob. It now follows each mob to whichever row it's in.
+- `/dida efcheck` lists the rows on screen (the ones with the marker first).
+
 ## v1.3.0
 - **Update notice:** if someone in your guild or group has a newer version, you're told once in chat that yours is out of date. Works between copies from 1.3.0 on. `/dida updates` turns it off.
 

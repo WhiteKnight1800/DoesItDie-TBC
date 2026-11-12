@@ -209,6 +209,26 @@ check("Enemy Frames marker follows the CC bar's strata", efMarker and efMarker.s
 check("Enemy Frames marker above the CC bar (above level 3)", efMarker and efMarker.level > 3, true)
 local okEF, efReport = pcall(ns.enemyFramesReport)
 check("/dida efcheck report", okEF and type(efReport) == "table" and #efReport > 3, true)
+-- Enemy Frames reuses rows: the dotted mob moves to another row; the marker follows it there
+local efCell2 = CreateFrame("Frame", nil, efGrid)
+efCell2.unit = "nameplate2"
+local efBar2 = CreateFrame("StatusBar", nil, efCell2)
+function efCell2.GetChildren() return efBar2 end
+function efCell2.GetEffectiveAlpha() return 1 end
+function efBar2.GetEffectiveAlpha() return 1 end
+function efGrid.GetChildren() return efCell, efCell2 end
+step("rows swap mobs", function()
+    efCell.unit, efCell2.unit = "nameplate2", "nameplate1"
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+local efMarker2
+for _, f in ipairs(frames) do if f.parent == efCell2 and f.kind == "StatusBar" and f.allPoints == efBar2 then efMarker2 = f end end
+check("marker moved with the mob to its new row", efMarker2 ~= nil and efMarker2.shown, true)
+check("old row's marker hidden", efMarker.shown, false)
+efCell.unit = "nameplate1"; function efGrid.GetChildren() return efCell end
 -- Feral bleeds scale with attack power, which Forever hides in combat
 C_Spell.GetSpellName = (function(orig) return function(id) if id == 1822 then return "Rake" end return orig(id) end end)(C_Spell.GetSpellName)
 C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 1822 then return "Rake the target for 10 Bleed damage and an additional 57 Bleed damage over 15 sec.\r\n\r\nAwards 1 combo point." end return orig(id) end end)(C_Spell.GetSpellDescription)
