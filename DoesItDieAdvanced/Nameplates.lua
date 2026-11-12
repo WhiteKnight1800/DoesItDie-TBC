@@ -740,11 +740,14 @@ local function copyText(w, root, healthBar, cell)
                 -- The spell's icon on a cast bar (square, inside the row): copied too, so the stripes don't cover it.
                 local okI, isTexture = pcall(function() return region:GetObjectType() == "Texture" end)
                 if okI and isTexture and cell and group and group ~= healthBar and not w.textCopies[region] then
+                    -- Either a square picture, or anything on a plain frame inside the overlay (Enemy Frames keeps
+                    -- the icon on its own frame next to the cast bar). Not the bar itself, its fill or background.
                     local okW, width, height = pcall(function() return region:GetWidth(), region:GetHeight() end)
-                    local okS, barTexture = pcall(function() return frame.GetStatusBarTexture and frame:GetStatusBarTexture() end)
-                    if okW and type(width) == "number" and type(height) == "number" and not isSecret(width)
+                    local square = okW and type(width) == "number" and type(height) == "number" and not isSecret(width)
                         and not isSecret(height) and width > 4 and math.abs(width - height) <= 2
-                        and not (okS and barTexture == region) then
+                    local iconFrame = depth >= 2 and not isStatusBar(frame)
+                    local okS, barTexture = pcall(function() return frame.GetStatusBarTexture and frame:GetStatusBarTexture() end)
+                    if (square or iconFrame) and not (okS and barTexture == region) then
                         local okD, layer, sub = pcall(region.GetDrawLayer, region)
                         local copy = w.textHolder:CreateTexture(nil, okD and type(layer) == "string" and layer or "ARTWORK",
                             nil, okD and type(sub) == "number" and sub or 0)
@@ -1018,6 +1021,16 @@ function ns.enemyFramesReport()
                     table.insert(report, string.format("%s  text \"%s\" shown=%s alpha=%s: %s", string.rep("  ", depth), text,
                         (function() local ok, v = pcall(region.IsShown, region); return ok and (isSecret(v) and "secret" or tostring(v)) or "?" end)(),
                         (function() local ok, v = pcall(region.GetAlpha, region); return ok and (isSecret(v) and "secret" or tostring(v)) or "?" end)(),
+                        not c and "no copy" or (c.shown and "copied above the stripes" or "copy hidden")))
+                end
+                local okI, isTexture = pcall(function() return region:GetObjectType() == "Texture" end)
+                if okI and isTexture and frame ~= w.marker and not (w and frame == w.textHolder) then
+                    local c = w and w.textCopies and w.textCopies[region]
+                    local okW, width, height = pcall(function() return region:GetWidth(), region:GetHeight() end)
+                    local size = (not okW and "?") or ((isSecret(width) or isSecret(height)) and "secret")
+                        or string.format("%dx%d", width or 0, height or 0)
+                    table.insert(report, string.format("%s  picture %s shown=%s: %s", string.rep("  ", depth), size,
+                        (function() local ok, v = pcall(region.IsShown, region); return ok and (isSecret(v) and "secret" or tostring(v)) or "?" end)(),
                         not c and "no copy" or (c.shown and "copied above the stripes" or "copy hidden")))
                 end
             end
