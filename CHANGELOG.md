@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.7
+- Forever: health text of unit frame addons like EllesmereUI ("603 | 87.3%") is drawn above the marker. The game hides where that text sits, so the addon couldn't tell it was over the health bar; any text that's part of your target frame is now copied above the marker.
+- `/dida textcheck` now lists every text in your target frame, whether the game hides its position, and parts of the frame the game locks.
+
 ## v1.2.6
 - **No two DoTs share a color any more, and common DoTs always get the same one:** Corruption purple, Agony green, Immolate orange, Siphon Life teal, Unstable Affliction blue (and set colors for the other classes' DoTs). Other spells take a color no DoT is using.
 - Nameplates and the focus frame now give each DoT its own color too. They used to color by spell school, where Corruption and Agony are both purple. (Changed once for everyone; "By spell school" is still in the options.)

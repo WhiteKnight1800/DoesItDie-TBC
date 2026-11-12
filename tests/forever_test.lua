@@ -94,6 +94,19 @@ hbar.LeftText = leftText
 hbar.RightText, hbar.TextString, hbar.HealthBarText, hbar.ManaBarText = false, false, false, false
 main.HealthBarsContainer.LeftText, main.HealthBarsContainer.RightText, main.HealthBarsContainer.TextString = false, false, false
 main.HealthBarsContainer.HealthBarText, main.HealthBarsContainer.ManaBarText = false, false
+-- An unnamed health text on its own frame (as EllesmereUI has), position hidden: copied too, being in the frame
+local textFrame = CreateFrame("Frame", nil, hbar)
+local otherText = FakeMock("FontString", textFrame)
+function otherText.GetObjectType() return "FontString" end
+function otherText.GetLeft() return secret(150) end
+function otherText.GetRight() return secret(200) end
+function otherText.GetTop() return secret(140) end
+function otherText.GetBottom() return secret(130) end
+function otherText.GetText() return "603 | 87.3%" end
+function otherText.GetDrawLayer() return "OVERLAY", 0 end
+function otherText.IsShown() return true end
+function textFrame.GetRegions() return otherText end
+function hbar.GetChildren() return textFrame end
 step("attach to the target frame", function() ns.display.attach(true); ns.relayer(); ns.refresh() end)
 step("cast Corruption", function() cast(172) end)
 step("display refresh with secret health", function() for _ = 1, 5 do H.update(0.1) end end)
@@ -127,6 +140,7 @@ local dropped = false
 for _, l in ipairs(db.log) do if l:find("DROP Immolate", 1, true) then dropped = true end end
 check("Immolate not dropped as never ticked", dropped, false)
 check("Blizzard's health text found by name (position secret): copied above the marker", (ns.textMirror(leftText)), true)
+check("an unnamed text in the target frame, position hidden: copied above the marker", (ns.textMirror(otherText)), true)
 function hbar.GetRect() return secret(100), secret(500), secret(126), secret(20) end
 function leftText.IsVisible() return setmetatable({}, getmetatable(secret(1))) end
 step("refresh with the bar's position hidden", function() ns.relayer(); ns.refresh() end)

@@ -819,10 +819,13 @@ do
     local knownOwners = setmetatable({}, { __mode = "k" }) -- frame -> true
     local lastFullScan, fullScanBar = -math.huge, nil
     local layerStrata, layerLevel = "MEDIUM", 1
+    -- true / false, or nil when the position can't be read (hidden on Forever, or the bar's own is).
     local function centreInside(region, scale, l, r, t, b)
+        if not l then return nil end
         local ok, rl, rr, rt, rb = pcall(function() return region:GetLeft(), region:GetRight(), region:GetTop(), region:GetBottom() end)
-        if not ok or type(rl) ~= "number" or type(rr) ~= "number" or type(rt) ~= "number" or type(rb) ~= "number" then return false end
-        if isSecret(rl) or isSecret(rr) or isSecret(rt) or isSecret(rb) then return false end
+        if not ok then return nil end
+        if isSecret(rl) or isSecret(rr) or isSecret(rt) or isSecret(rb) then return nil end
+        if type(rl) ~= "number" or type(rr) ~= "number" or type(rt) ~= "number" or type(rb) ~= "number" then return nil end
         local cx, cy = (rl + rr) / 2 * scale, (rt + rb) / 2 * scale
         return cx >= l and cx <= r and cy >= b and cy <= t
     end
@@ -881,14 +884,23 @@ do
         -- search off (the default on Forever).
         if db.markerUnderTextAddons == false then return end
         local okR, l, b, w, h = pcall(bar.GetRect, bar)
-        if not okR or type(l) ~= "number" or isSecret(l) or isSecret(w) then return end
-        local bs = bar:GetEffectiveScale()
-        l, b = l * bs, b * bs
-        local r, t = l + w * bs, b + h * bs
+        local r, t
+        if okR and not isSecret(l) and not isSecret(b) and not isSecret(w) and not isSecret(h) and type(l) == "number"
+            and type(b) == "number" and type(w) == "number" and type(h) == "number" then
+            local bs = bar:GetEffectiveScale()
+            l, b = l * bs, b * bs
+            r, t = l + w * bs, b + h * bs
+        else
+            l = nil -- the bar's position is hidden: only text in the target frame itself is copied (below)
+        end
         layerStrata, layerLevel = strata, top + 1
         for _, holder in pairs(holders) do holder:SetFrameStrata(strata); holder:SetFrameLevel(top + 1) end
         local rank, seen = STRATA_RANK[strata] or 0, {}
-        local function consider(frame, depth)
+        -- inTree: part of the target frame. Its texts are copied when they're over the bar, and also when their
+        -- position can't be read (Forever hides it, e.g. EllesmereUI's "603 | 87.3%"): a copy drawn exactly over
+        -- the original does no harm even if that text isn't on the bar. Elsewhere in the interface only text seen
+        -- over the bar counts.
+        local function consider(frame, depth, inTree)
             if not frame or seen[frame] or textLift.isHolder(frame) then return end
             seen[frame] = true
             if frame.IsForbidden then
@@ -902,24 +914,26 @@ do
                 if (fr < rank or (fr == rank and fl <= top)) and truthy(frame, "IsVisible") then
                     local scale = frame:GetEffectiveScale()
                     for _, region in ipairs({ frame:GetRegions() }) do
-                        if region:GetObjectType() == "FontString" and truthy(region, "IsShown")
-                            and centreInside(region, scale, l, r, t, b) then
-                            mirror(region, frame)
-                            knownOwners[frame] = true
+                        if region:GetObjectType() == "FontString" and truthy(region, "IsShown") then
+                            local inside = centreInside(region, scale, l, r, t, b)
+                            if inside or (inTree and inside == nil) then
+                                mirror(region, frame)
+                                knownOwners[frame] = true
+                            end
                         end
                     end
                 end
             end
             if depth < 6 then
-                for _, child in ipairs({ frame:GetChildren() }) do consider(child, depth + 1) end
+                for _, child in ipairs({ frame:GetChildren() }) do consider(child, depth + 1, inTree) end
             end
         end
-        consider(bar, 0)
-        if root and root ~= UIParent then consider(root, 0) end
+        consider(bar, 0, true)
+        if root and root ~= UIParent then consider(root, 0, true) end
         local parent = bar:GetParent()
-        if parent and parent ~= UIParent then consider(parent, 1) end
+        if parent and parent ~= UIParent then consider(parent, 1, true) end
         for owner in pairs(knownOwners) do consider(owner, 6) end
-        if EnumerateFrames then
+        if l and EnumerateFrames then
             local now = GetTime()
             if fullScanBar ~= bar or (not scanActive and now - lastFullScan >= RESCAN_SECONDS) then
                 lastFullScan, fullScanBar, scanActive, scanCursor = now, bar, true, nil
@@ -973,7 +987,7 @@ do
     -- it is copied above the marker. For bug reports when a unit frame addon's numbers still sit under the marker.
     -- /dida textcheck. Everything it reads goes through pcall and secret checks: on Forever a frame's position,
     -- strata or visibility can be secret, and testing one errors.
-    function textLift.report(bar)
+    function textLift.report(bar, root)
         local function show(v)
             if isSecret(v) then return "secret" end
             return tostring(v)
@@ -1000,6 +1014,36 @@ do
                         call(region, "IsVisible"), m and (m.found and ("copied, copy shown=" .. call(m.copy, "IsShown"))
                         or "copy not in use") or "NOT copied"))
                 end
+            end
+        end
+        -- Every text in the target frame itself, wherever it sits.
+        if root and root ~= UIParent then
+            table.insert(out, "Target frame " .. call(root, "GetDebugName") .. ":")
+            local forbidden, walked = 0, {}
+            local function walk(frame, depth)
+                if not frame or walked[frame] or textLift.isHolder(frame) then return end
+                walked[frame] = true
+                local okF, isForbidden = pcall(function() return frame.IsForbidden and frame:IsForbidden() end)
+                if not okF or isForbidden then forbidden = forbidden + 1 return end
+                pcall(function()
+                    for _, region in ipairs({ frame:GetRegions() }) do
+                        local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
+                        if okT and isText then
+                            local okP, rl = pcall(region.GetLeft, region)
+                            local where = (not okP or isSecret(rl)) and "position hidden"
+                                or (rl == nil and "no position") or "position readable"
+                            table.insert(out, string.format("  Text \"%s\" on %s, %s/%s, shown=%s, %s, %s", call(region, "GetText"),
+                                call(frame, "GetDebugName"), call(frame, "GetFrameStrata"), call(frame, "GetFrameLevel"),
+                                call(region, "IsVisible"), where,
+                                textLift.isMirrored(region) and "copied above the marker" or "NOT copied"))
+                        end
+                    end
+                    if depth < 8 then for _, child in ipairs({ frame:GetChildren() }) do walk(child, depth + 1) end end
+                end)
+            end
+            walk(root, 0)
+            if forbidden > 0 then
+                table.insert(out, string.format("  %d part(s) of it are locked by the game (forbidden): their text can't be read or copied", forbidden))
             end
         end
         -- Any other text over the bar, where positions can be read.
@@ -1117,7 +1161,7 @@ end
 
 -- Re-layer on the next refresh (a setting changed).
 function ns.relayer() layerCheckedAt = 0 end
-function ns.textReport() return textLift.report(healthBar) end
+function ns.textReport() return textLift.report(healthBar, layerRoot) end
 function ns.textMirror(region) return textLift.isMirrored(region) end
 
 local function hideMarkers()
