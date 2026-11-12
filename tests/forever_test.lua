@@ -231,6 +231,23 @@ step("fear ends", function()
     UnitHealth, UnitHealthMax = realUH, realUHM
 end)
 check("fear over: the name is back on top", efCopy and efCopy.shown, true)
+-- Enemy Frames' own Fear: the health bar turns blue (no other bar); the name steps aside
+function efBar.GetStatusBarColor() return 0.2, 0.55, 1 end
+step("feared, shown as a blue health bar", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("blue (crowd controlled) health bar: name not drawn over \"Fear\"", efCopy and efCopy.shown, false)
+function efBar.GetStatusBarColor() return 0.9, 0.1, 0.1 end
+step("fear over, bar red again", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("red health bar: name back on top", efCopy and efCopy.shown, true)
 function efCell.GetChildren() return efBar, efCast end
 -- its crowd control bar (Fear) in a higher strata than the health bar: the marker follows it up
 local efCC = CreateFrame("StatusBar", nil, efTop)

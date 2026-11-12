@@ -816,6 +816,19 @@ local function copyText(w, root, healthBar, cell)
             end
         end
         look(cell, 0)
+        -- Crowd control (Fear...): Enemy Frames shows it on the health bar itself, turned blue with the time left,
+        -- and its "Fear" label sits under the name (seen in /dida efcheck: no other bar shown, name still "shown").
+        -- A blue health bar means the mob is crowd controlled: the name copy steps aside so "Fear" shows.
+        -- (Mobs only: enemy players' bars are class colored, and a mage's or shaman's is blue.)
+        local okP, isPlayer = pcall(UnitIsPlayer, w.unit or "")
+        local mob = not (okP and not isSecret(isPlayer) and isPlayer)
+        if not overlayShown and mob then
+            local okC, r, g, b = pcall(healthBar.GetStatusBarColor, healthBar)
+            if okC and type(r) == "number" and type(g) == "number" and type(b) == "number" and not isSecret(r)
+                and not isSecret(g) and not isSecret(b) and b > 0.5 and b > r + 0.15 and b > g + 0.05 then
+                overlayShown = true
+            end
+        end
     end
     for region, c in pairs(w.textCopies) do
         local copy = c.copy
@@ -1083,6 +1096,7 @@ local function updateEnemyFrames(db)
                         layerWidgets(w, entry.bar, true)
                     end
                     drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db)
+                    w.unit = unit
                     if w.marker:IsShown() then copyText(w, entry.cell, entry.bar, entry.cell) end
                 end
             end
