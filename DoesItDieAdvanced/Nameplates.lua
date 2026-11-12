@@ -799,22 +799,23 @@ local function copyText(w, root, healthBar, cell)
         end
     end
     -- Enemy Frames: is an overlay (anything in the row but the health bar) showing over the health bar?
+    -- An overlay is any bar in the row other than the health bar (cast bar, crowd control bar), shown: a StatusBar
+    -- anywhere in the row, not only one hung straight off it (Fear's bar wasn't, so the name stayed on top of
+    -- "Fear"). The row's aura icons (frames of icons) aren't bars: counting them hid the name once DoTs went on.
     local overlayShown = false
     if cell then
-        local okK, kids = pcall(function() return { cell:GetChildren() } end)
-        for _, kid in ipairs(okK and kids or {}) do
-            -- An overlay is a bar (cast bar, crowd control bar): a StatusBar, or a frame holding one. The row's aura
-            -- icons (frames of icons) aren't, and counting them hid the name as soon as your DoTs' icons appeared.
-            local isOverlay = isStatusBar(kid)
-            if not isOverlay then
-                local okP, parts = pcall(function() return { kid:GetChildren() } end)
-                for _, part in ipairs(okP and parts or {}) do if isStatusBar(part) then isOverlay = true break end end
-            end
-            if isOverlay and kid ~= healthBar and kid ~= w.marker and kid ~= w.iconWindow and kid ~= w.iconBar
-                and frameShows(kid, cell) then
+        local function look(frame, depth)
+            if overlayShown or frame == w.marker or frame == w.iconWindow or frame == w.iconBar then return end
+            if frame ~= healthBar and frame ~= cell and isStatusBar(frame) and frameShows(frame, cell) then
                 overlayShown = true
+                return
+            end
+            if depth < 4 then
+                local okK, kids = pcall(function() return { frame:GetChildren() } end)
+                for _, kid in ipairs(okK and kids or {}) do look(kid, depth + 1) end
             end
         end
+        look(cell, 0)
     end
     for region, c in pairs(w.textCopies) do
         local copy = c.copy

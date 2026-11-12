@@ -209,6 +209,29 @@ step("the cast ends", function()
 end)
 check("no cast: the mob's name is drawn above the stripes", efCopy and efCopy.shown, true)
 check("name copy has the name", efCopy and efCopy.text, "Venom Spitter")
+-- Fear: its bar sits deeper in the row (a frame in a frame); the name steps aside for it too
+local efCC1 = CreateFrame("Frame", nil, efCell)
+local efCC2 = CreateFrame("Frame", nil, efCC1)
+local efCCBar = CreateFrame("StatusBar", nil, efCC2)
+function efCC1.GetChildren() return efCC2 end
+function efCC2.GetChildren() return efCCBar end
+function efCell.GetChildren() return efBar, efCast, efCC1 end
+step("the mob is feared", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("feared: the mob's name isn't drawn over \"Fear\"", efCopy and efCopy.shown, false)
+efCC1:Hide()
+step("fear ends", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("fear over: the name is back on top", efCopy and efCopy.shown, true)
+function efCell.GetChildren() return efBar, efCast end
 -- its crowd control bar (Fear) in a higher strata than the health bar: the marker follows it up
 local efCC = CreateFrame("StatusBar", nil, efTop)
 efCC:SetFrameStrata("HIGH"); efCC:SetFrameLevel(3)
