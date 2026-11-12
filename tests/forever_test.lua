@@ -397,6 +397,28 @@ for _, e in ipairs(ns.dotBreakdownForUnit("softenemy")) do if e.name == "Corrupt
 check("corpse targeted: Corruption goes on the next mob", onNext, 1)
 UnitGUID, UnitIsDeadOrGhost, UnitName = realGUID, realDead, realName
 
+-- Drain Life on Forever: its ticks are hidden and never matched; it must stay for the whole 5s channel
+C_Spell.GetSpellName = (function(orig) return function(id) if id == 689 then return "Drain Life" end return orig(id) end end)(C_Spell.GetSpellName)
+C_Spell.GetSpellDescription = (function(orig) return function(id) if id == 689 then return "Transfers 10 health every 1 sec from the target to the caster.  Lasts 5 sec." end return orig(id) end end)(C_Spell.GetSpellDescription)
+targetGuid = "Creature-0-0000-0-0000-9999-0000AB0059"; H.fire("PLAYER_TARGET_CHANGED")
+local channelStart = GetTime()
+UnitChannelInfo = function() return "Drain Life", "", 0, channelStart * 1000, (channelStart + 5) * 1000 end
+step("channel Drain Life", function()
+    H.fire("UNIT_SPELLCAST_SENT", "player", "Mob", "Cast-DL", 689)
+    H.fire("UNIT_SPELLCAST_CHANNEL_START", "player", "Cast-DL", 689)
+end)
+local function drainLife()
+    for _, e in ipairs(ns.dotBreakdownForUnit("target")) do if e.name == "Drain Life" then return math.floor(e.damage + 0.5) end end
+    return 0
+end
+check("Drain Life: 5 ticks to come", drainLife(), 50)
+for _ = 1, 3 do H.update(1); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(10), 32) end
+check("3s in (ticks hidden): still on, 2 ticks left", drainLife(), 20)
+H.update(1.2)
+check("4.2s in: the last tick (at 5s) still counted", drainLife(), 10)
+UnitChannelInfo = nil
+H.fire("UNIT_SPELLCAST_CHANNEL_STOP", "player")
+
 if os.getenv("SHOWLOG") then for _, l in ipairs(db.log) do print("LOG: " .. l) end end
 print(string.format("\n%d passed, %d failed", passes, failures))
 local errs = 0

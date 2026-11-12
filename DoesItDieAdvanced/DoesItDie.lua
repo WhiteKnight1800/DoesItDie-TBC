@@ -1621,7 +1621,11 @@ local function housekeep(now)
                 dot.nextTickAt = dot.nextTickAt + dot.interval
                 -- Only a tick that could have been seen counts as missed.
                 -- A DoT the combat log saw land stays until it reports the aura removed (TBC).
-                if dot.ticksSeen == 0 and not dot.confirmed and isObservable(key) then dot.missed = dot.missed + 1 end
+                -- (Not a channel: it's on while the game says you're channelling it, and on Forever its ticks are
+                -- hidden and never matched, so it "missed" two and was dropped halfway through Drain Life.)
+                if dot.ticksSeen == 0 and not dot.confirmed and not dot.channel and isObservable(key) then
+                    dot.missed = dot.missed + 1
+                end
             end
             if now > dot.expiresAt + TICK_MATCH_WINDOW then
                 dots[name] = nil
@@ -1654,10 +1658,9 @@ local function remainingDamage(dot)
         local start, interval = dot.channelStart or dot.appliedAt, dot.interval
         local total = math.floor((endsAt - start) / interval + 0.05)
         local now = GetTime()
-        local due = 0 -- ticks still to land (one a moment ago may not have been seen yet)
+        local due = 0 -- ticks whose time hasn't come yet (one just due but not yet seen isn't counted: cautious)
         for k = 1, total do
-            local at = start + k * interval
-            if at > now - 0.35 then due = due + 1 end
+            if start + k * interval > now then due = due + 1 end
         end
         local left = math.max(0, math.min(total - (dot.ticksSeen or 0), due))
         return left * expectedTick(dot)
