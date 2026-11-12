@@ -404,6 +404,9 @@ check("other addons' health text on by default on Forever", DoesItDieAdvancedDB.
 
 -- v1.2.0: Russian, Chinese and Portuguese tooltips (JoeGG's locale files)
 local function parsed(desc) local t, school, d = ns.parseDot(desc, 5); return tostring(t) .. "/" .. tostring(school) .. "/" .. tostring(d) end
+check("thousands separator: 1,067 read as 1067", parsed("Banes the target with agony, causing 1,067 Shadow damage over 24 sec.  This damage is dealt slowly at first, and builds up as the Bane reaches its full duration."), "1067/32/24")
+check("thousands: 12,345,678", ns.joinThousands("12,345,678 damage"), "12345678 damage")
+check("decimal seconds untouched", ns.joinThousands("over 1.5 sec, 1,067 damage"), "over 1.5 sec, 1067 damage")
 check("Russian Corruption", parsed("Поражает цель порчей, нанося 40 ед. урона от темной магии за 12 сек."), "40/32/12")
 check("Russian Rip 5 points", parsed("Завершающий прием. 1 прием: 44 ед. урона за 12 сек. 5 приемов: 189 ед. урона за 12 сек."), "189/1/12")
 check("Chinese Corruption", parsed("使目标受到腐蚀，在12秒内造成总计40点暗影伤害。"), "40/32/12")

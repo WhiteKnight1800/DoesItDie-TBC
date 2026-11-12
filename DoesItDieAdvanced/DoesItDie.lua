@@ -335,8 +335,24 @@ end
 --   "Transfers 15 health from the target to the caster every 3 sec. Lasts 30 sec."  (Siphon Life)
 -- comboPoints is only used for finishers. (Rake/Garrote merely award a combo point, so finishers are
 -- recognised by "Finishing move", not "combo point".)
+-- Thousands separators out of tooltip numbers: "1,067 Shadow damage" was read as 67 (seen: Forever's Bane of Agony
+-- rank 5, "tooltip 5.6 a tick" instead of 88.9). Commas, dots ("1.067", German) and spaces ("1 067", French) between
+-- a digit and exactly three more digits.
+local function joinThousands(desc)
+    local previous
+    repeat
+        previous = desc
+        desc = desc:gsub("(%d)[,%.](%d%d%d)%f[^%d]", "%1%2")
+        desc = desc:gsub("(%d)\194\160(%d%d%d)%f[^%d]", "%1%2")     -- no-break space
+        desc = desc:gsub("(%d)\226\128\175(%d%d%d)%f[^%d]", "%1%2") -- narrow no-break space
+    until desc == previous
+    return desc
+end
+ns.joinThousands = joinThousands
+
 local function parseDot(desc, comboPoints)
     if type(desc) ~= "string" or isSecret(desc) then return nil end
+    desc = joinThousands(desc)
     if desc:find("Finishing move") then return parseFinisher(desc, comboPoints or 5) end
     -- Weapon enchants (rogue poisons) describe a proc DoT but aren't cast on the target. Match the enchant
     -- wording only: Lacerate's tooltip also mentions "weapon damage".
@@ -975,6 +991,7 @@ end
 -- additional 20 Fire damage over 15 sec": 11; "44 to 52": their middle). nil: another language, can't tell.
 local function directPart(desc)
     if type(desc) ~= "string" or isSecret(desc) or not desc:find("damage") then return nil end
+    desc = joinThousands(desc)
     local clauseAt
     for at in desc:gmatch("()%d+[%a ]-damage over %d") do clauseAt = at end
     if not clauseAt then return 0 end
