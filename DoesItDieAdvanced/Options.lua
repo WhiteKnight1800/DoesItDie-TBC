@@ -784,8 +784,35 @@ local function openColorPicker(r, g, b, onPick, onCancel)
     end
 end
 
+-- Every DoT the addon tracks, by class (first rank's spell ID: the name is read from the game, so Forever's renames
+-- such as Bane of Agony show, and spells this client doesn't have are left out).
+local CLASS_DOTS = {
+    WARLOCK = { 172, 980, 348, 18265, 30108, 27243, 689, 1120 },
+    PRIEST = { 589, 34914, 2944, 14914, 15407, 10797 },
+    DRUID = { 8921, 5570, 339, 1822, 1079, 9005, 33745 },
+    HUNTER = { 1978, 13795 },
+    MAGE = { 133, 11366 },
+    ROGUE = { 1943, 703 },
+    SHAMAN = { 8050 },
+    WARRIOR = { 772 },
+}
+
+local function spellNameOf(spellID)
+    local name = spellCall("GetSpellName", spellID)
+    if not name and GetSpellInfo then
+        local ok, value = pcall(GetSpellInfo, spellID)
+        name = ok and value or nil
+    end
+    return type(name) == "string" and name ~= "" and name or nil
+end
+
 local function dotColorNames()
     local d, names, seen = ns.db, {}, {}
+    local okC, _, class = pcall(UnitClass, "player")
+    for _, spellID in ipairs(okC and CLASS_DOTS[class] or {}) do
+        local name = spellNameOf(spellID)
+        if name and not seen[name] then seen[name] = true; table.insert(names, name) end
+    end
     for name in pairs(d.seenDotNames or {}) do if not seen[name] then seen[name] = true; table.insert(names, name) end end
     for name in pairs(d.dotColorOverrides or {}) do if not seen[name] then seen[name] = true; table.insert(names, name) end end
     table.sort(names)
@@ -815,7 +842,7 @@ local function createColorWindow()
     intro:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
     intro:SetWidth(COLORS_WIDTH - 32)
     intro:SetJustifyH("LEFT")
-    intro:SetText(T("Click a color to change it for that DoT. Your DoTs appear here once you've cast them."))
+    intro:SetText(T("Click a color to change it for that DoT."))
 
     local list = CreateFrame("Frame", nil, w, "BackdropTemplate")
     list:SetPoint("TOPLEFT", 10, -84)

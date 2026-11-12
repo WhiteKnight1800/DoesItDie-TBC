@@ -1,7 +1,7 @@
 # Changelog (Does It Die Advanced)
 
 ## v1.2.8
-- **Pick the color of each DoT:** `/dida` → Marker → **Color of each DoT → Pick**. Every DoT you've cast is listed; click its color to change it, **Default** to undo. Your colors are used on the target frame, nameplates and focus, and are kept.
+- **Pick the color of each DoT:** `/dida` → Marker → **Color of each DoT → Pick**. All your class's DoTs are listed (Drain Life, Bane of Agony and so on, even before you've cast them); click a color to change it, **Default** to undo. Your colors are used on the target frame, nameplates and focus, and are kept.
 - Red is no longer used for DoT colors: enemy health bars are red, so a red DoT disappeared into the bar.
 
 ## v1.2.7

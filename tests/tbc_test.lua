@@ -984,6 +984,21 @@ do -- every DoT its own color, the same each session; an unknown spell takes a f
     end)
     local first = next(db.dotColorOverrides or {})
     check("color picked in the window is saved", first ~= nil and table.concat(db.dotColorOverrides[first], ","), "0.2,0.4,0.6")
+    -- a warlock sees all their DoTs listed, cast or not
+    db.seenDotNames, db.dotColorOverrides = {}, nil
+    UnitClass = function() return "Warlock", "WARLOCK" end
+    local realGSI = GetSpellInfo
+    GetSpellInfo = function(id) if id == 348 then return "Immolate" elseif id == 980 then return "Curse of Agony" end return realGSI(id) end
+    local listed = {}
+    step("DoT colors window lists the class's DoTs", function()
+        ns.toggleColorWindow(); ns.toggleColorWindow()
+        DoesItDieAdvancedDotColors.offset = 0
+        DoesItDieAdvancedDotColors:Refresh()
+        for _, row in ipairs(DoesItDieAdvancedDotColors.rows) do if row.dotName then listed[row.dotName] = true end end
+    end)
+    check("Immolate listed before ever cast", listed["Immolate"], true)
+    check("Curse of Agony listed", listed["Curse of Agony"], true)
+    UnitClass, GetSpellInfo = nil, realGSI
     db.dotColorOverrides = nil
 end
 print(string.format("\n%d passed, %d failed", passes, failures))
