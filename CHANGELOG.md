@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.0
+- **Update notice:** if someone in your guild or group has a newer version, you're told once in chat that yours is out of date. Works between copies from 1.3.0 on. `/dida updates` turns it off.
+
 ## v1.2.9
 - **Nameplate health text stays readable:** the health numbers on nameplates (e.g. Plater's "2.4K (72.7%)") are now drawn on top of the stripes, like on the target frame. Turned off together with **Advanced → Health text above marker**.
 

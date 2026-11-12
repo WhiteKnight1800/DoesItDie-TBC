@@ -140,3 +140,4 @@ function strlower(s) return string.lower(s) end
 function strtrim(s) return (s:gsub("^%s+", ""):gsub("%s+$", "")) end
 function date() return "12:00:00" end
 unpack = unpack or table.unpack
+function GetAddOnMetadata(_, field) if field == "Version" then return "1.2.10" end end

@@ -961,6 +961,19 @@ end)
 if not okCE then failures = failures + 1; print("FAIL  Classic Era test crashed: " .. tostring(errCE)) end
 
 check("other addons' health text on by default on TBC/Classic", db.markerUnderTextAddons, true)
+do -- update notice: a newer version heard from a guild or group member
+    check("version numbers compare", ns.versionNumber("1.2.10") > ns.versionNumber("1.2.9"), true)
+    local said = {}
+    local realAdd = DEFAULT_CHAT_FRAME.AddMessage
+    DEFAULT_CHAT_FRAME.AddMessage = function(self, msg) table.insert(said, tostring(msg)) end
+    H.fire("CHAT_MSG_ADDON", "DIDAdv", "V:0.0.1", "GUILD", "Someone")
+    H.fire("CHAT_MSG_ADDON", "DIDAdv", "V:99.0.0", "GUILD", "Someone")
+    H.fire("CHAT_MSG_ADDON", "DIDAdv", "V:99.1.0", "GUILD", "Someone")
+    DEFAULT_CHAT_FRAME.AddMessage = realAdd
+    local notices = 0
+    for _, line in ipairs(said) do if line:find("outdated version") then notices = notices + 1 end end
+    check("told once that a newer version is out (not for an older one)", notices, 1)
+end
 do -- every DoT its own color, the same each session; an unknown spell takes a free one
     ns.resetDotColors()
     local function c(name) local col = ns.dotColor({ name = name, school = 32 }, "each"); return table.concat(col, ",") end

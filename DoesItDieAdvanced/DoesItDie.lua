@@ -196,6 +196,7 @@ local DEFAULTS = {
     markerOffsetY = 0,              -- moved up (+) or down (-), in pixels
     markerInsetLeft = 0,            -- left end pulled in, in pixels
     markerInsetRight = 0,           -- right end pulled in, in pixels
+    updateNotice = true,            -- tell me when a newer version is out (heard from guild and group members)
     enemyFrames = true,             -- the marker and kill icon on Enemy Frames' list too (Krelock's addon, Forever)
     plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height
     plateIcon = "skull",
@@ -2367,6 +2368,9 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
         if ns.showCopyBox then
             ns.showCopyBox("Text check: select all (Ctrl+A), copy (Ctrl+C) and paste it in a comment", table.concat(report, "\n"))
         end
+    elseif cmd == "updates" then
+        db.updateNotice = db.updateNotice == false
+        print((db.updateNotice and "you'll be told when a newer version is out." or "update notices off."))
     elseif cmd == "efcheck" then
         local ok, report = pcall(ns.enemyFramesReport)
         if not ok then report = { "efcheck failed: " .. tostring(report) } end
@@ -2419,6 +2423,71 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
             "/did pvp - show or hide the marker and kill icon on enemy players",
             "/did enemyframes - show or hide the marker and kill icon on Enemy Frames' list",
             "/did textcheck - list the text over the target's health bar and whether it's above the marker",
+            "/did updates - turn the \"outdated version\" notice on or off",
         }) do print(ns.locale.T(line)) end
     end
+end
+
+-- Update notice (like Questie's): every copy tells the guild and the group which version it is, quietly, over the
+-- addon channel. When a newer one is heard, you're told once per session that yours is out of date.
+-- /dida updates turns it off.
+do
+    local PREFIX = "DIDAdv"
+    local SEND_GAP = 60 -- seconds, per channel
+    local function versionNumber(text)
+        if type(text) ~= "string" then return nil end
+        local a, b, c = text:match("^(%d+)%.(%d+)%.?(%d*)")
+        if not a then return nil end
+        return tonumber(a) * 1000000 + tonumber(b) * 1000 + (tonumber(c) or 0)
+    end
+    local get = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+    local okV, ours = pcall(get, ADDON_NAME, "Version")
+    ours = okV and type(ours) == "string" and ours or nil
+    local ourNumber = versionNumber(ours)
+    local registered, told, sentAt = false, false, {}
+
+    local function send(channel)
+        if not registered or not ourNumber then return end
+        if db and db.updateNotice == false then return end
+        local now = GetTime()
+        if sentAt[channel] and now - sentAt[channel] < SEND_GAP then return end
+        if InCombatLockdown and InCombatLockdown() then return end -- Forever limits addon messages in combat
+        sentAt[channel] = now
+        local sendMessage = C_ChatInfo and C_ChatInfo.SendAddonMessage or SendAddonMessage
+        pcall(sendMessage, PREFIX, "V:" .. ours, channel)
+    end
+    local function announce()
+        if IsInGuild and IsInGuild() then send("GUILD") end
+        local okI, inInstance = pcall(IsInGroup, LE_PARTY_CATEGORY_INSTANCE)
+        if okI and inInstance then send("INSTANCE_CHAT")
+        elseif IsInRaid and IsInRaid() then send("RAID")
+        elseif IsInGroup and IsInGroup() then send("PARTY") end
+    end
+
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    frame:RegisterEvent("CHAT_MSG_ADDON")
+    frame:SetScript("OnEvent", function(_, event, prefix, message)
+        if event == "PLAYER_LOGIN" then
+            local register = C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix or RegisterAddonMessagePrefix
+            registered = register and pcall(register, PREFIX) or false
+            -- After the loading screen settles (guild info isn't ready right away).
+            if C_Timer then C_Timer.After(15, announce) end
+        elseif event == "GROUP_ROSTER_UPDATE" then
+            if C_Timer then C_Timer.After(3, announce) else announce() end
+        elseif event == "CHAT_MSG_ADDON" then
+            if prefix ~= PREFIX or told or not ourNumber or type(message) ~= "string" then return end
+            if issecretvalue and (issecretvalue(prefix) or issecretvalue(message)) then return end
+            if db and db.updateNotice == false then return end
+            local theirs = message:match("^V:(.+)$")
+            local theirNumber = versionNumber(theirs)
+            if theirNumber and theirNumber > ourNumber then
+                told = true
+                print("|cffff4444You have an outdated version (" .. ours .. "). Version " .. theirs
+                    .. " is out, please update!|r")
+            end
+        end
+    end)
+    ns.versionNumber = versionNumber
 end
