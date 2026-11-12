@@ -689,6 +689,33 @@ end
 -- While an overlay is shown, the health bar's text is under it, so only the overlay's text is copied (copying the
 -- name too drew "GladVenom Spit": the mob's name under the spell it was casting).
 local TEXT_RESCAN = 3
+-- Is this text on the bar (under the stripes), or beside it? Plater keeps the mob's name on its health bar frame but
+-- below the bar, where its cast bar covers it while the mob casts: a copy of the name was drawn over the cast bar
+-- ("Shadow Bolt" mixed with the name). Where positions can be read, the text's centre decides; where Forever hides
+-- them, how it's anchored does (a text hung off the bar's top or bottom edge sits outside it).
+local function onBar(region, bar)
+    local okR, left, right, top, bottom = pcall(function() return region:GetLeft(), region:GetRight(), region:GetTop(), region:GetBottom() end)
+    local okB, bl, br, bt, bb = pcall(function() return bar:GetLeft(), bar:GetRight(), bar:GetTop(), bar:GetBottom() end)
+    local readable = okR and okB
+    for _, v in ipairs({ left, right, top, bottom, bl, br, bt, bb }) do
+        if isSecret(v) or type(v) ~= "number" then readable = false break end
+    end
+    if readable then
+        local okS, scale = pcall(region.GetEffectiveScale, region)
+        local okBS, barScale = pcall(bar.GetEffectiveScale, bar)
+        scale = okS and type(scale) == "number" and not isSecret(scale) and scale or 1
+        barScale = okBS and type(barScale) == "number" and not isSecret(barScale) and barScale or 1
+        local cx, cy = (left + right) / 2 * scale, (top + bottom) / 2 * scale
+        return cx >= bl * barScale and cx <= br * barScale and cy >= bb * barScale and cy <= bt * barScale
+    end
+    local okP, point, _, relativePoint = pcall(region.GetPoint, region, 1)
+    if not okP or type(point) ~= "string" or type(relativePoint) ~= "string" or isSecret(point) or isSecret(relativePoint) then
+        return true
+    end
+    if relativePoint:find("BOTTOM") and point:find("TOP") then return false end -- hung below the bar
+    if relativePoint:find("TOP") and point:find("BOTTOM") then return false end -- stood on top of the bar
+    return true
+end
 local function effectiveAlpha(region, owner)
     local okA, alpha = pcall(region.GetAlpha, region)
     local okE, ownerAlpha = pcall(owner.GetEffectiveAlpha, owner)
@@ -751,6 +778,9 @@ local function copyText(w, root, healthBar, cell)
             end
         end
         walk(root, 0, nil)
+        if not cell then -- nameplates: only text on the bar needs to be above the stripes
+            for region, c in pairs(w.textCopies) do c.onBar = onBar(region, healthBar) end
+        end
     end
     -- Enemy Frames: is an overlay (anything in the row but the health bar) showing over the health bar?
     local overlayShown = false
@@ -781,7 +811,7 @@ local function copyText(w, root, healthBar, cell)
             end
         else
             local okV, visible = pcall(region.IsVisible, region)
-            show = okV and (isSecret(visible) or visible)
+            show = c.onBar ~= false and okV and (isSecret(visible) or visible)
         end
         c.shown = show
         if show then

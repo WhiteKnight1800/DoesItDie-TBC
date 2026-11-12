@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.2
+- Plater: the mob's name no longer gets mixed up with its cast bar ("Shadow Bolt" written over the name). Only text on the health bar itself, like the health numbers, is drawn above the stripes; the name below the bar is left alone, so the cast bar covers it as normal.
+
 ## v1.3.1
 - Enemy Frames: **fixed the marker missing from dotted mobs.** Enemy Frames reuses its rows as mobs come and go, and the addon kept drawing on the row a mob had when it was first seen, which could later be hidden or showing another mob. It now follows each mob to whichever row it's in.
 - Enemy Frames: the mob's name and health text are drawn on top of the stripes, so they stay readable. While the mob casts or is crowd controlled, the spell's name is shown on top instead (the mob's name is under the cast bar then).

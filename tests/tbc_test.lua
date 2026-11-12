@@ -356,7 +356,21 @@ do
     function lifePercent.GetText() return "2.4K (72.7%)" end
     function lifePercent.GetDrawLayer() return "OVERLAY", 0 end
     function lifePercent.IsVisible() return true end
-    function hb.GetRegions() return lifePercent end
+    function lifePercent.GetPoint() return "CENTER", hb, "CENTER", 0, 0 end
+    -- its name, also on the health bar frame but hung below the bar (Plater's cast bar covers it when casting)
+    local actorName = FakeMock("FontString", hb)
+    function actorName.GetObjectType() return "FontString" end
+    function actorName.GetText() return "Jaedenar Cultist" end
+    function actorName.GetDrawLayer() return "OVERLAY", 0 end
+    function actorName.IsVisible() return true end
+    function actorName.GetPoint() return "TOP", hb, "BOTTOM", 0, -2 end
+    function hb.GetLeft() return 0 end; function hb.GetRight() return 130 end
+    function hb.GetTop() return 14 end; function hb.GetBottom() return 0 end
+    function lifePercent.GetLeft() return 40 end; function lifePercent.GetRight() return 90 end
+    function lifePercent.GetTop() return 12 end; function lifePercent.GetBottom() return 2 end
+    function actorName.GetLeft() return 20 end; function actorName.GetRight() return 110 end
+    function actorName.GetTop() return -2 end; function actorName.GetBottom() return -12 end
+    function hb.GetRegions() return lifePercent, actorName end
     platerFrame.healthBar = hb
     FakePlate.unitFrame = platerFrame
     step("nameplate refresh with Plater on UIParent", function() for _ = 1, 15 do H.update(0.1) end end)
@@ -376,6 +390,9 @@ do
     for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == lifePercent then copy = f end end
     check("Plater's health text copied above the marker", copy and copy.text, "2.4K (72.7%)")
     check("health text copy shown", copy and copy.shown, true)
+    local nameCopy
+    for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == actorName then nameCopy = f end end
+    check("Plater's name (below the bar) not drawn over its cast bar", nameCopy == nil or nameCopy.shown == false, true)
 end
 
 -- 19c. NeatPlates: its frame is plate.extended, on a carrier outside the plate, bar at extended.bars.healthbar
