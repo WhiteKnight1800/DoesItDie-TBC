@@ -745,7 +745,7 @@ local function copyText(w, root, healthBar, cell)
                     local okW, width, height = pcall(function() return region:GetWidth(), region:GetHeight() end)
                     local square = okW and type(width) == "number" and type(height) == "number" and not isSecret(width)
                         and not isSecret(height) and width > 4 and math.abs(width - height) <= 2
-                    local iconFrame = depth >= 2 and not isStatusBar(frame)
+                    local iconFrame = false -- (copying everything on Enemy Frames' plain frames drew its cast bar lines too)
                     local okS, barTexture = pcall(function() return frame.GetStatusBarTexture and frame:GetStatusBarTexture() end)
                     if (square or iconFrame) and not (okS and barTexture == region) then
                         local okD, layer, sub = pcall(region.GetDrawLayer, region)

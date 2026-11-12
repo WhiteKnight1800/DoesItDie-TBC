@@ -206,29 +206,6 @@ check("cast bar showing: the mob's name (under it) isn't drawn over the marker",
 local efIconCopy
 for _, f in ipairs(frames) do if f.kind == "texture" and f.allPoints == efCastIcon then efIconCopy = f end end
 check("cast bar's spell icon drawn above the stripes", efIconCopy ~= nil and efIconCopy.shown, true)
--- As in Enemy Frames: the cast group is a frame holding an icon frame and the bar; the icon's size is hidden
-local efGroup = CreateFrame("Frame", nil, efCell)
-local efIconFrame = CreateFrame("Frame", nil, efGroup)
-local efGroupBar = CreateFrame("StatusBar", nil, efGroup)
-local efIcon2 = FakeMock("Texture", efIconFrame)
-function efIcon2.GetObjectType() return "Texture" end
-function efIcon2.GetWidth() return secret(16) end
-function efIcon2.GetHeight() return secret(16) end
-function efIcon2.GetDrawLayer() return "ARTWORK", 0 end
-function efIcon2.IsShown() return true end
-function efIconFrame.GetRegions() return efIcon2 end
-function efGroup.GetChildren() return efIconFrame, efGroupBar end
-function efCell.GetChildren() return efBar, efCast, efGroup end
-step("refresh with the cast group", function()
-    function UnitHealth() return 100 end
-    function UnitHealthMax() return 100 end
-    H.update(3.5); H.update(0.2)
-    UnitHealth, UnitHealthMax = realUH, realUHM
-end)
-local efIcon2Copy
-for _, f in ipairs(frames) do if f.kind == "texture" and f.allPoints == efIcon2 then efIcon2Copy = f end end
-check("icon on its own frame in the cast group (size hidden) drawn above the stripes", efIcon2Copy ~= nil and efIcon2Copy.shown, true)
-function efCell.GetChildren() return efBar, efCast end
 efCast:Hide()
 -- the row's aura icons (a frame of icons, shown once DoTs are on): not a cast bar, the name stays on top
 local efAuras = CreateFrame("Frame", nil, efCell)
