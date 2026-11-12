@@ -757,7 +757,15 @@ local function copyText(w, root, healthBar, cell)
     if cell then
         local okK, kids = pcall(function() return { cell:GetChildren() } end)
         for _, kid in ipairs(okK and kids or {}) do
-            if kid ~= healthBar and kid ~= w.marker and kid ~= w.iconWindow and kid ~= w.iconBar and frameShows(kid, cell) then
+            -- An overlay is a bar (cast bar, crowd control bar): a StatusBar, or a frame holding one. The row's aura
+            -- icons (frames of icons) aren't, and counting them hid the name as soon as your DoTs' icons appeared.
+            local isOverlay = isStatusBar(kid)
+            if not isOverlay then
+                local okP, parts = pcall(function() return { kid:GetChildren() } end)
+                for _, part in ipairs(okP and parts or {}) do if isStatusBar(part) then isOverlay = true break end end
+            end
+            if isOverlay and kid ~= healthBar and kid ~= w.marker and kid ~= w.iconWindow and kid ~= w.iconBar
+                and frameShows(kid, cell) then
                 overlayShown = true
             end
         end

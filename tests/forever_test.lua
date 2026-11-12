@@ -196,6 +196,11 @@ local efCopy
 for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == efName then efCopy = f end end
 check("cast bar showing: the mob's name (under it) isn't drawn over the marker", efCopy ~= nil and efCopy.shown, false)
 efCast:Hide()
+-- the row's aura icons (a frame of icons, shown once DoTs are on): not a cast bar, the name stays on top
+local efAuras = CreateFrame("Frame", nil, efCell)
+local efAuraIcon = CreateFrame("Frame", nil, efAuras)
+function efAuras.GetChildren() return efAuraIcon end
+function efCell.GetChildren() return efBar, efCast, efAuras end
 step("the cast ends", function()
     function UnitHealth() return 100 end
     function UnitHealthMax() return 100 end
