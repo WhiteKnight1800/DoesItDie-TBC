@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.9
+- **Nameplate health text stays readable:** the health numbers on nameplates (e.g. Plater's "2.4K (72.7%)") are now drawn on top of the stripes, like on the target frame. Turned off together with **Advanced → Health text above marker**.
+
 ## v1.2.8
 - **Pick the color of each DoT:** `/dida` → Marker → **Color of each DoT → Pick**. All your class's DoTs are listed (Drain Life, Bane of Agony and so on, even before you've cast them); click a color to change it, **Default** to undo. Your colors are used on the target frame, nameplates and focus, and are kept.
 - Red is no longer used for DoT colors: enemy health bars are red, so a red DoT disappeared into the bar.

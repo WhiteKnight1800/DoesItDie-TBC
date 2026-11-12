@@ -682,6 +682,69 @@ local function unitIsDead(unit)
     return ok and not isSecret(dead) and dead
 end
 
+-- The plate's health text ("2.4K (72.7%)" on Plater) sits on the health bar itself, so the marker covered it: it's
+-- copied above the marker (same font, color, position, following the original), as on the target frame (Advanced >
+-- Health text above marker). Only text on the health bar and its child frames, not the name or cast bar.
+local PLATE_TEXT_RESCAN = 3
+local function plateText(w, bar)
+    if not w.textHolder then
+        w.textHolder = CreateFrame("Frame", nil, w.marker)
+        w.textHolder:SetAllPoints(w.marker)
+        w.textCopies = {}
+    end
+    local okL, level = pcall(w.marker.GetFrameLevel, w.marker)
+    if okL and type(level) == "number" and not isSecret(level) then w.textHolder:SetFrameLevel(level + 4) end
+    local now = GetTime()
+    if w.textBar ~= bar or not w.textScannedAt or now - w.textScannedAt >= PLATE_TEXT_RESCAN then
+        if w.textBar ~= bar then
+            for _, copy in pairs(w.textCopies) do copy:Hide() end
+            w.textCopies, w.textBar = {}, bar
+        end
+        w.textScannedAt = now
+        local function walk(frame, depth)
+            if frame == w.marker or frame == w.iconWindow or frame == w.iconBar then return end
+            local okF, forbidden = pcall(function() return frame.IsForbidden and frame:IsForbidden() end)
+            if not okF or forbidden then return end
+            local ok, regions = pcall(function() return { frame:GetRegions() } end)
+            for _, region in ipairs(ok and regions or {}) do
+                local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
+                if okT and isText and not w.textCopies[region] then
+                    local okD, layer = pcall(region.GetDrawLayer, region)
+                    local copy = w.textHolder:CreateFontString(nil, okD and type(layer) == "string" and layer or "OVERLAY")
+                    copy:SetFontObject(GameFontHighlightSmall or GameFontNormalSmall)
+                    copy:SetAllPoints(region)
+                    w.textCopies[region] = copy
+                end
+            end
+            if depth < 3 then
+                local okK, kids = pcall(function() return { frame:GetChildren() } end)
+                for _, kid in ipairs(okK and kids or {}) do walk(kid, depth + 1) end
+            end
+        end
+        walk(bar, 0)
+    end
+    for region, copy in pairs(w.textCopies) do
+        local okV, visible = pcall(region.IsVisible, region)
+        if okV and (isSecret(visible) or visible) then
+            -- Each part on its own: on Forever any of them can be secret (passed on as is, never tested).
+            pcall(function() local font, size, flags = region:GetFont(); if isSecret(font) or font then copy:SetFont(font, size, flags) end end)
+            pcall(function() copy:SetTextColor(region:GetTextColor()) end)
+            pcall(function() copy:SetShadowColor(region:GetShadowColor()) end)
+            pcall(function() copy:SetShadowOffset(region:GetShadowOffset()) end)
+            pcall(function() copy:SetJustifyH(region:GetJustifyH()) end)
+            pcall(function() copy:SetJustifyV(region:GetJustifyV()) end)
+            pcall(function()
+                local text = region:GetText()
+                if isSecret(text) then copy:SetText(text) else copy:SetText(text or "") end
+            end)
+            copy:Show()
+        else
+            copy:Hide()
+        end
+    end
+    w.textHolder:SetShown(ns.db.markerUnderText ~= false)
+end
+
 local function updatePlate(unit, plate, db)
     local entries, total = ns.dotBreakdownForUnit(unit)
     if total <= 0 or unitIsDead(unit) then return end
@@ -710,7 +773,7 @@ local function updatePlate(unit, plate, db)
         end
     end
     if drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db) then
-        if iconOnly then w.marker:Hide() end
+        if iconOnly then w.marker:Hide() else plateText(w, healthBar) end
         if ns.shielded and ns.shielded(unit) then w.iconWindow:Hide() end -- a shield soaks damage first
     end
 end

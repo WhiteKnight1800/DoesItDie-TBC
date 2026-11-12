@@ -350,6 +350,13 @@ do
     local border = CreateFrame("Frame", nil, hb); border:SetFrameLevel(46)
     function hb.GetChildren() return border end
     function hb.GetEffectiveAlpha() return 1 end
+    -- Plater's health text, on the health bar itself
+    local lifePercent = FakeMock("FontString", hb)
+    function lifePercent.GetObjectType() return "FontString" end
+    function lifePercent.GetText() return "2.4K (72.7%)" end
+    function lifePercent.GetDrawLayer() return "OVERLAY", 0 end
+    function lifePercent.IsVisible() return true end
+    function hb.GetRegions() return lifePercent end
     platerFrame.healthBar = hb
     FakePlate.unitFrame = platerFrame
     step("nameplate refresh with Plater on UIParent", function() for _ = 1, 15 do H.update(0.1) end end)
@@ -365,6 +372,10 @@ do
     for _ = 1, 3 do H.update(0.1) end
     check("marker follows Plater's raised strata", marker and marker.strata, "DIALOG")
     check("marker back above Plater's raised bar", marker and marker.level, 69)
+    local copy
+    for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == lifePercent then copy = f end end
+    check("Plater's health text copied above the marker", copy and copy.text, "2.4K (72.7%)")
+    check("health text copy shown", copy and copy.shown, true)
 end
 
 -- 19c. NeatPlates: its frame is plate.extended, on a carrier outside the plate, bar at extended.bars.healthbar
