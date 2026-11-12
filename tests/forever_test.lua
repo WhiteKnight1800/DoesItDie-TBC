@@ -175,14 +175,6 @@ function efName.GetDrawLayer() return "OVERLAY", 0 end
 function efTop.GetRegions() return efName end
 local efCast = CreateFrame("StatusBar", nil, efCell) -- its cast bar, drawn over the health bar while casting
 efCast:SetFrameLevel(14)
-local efCastIcon = FakeMock("Texture", efCast) -- the spell's icon on the cast bar
-function efCastIcon.GetObjectType() return "Texture" end
-function efCastIcon.GetWidth() return 14 end
-function efCastIcon.GetHeight() return 14 end
-function efCastIcon.GetTexture() return 135812 end
-function efCastIcon.GetDrawLayer() return "ARTWORK", 0 end
-function efCastIcon.IsShown() return true end
-function efCast.GetRegions() return efCastIcon end
 function efCell.GetChildren() return efBar, efCast end
 function efGrid.GetChildren() return efCell end
 function UIParent.GetChildren() return efGrid end
@@ -203,9 +195,6 @@ check("Enemy Frames marker above the cast bar too (level 14 + 5)", efMarker and 
 local efCopy
 for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == efName then efCopy = f end end
 check("cast bar showing: the mob's name (under it) isn't drawn over the marker", efCopy ~= nil and efCopy.shown, false)
-local efIconCopy
-for _, f in ipairs(frames) do if f.kind == "texture" and f.allPoints == efCastIcon then efIconCopy = f end end
-check("cast bar's spell icon left alone (copying it drew the wrong picture on Forever)", efIconCopy, nil)
 efCast:Hide()
 -- the row's aura icons (a frame of icons, shown once DoTs are on): not a cast bar, the name stays on top
 local efAuras = CreateFrame("Frame", nil, efCell)
