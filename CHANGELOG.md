@@ -1,14 +1,16 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.0
+- **Tooltips with numbers over 1,000 are read right.** "1,067 Shadow damage" (Bane of Agony rank 5) was read as 67, so the marker showed a fraction of that DoT's damage and its tick size couldn't be learned.
+- Forever: **Bane of Agony's tick size is learned again.** When most of its ticks couldn't be picked out (they share Shadow with Corruption and Drain Life), the damage meter's total was put down to only a tick or two and learning was skipped ("9.36x the tooltip"). Every tick due while the mob was still taking damage now counts.
+- **Drain Life (and Drain Soul, Mind Flay) stay on the marker for the whole channel.** On Forever the addon can't see channel ticks, took that as "missed ticks" and dropped Drain Life halfway through. It now stays for as long as you channel, and its ticks are counted from the start of the channel, so the last one isn't dropped either.
+- **Stripes line up across DoTs:** with a color per DoT, each DoT's stripes started fresh at its own edge, so they didn't join up between DoTs. All segments now share one stripe pattern (target frame, nameplates, Enemy Frames).
+
 ## v1.2.9
 - **Update notice:** if someone in your guild or group has a newer version, you're told once in chat that yours is out of date (like Questie). Works between copies from this version on. `/dida updates` turns it off.
 - **Nameplate health text stays readable:** the health numbers on nameplates (e.g. Plater's "2.4K (72.7%)") are drawn on top of the stripes, like on the target frame. The mob's name is left alone, so it never gets mixed up with the cast bar. Turned off together with **Advanced → Health text above marker**.
 - Enemy Frames: **fixed the marker missing from dotted mobs.** Enemy Frames reuses its rows as mobs come and go, and the addon kept drawing on the row a mob had when it was first seen, which could later be hidden or showing another mob. It now follows each mob to whichever row it's in.
 - Enemy Frames: the mob's name and health text are drawn on top of the stripes, so they stay readable. While the mob casts or is crowd controlled, the spell's name is shown on top instead (the mob's name is under the cast bar then).
-- **Stripes line up across DoTs:** with a color per DoT, each DoT's stripes started fresh at its own edge, so they didn't join up between DoTs. All segments now share one stripe pattern (target frame, nameplates, Enemy Frames).
-- **Drain Life (and Drain Soul, Mind Flay) stay on the marker for the whole channel.** On Forever the addon can't see channel ticks, took that as "missed ticks" and dropped Drain Life halfway through. It now stays for as long as you channel, and its ticks are counted from the start of the channel, so the last one isn't dropped either.
-- Forever: **Bane of Agony's tick size is learned again.** When most of its ticks couldn't be picked out (they share Shadow with Corruption and Drain Life), the damage meter's total was put down to only a tick or two and learning was skipped ("9.36x the tooltip"). Every tick due while the mob was still taking damage now counts.
-- **Tooltips with numbers over 1,000 are read right.** "1,067 Shadow damage" (Bane of Agony rank 5) was read as 67, so the marker showed a fraction of that DoT's damage and its tick size couldn't be learned.
 - `/dida efcheck` lists the Enemy Frames rows on screen (the ones with the marker first), and every text on them.
 
 ## v1.2.8
