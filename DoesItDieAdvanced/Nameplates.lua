@@ -689,6 +689,7 @@ end
 -- While an overlay is shown, the health bar's text is under it, so only the overlay's text is copied (copying the
 -- name too drew "GladVenom Spit": the mob's name under the spell it was casting).
 local TEXT_RESCAN = 3
+local COPY_ICONS = false
 local function effectiveAlpha(region, owner)
     local okA, alpha = pcall(region.GetAlpha, region)
     local okE, ownerAlpha = pcall(owner.GetEffectiveAlpha, owner)
@@ -739,7 +740,8 @@ local function copyText(w, root, healthBar, cell)
                 local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
                 -- The spell's icon on a cast bar (square, inside the row): copied too, so the stripes don't cover it.
                 local okI, isTexture = pcall(function() return region:GetObjectType() == "Texture" end)
-                if okI and isTexture and cell and group and group ~= healthBar and not w.textCopies[region] then
+                -- Off: on Forever the icon's picture can't be copied right (it drew a sheet of other icons instead).
+                if COPY_ICONS and okI and isTexture and cell and group and group ~= healthBar and not w.textCopies[region] then
                     -- Either a square picture, or anything on a plain frame inside the overlay (Enemy Frames keeps
                     -- the icon on its own frame next to the cast bar). Not the bar itself, its fill or background.
                     local okW, width, height = pcall(function() return region:GetWidth(), region:GetHeight() end)

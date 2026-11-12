@@ -205,7 +205,7 @@ for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == efNam
 check("cast bar showing: the mob's name (under it) isn't drawn over the marker", efCopy ~= nil and efCopy.shown, false)
 local efIconCopy
 for _, f in ipairs(frames) do if f.kind == "texture" and f.allPoints == efCastIcon then efIconCopy = f end end
-check("cast bar's spell icon drawn above the stripes", efIconCopy ~= nil and efIconCopy.shown, true)
+check("cast bar's spell icon left alone (copying it drew the wrong picture on Forever)", efIconCopy, nil)
 efCast:Hide()
 -- the row's aura icons (a frame of icons, shown once DoTs are on): not a cast bar, the name stays on top
 local efAuras = CreateFrame("Frame", nil, efCell)
