@@ -1,18 +1,11 @@
 # Changelog (Does It Die Advanced)
 
-## v1.3.2
-- Plater: the mob's name no longer gets mixed up with its cast bar ("Shadow Bolt" written over the name). On Plater only its health numbers are drawn above the stripes (on other nameplates, only text on the health bar itself); the name is left alone, so the cast bar covers it as normal.
-
-## v1.3.1
+## v1.2.9
+- **Update notice:** if someone in your guild or group has a newer version, you're told once in chat that yours is out of date (like Questie). Works between copies from this version on. `/dida updates` turns it off.
+- **Nameplate health text stays readable:** the health numbers on nameplates (e.g. Plater's "2.4K (72.7%)") are drawn on top of the stripes, like on the target frame. The mob's name is left alone, so it never gets mixed up with the cast bar. Turned off together with **Advanced → Health text above marker**.
 - Enemy Frames: **fixed the marker missing from dotted mobs.** Enemy Frames reuses its rows as mobs come and go, and the addon kept drawing on the row a mob had when it was first seen, which could later be hidden or showing another mob. It now follows each mob to whichever row it's in.
 - Enemy Frames: the mob's name and health text are drawn on top of the stripes, so they stay readable. While the mob casts or is crowd controlled, the spell's name is shown on top instead (the mob's name is under the cast bar then).
-- `/dida efcheck` lists the rows on screen (the ones with the marker first), and every text on them.
-
-## v1.3.0
-- **Update notice:** if someone in your guild or group has a newer version, you're told once in chat that yours is out of date. Works between copies from 1.3.0 on. `/dida updates` turns it off.
-
-## v1.2.9
-- **Nameplate health text stays readable:** the health numbers on nameplates (e.g. Plater's "2.4K (72.7%)") are now drawn on top of the stripes, like on the target frame. Turned off together with **Advanced → Health text above marker**.
+- `/dida efcheck` lists the Enemy Frames rows on screen (the ones with the marker first), and every text on them.
 
 ## v1.2.8
 - **Pick the color of each DoT:** `/dida` → Marker → **Color of each DoT → Pick**. All your class's DoTs are listed (Drain Life, Bane of Agony and so on, even before you've cast them); click a color to change it, **Default** to undo. Your colors are used on the target frame, nameplates and focus, and are kept.
