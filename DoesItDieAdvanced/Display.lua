@@ -234,6 +234,14 @@ fillLayer:SetAllPoints()
 local fillTex = fillLayer:CreateTexture(nil, "ARTWORK")
 coverSpan(fillTex)
 
+-- Clipped to the span: effects that move across the whole health bar but should only show inside the
+-- marker (scrolling stripes, the shine sweep; also the segment dividers and the flash, above the segments). Clipping does the work Lua can't, since the span's width
+-- comes from secret health.
+local clipLayer = CreateFrame("Frame", nil, remainingBar)
+clipLayer:SetPoint("TOPLEFT", span, "TOPLEFT")
+clipLayer:SetPoint("BOTTOMRIGHT", span, "BOTTOMRIGHT")
+clipLayer:SetClipsChildren(true)
+
 -- Per-DoT segments ("DoT colors" option): the remaining damage split into one colored segment per DoT, laid
 -- end to end. Segment i runs from the end of running-total bar i-1's fill to the end of bar i's fill (bar i
 -- filled to DoT 1 + ... + DoT i), so it's exactly that DoT's share on the (secret) health scale.
@@ -246,26 +254,32 @@ for i = 1, MAX_SEGMENTS do
     bar:SetStatusBarColor(0, 0, 0, 0)
     local fillEnd = bar:GetStatusBarTexture()
 
-    local texture = fillLayer:CreateTexture(nil, "ARTWORK", nil, 1)
+    -- The segment is a clipping window; its texture covers the whole bar, so every segment's stripes start at the
+    -- same place and line up across segments (each texture tiled from its own edge didn't).
+    local clip = CreateFrame("Frame", nil, fillLayer)
+    clip:SetClipsChildren(true)
     if i == 1 then
-        texture:SetPoint("TOPLEFT", remainingBar, "TOPLEFT")
+        clip:SetPoint("TOPLEFT", remainingBar, "TOPLEFT")
     else
-        texture:SetPoint("TOPLEFT", segments[i - 1].fillEnd, "TOPRIGHT")
+        clip:SetPoint("TOPLEFT", segments[i - 1].fillEnd, "TOPRIGHT")
     end
-    texture:SetPoint("BOTTOMRIGHT", fillEnd, "BOTTOMRIGHT")
+    clip:SetPoint("BOTTOMRIGHT", fillEnd, "BOTTOMRIGHT")
+    local texture = clip:CreateTexture(nil, "ARTWORK", nil, 1)
+    texture:SetAllPoints(remainingBar)
     texture:Hide()
 
-    local divider = fillLayer:CreateTexture(nil, "OVERLAY", nil, 1)
+    -- Dividers on the layer above the segments (they're frames now).
+    local divider = clipLayer:CreateTexture(nil, "OVERLAY", nil, 1)
     divider:SetColorTexture(0, 0, 0, 0.85)
     divider:SetWidth(1)
     divider:SetPoint("TOP", fillEnd, "TOPRIGHT")
     divider:SetPoint("BOTTOM", fillEnd, "BOTTOMRIGHT")
     divider:Hide()
 
-    segments[i] = { bar = bar, fillEnd = fillEnd, texture = texture, divider = divider, target = 0, shown = 0 }
+    segments[i] = { bar = bar, fillEnd = fillEnd, texture = texture, clip = clip, divider = divider, target = 0, shown = 0 }
 end
 
-local flashTex = fillLayer:CreateTexture(nil, "OVERLAY")
+local flashTex = clipLayer:CreateTexture(nil, "OVERLAY")
 coverSpan(flashTex)
 flashTex:SetColorTexture(1, 1, 1, 1)
 flashTex:SetBlendMode("ADD")
@@ -342,14 +356,6 @@ do
     makeGlow("left")
     makeGlow("right")
 end
-
--- Clipped to the span: effects that move across the whole health bar but should only show inside the
--- marker (scrolling stripes, the shine sweep). Clipping does the work Lua can't, since the span's width
--- comes from secret health.
-local clipLayer = CreateFrame("Frame", nil, remainingBar)
-clipLayer:SetPoint("TOPLEFT", span, "TOPLEFT")
-clipLayer:SetPoint("BOTTOMRIGHT", span, "BOTTOMRIGHT")
-clipLayer:SetClipsChildren(true)
 
 local STRIPE_SCROLL_PERIOD = 8 -- px; the stripe pattern repeats every 8px horizontally (make_textures.py)
 
@@ -1146,6 +1152,10 @@ local function updateLayering(now)
     for i, frame in ipairs({ remainingBar, fillLayer, clipLayer, outlineLayer, sparkLayer }) do
         frame:SetFrameStrata(strata)
         frame:SetFrameLevel(level + i)
+    end
+    for _, segment in ipairs(segments) do -- on the fill layer's level, under the clip layer (dividers, flash)
+        segment.clip:SetFrameStrata(strata)
+        segment.clip:SetFrameLevel(level + 2)
     end
     skullWindow:SetFrameStrata(strata)
     skullWindow:SetFrameLevel(level + 7)

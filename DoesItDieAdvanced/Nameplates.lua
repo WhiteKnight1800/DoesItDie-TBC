@@ -486,6 +486,8 @@ local function layerWidgets(w, healthBar, matchStrata)
     if key == w.layerKey and okOwn and own == markerLevel then return end
     w.layerKey = key
     w.marker:SetFrameLevel(markerLevel)
+    for _, segment in ipairs(w.segments) do segment.clip:SetFrameLevel(markerLevel + 1) end
+    w.edgeLayer:SetFrameLevel(markerLevel + 2)
     w.iconWindow:SetFrameLevel(level + 20)
     w.iconBar:SetFrameLevel(level + 21)
 end
@@ -516,20 +518,28 @@ local function createWidgets(host, healthBar, pooledHost, matchStrata)
         local bar = invisibleBar(w.marker)
         bar:SetAllPoints(w.marker)
         local fillEnd = bar:GetStatusBarTexture()
-        local texture = w.marker:CreateTexture(nil, "ARTWORK", nil, 1)
+        -- The segment is a clipping window; its texture covers the whole marker, so every segment's stripes start
+        -- at the same place and line up across segments (each texture tiled from its own edge didn't).
+        local clip = CreateFrame("Frame", nil, w.marker)
+        clip:SetClipsChildren(true)
         if i == 1 then
-            texture:SetPoint("TOPLEFT", w.marker, "TOPLEFT")
+            clip:SetPoint("TOPLEFT", w.marker, "TOPLEFT")
         else
-            texture:SetPoint("TOPLEFT", w.segments[i - 1].fillEnd, "TOPRIGHT")
+            clip:SetPoint("TOPLEFT", w.segments[i - 1].fillEnd, "TOPRIGHT")
         end
-        texture:SetPoint("BOTTOMRIGHT", fillEnd, "BOTTOMRIGHT")
-        w.segments[i] = { bar = bar, fillEnd = fillEnd, texture = texture }
+        clip:SetPoint("BOTTOMRIGHT", fillEnd, "BOTTOMRIGHT")
+        local texture = clip:CreateTexture(nil, "ARTWORK", nil, 1)
+        texture:SetAllPoints(w.marker)
+        w.segments[i] = { bar = bar, fillEnd = fillEnd, texture = texture, clip = clip }
     end
 
+    -- The outline above the segments (they're frames now).
+    w.edgeLayer = CreateFrame("Frame", nil, w.marker)
+    w.edgeLayer:SetAllPoints(w.marker)
     w.edges = {}
     for _, points in ipairs({ { true, "TOPLEFT", "TOPRIGHT" }, { true, "BOTTOMLEFT", "BOTTOMRIGHT" },
         { false, "TOPLEFT", "BOTTOMLEFT" }, { false, "TOPRIGHT", "BOTTOMRIGHT" } }) do
-        local edge = w.marker:CreateTexture(nil, "OVERLAY")
+        local edge = w.edgeLayer:CreateTexture(nil, "OVERLAY")
         edge:SetPoint(points[2], w.span, points[2])
         edge:SetPoint(points[3], w.span, points[3])
         if points[1] then edge:SetHeight(OUTLINE_THICKNESS) else edge:SetWidth(OUTLINE_THICKNESS) end
