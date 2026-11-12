@@ -194,7 +194,16 @@ check("Enemy Frames marker shown", efMarker and efMarker.shown, true)
 check("Enemy Frames marker above the cast bar too (level 14 + 5)", efMarker and efMarker.level, 19)
 local efCopy
 for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == efName then efCopy = f end end
-check("no copy of the mob's name drawn over the marker", efCopy, nil)
+check("cast bar showing: the mob's name (under it) isn't drawn over the marker", efCopy ~= nil and efCopy.shown, false)
+function efCast.IsVisible() return false end
+step("the cast ends", function()
+    function UnitHealth() return 100 end
+    function UnitHealthMax() return 100 end
+    H.update(0.2); H.update(0.2)
+    UnitHealth, UnitHealthMax = realUH, realUHM
+end)
+check("no cast: the mob's name is drawn above the stripes", efCopy and efCopy.shown, true)
+check("name copy has the name", efCopy and efCopy.text, "Venom Spitter")
 -- its crowd control bar (Fear) in a higher strata than the health bar: the marker follows it up
 local efCC = CreateFrame("StatusBar", nil, efTop)
 efCC:SetFrameStrata("HIGH"); efCC:SetFrameLevel(3)

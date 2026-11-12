@@ -682,26 +682,45 @@ local function unitIsDead(unit)
     return ok and not isSecret(dead) and dead
 end
 
--- The plate's health text ("2.4K (72.7%)" on Plater) sits on the health bar itself, so the marker covered it: it's
--- copied above the marker (same font, color, position, following the original), as on the target frame (Advanced >
--- Health text above marker). Only text on the health bar and its child frames, not the name or cast bar.
-local PLATE_TEXT_RESCAN = 3
-local function plateText(w, bar)
+-- Text drawn on top of the marker, so the stripes never hide it: the plate's health text ("2.4K (72.7%)" on Plater)
+-- and Enemy Frames' mob name and health. Each copy has the original's font, color, position and visibility, and
+-- its alpha too (a text faded out by its addon stays faded out).
+-- Enemy Frames (cell given): a row is its health bar plus overlays (cast bar, crowd control bar) shown over it.
+-- While an overlay is shown, the health bar's text is under it, so only the overlay's text is copied (copying the
+-- name too drew "GladVenom Spit": the mob's name under the spell it was casting).
+local TEXT_RESCAN = 3
+local function effectiveAlpha(region, owner)
+    local okA, alpha = pcall(region.GetAlpha, region)
+    local okE, ownerAlpha = pcall(owner.GetEffectiveAlpha, owner)
+    if not okA or isSecret(alpha) or type(alpha) ~= "number" then alpha = 1 end
+    if not okE or isSecret(ownerAlpha) or type(ownerAlpha) ~= "number" then ownerAlpha = 1 end
+    return alpha * ownerAlpha
+end
+local function frameShows(frame)
+    local okV, visible = pcall(frame.IsVisible, frame)
+    if not okV then return false end
+    if isSecret(visible) then return true end
+    if not visible then return false end
+    local okE, alpha = pcall(frame.GetEffectiveAlpha, frame)
+    return not okE or isSecret(alpha) or type(alpha) ~= "number" or alpha > 0.05
+end
+local function copyText(w, root, healthBar, cell)
     if not w.textHolder then
         w.textHolder = CreateFrame("Frame", nil, w.marker)
-        w.textHolder:SetAllPoints(w.marker)
+        w.textHolder:SetAllPoints(cell or w.marker)
         w.textCopies = {}
     end
     local okL, level = pcall(w.marker.GetFrameLevel, w.marker)
     if okL and type(level) == "number" and not isSecret(level) then w.textHolder:SetFrameLevel(level + 4) end
     local now = GetTime()
-    if w.textBar ~= bar or not w.textScannedAt or now - w.textScannedAt >= PLATE_TEXT_RESCAN then
-        if w.textBar ~= bar then
-            for _, copy in pairs(w.textCopies) do copy:Hide() end
-            w.textCopies, w.textBar = {}, bar
+    if w.textRoot ~= root or not w.textScannedAt or now - w.textScannedAt >= TEXT_RESCAN then
+        if w.textRoot ~= root then
+            for _, c in pairs(w.textCopies) do c.copy:Hide() end
+            w.textCopies, w.textRoot = {}, root
         end
         w.textScannedAt = now
-        local function walk(frame, depth)
+        -- group: the row part a text belongs to (the health bar, or an overlay); nil off Enemy Frames
+        local function walk(frame, depth, group)
             if frame == w.marker or frame == w.iconWindow or frame == w.iconBar then return end
             local okF, forbidden = pcall(function() return frame.IsForbidden and frame:IsForbidden() end)
             if not okF or forbidden then return end
@@ -713,19 +732,35 @@ local function plateText(w, bar)
                     local copy = w.textHolder:CreateFontString(nil, okD and type(layer) == "string" and layer or "OVERLAY")
                     copy:SetFontObject(GameFontHighlightSmall or GameFontNormalSmall)
                     copy:SetAllPoints(region)
-                    w.textCopies[region] = copy
+                    w.textCopies[region] = { copy = copy, owner = frame, group = group }
                 end
             end
-            if depth < 3 then
+            if depth < 4 then
                 local okK, kids = pcall(function() return { frame:GetChildren() } end)
-                for _, kid in ipairs(okK and kids or {}) do walk(kid, depth + 1) end
+                for _, kid in ipairs(okK and kids or {}) do walk(kid, depth + 1, group or (cell and kid) or nil) end
             end
         end
-        walk(bar, 0)
+        walk(root, 0, nil)
     end
-    for region, copy in pairs(w.textCopies) do
+    -- Enemy Frames: is an overlay (anything in the row but the health bar) showing over the health bar?
+    local overlayShown = false
+    if cell then
+        local okK, kids = pcall(function() return { cell:GetChildren() } end)
+        for _, kid in ipairs(okK and kids or {}) do
+            if kid ~= healthBar and kid ~= w.marker and kid ~= w.iconWindow and kid ~= w.iconBar and frameShows(kid) then
+                overlayShown = true
+            end
+        end
+    end
+    for region, c in pairs(w.textCopies) do
+        local copy = c.copy
         local okV, visible = pcall(region.IsVisible, region)
-        if okV and (isSecret(visible) or visible) then
+        local show = okV and (isSecret(visible) or visible)
+        if show and cell then
+            if c.group == healthBar then show = not overlayShown
+            elseif c.group then show = frameShows(c.group) end
+        end
+        if show then
             -- Each part on its own: on Forever any of them can be secret (passed on as is, never tested).
             pcall(function() local font, size, flags = region:GetFont(); if isSecret(font) or font then copy:SetFont(font, size, flags) end end)
             pcall(function() copy:SetTextColor(region:GetTextColor()) end)
@@ -737,6 +772,7 @@ local function plateText(w, bar)
                 local text = region:GetText()
                 if isSecret(text) then copy:SetText(text) else copy:SetText(text or "") end
             end)
+            copy:SetAlpha(effectiveAlpha(region, c.owner))
             copy:Show()
         else
             copy:Hide()
@@ -744,6 +780,8 @@ local function plateText(w, bar)
     end
     w.textHolder:SetShown(ns.db.markerUnderText ~= false)
 end
+local function plateText(w, bar) copyText(w, bar, bar, nil) end
+ns.copyCellText = function(w, cell, bar) copyText(w, cell, bar, cell) end
 
 local function updatePlate(unit, plate, db)
     local entries, total = ns.dotBreakdownForUnit(unit)
@@ -961,6 +999,7 @@ local function updateEnemyFrames(db)
                         layerWidgets(w, entry.bar, true)
                     end
                     drawPlate(w, entries, total, maxHealth, ns.atLeast(health), db)
+                    if w.marker:IsShown() then copyText(w, entry.cell, entry.bar, entry.cell) end
                 end
             end
         end
