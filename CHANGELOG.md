@@ -6,6 +6,7 @@
 - Enemy Frames: **fixed the marker missing from dotted mobs.** Enemy Frames reuses its rows as mobs come and go, and the addon kept drawing on the row a mob had when it was first seen, which could later be hidden or showing another mob. It now follows each mob to whichever row it's in.
 - Enemy Frames: the mob's name and health text are drawn on top of the stripes, so they stay readable. While the mob casts or is crowd controlled, the spell's name is shown on top instead (the mob's name is under the cast bar then).
 - **Stripes line up across DoTs:** with a color per DoT, each DoT's stripes started fresh at its own edge, so they didn't join up between DoTs. All segments now share one stripe pattern (target frame, nameplates, Enemy Frames).
+- **Drain Life (and Drain Soul, Mind Flay) no longer leave the marker a tick early.** The addon expected each tick from when it saw the last one, and since ticks are seen a moment late, the last tick seemed to fall after the channel ended and was dropped. Ticks are now counted from the start of the channel.
 - `/dida efcheck` lists the Enemy Frames rows on screen (the ones with the marker first), and every text on them.
 
 ## v1.2.8

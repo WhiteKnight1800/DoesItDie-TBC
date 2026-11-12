@@ -1196,6 +1196,9 @@ do
         local endsAt = channelEndTime()
         if endsAt and endsAt > now then dot.expiresAt, dot.channelEndsAt = endsAt, endsAt end
         dot.channel = true
+        local okS, _, _, _, startMS = pcall(UnitChannelInfo or function() end, "player")
+        local start = okS and type(startMS) == "number" and not isSecret(startMS) and startMS / 1000 or nil
+        dot.channelStart = (start and math.abs(start - now) < 1) and start or now
         dotsByTarget[key] = dotsByTarget[key] or {}
         dotsByTarget[key][name] = dot
         current = { key = key, name = name, dot = dot }
@@ -1644,9 +1647,20 @@ end
 local function remainingDamage(dot)
     if dot.channelEndsAt then
         -- A channel only ticks until it ends (pushback moves that); a tick due after the end never comes.
+        -- Its ticks come every interval from the start of the channel; the last lands right at the end. Counted from
+        -- that schedule, not from when the last tick was seen: ticks are seen a moment late, and expecting the next
+        -- from then pushed the last one past the end, so Drain Life left the marker a tick early.
         local endsAt = math.min(dot.expiresAt, dot.channelEndsAt)
-        if dot.nextTickAt > endsAt + 0.1 then return 0 end
-        return (math.floor((endsAt - dot.nextTickAt) / dot.interval + 0.05) + 1) * expectedTick(dot)
+        local start, interval = dot.channelStart or dot.appliedAt, dot.interval
+        local total = math.floor((endsAt - start) / interval + 0.05)
+        local now = GetTime()
+        local due = 0 -- ticks still to land (one a moment ago may not have been seen yet)
+        for k = 1, total do
+            local at = start + k * interval
+            if at > now - 0.35 then due = due + 1 end
+        end
+        local left = math.max(0, math.min(total - (dot.ticksSeen or 0), due))
+        return left * expectedTick(dot)
     end
     if dot.nextTickAt > dot.expiresAt + dot.interval / 2 then return 0 end
     local ticksLeft = math.floor((dot.expiresAt - dot.nextTickAt) / dot.interval + 0.5) + 1

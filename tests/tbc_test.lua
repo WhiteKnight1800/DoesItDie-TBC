@@ -458,6 +458,12 @@ do
     -- Re-channel: starts from the learned size straight away
     channel(27238, 5)
     check("next Drain Life starts at the learned 5 x 150", dl(), 750)
+    -- each tick seen 0.2s late: after the 4th, the 5th (right at the end) still counts until it lands
+    wait(1.2); tick(mobs.A, 27238, 150)
+    for _ = 2, 4 do wait(1); tick(mobs.A, 27238, 150) end
+    check("ticks seen late: the last tick still counted", dl(), 150)
+    wait(1); tick(mobs.A, 27238, 150)
+    check("all 5 landed: nothing left", dl() or 0, 0)
     stop()
     -- Drain Soul (3s ticks) and Mind Flay (1s ticks)
     channel(25311, 15)
