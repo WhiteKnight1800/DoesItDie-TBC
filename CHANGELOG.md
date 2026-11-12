@@ -4,6 +4,7 @@
 - **Tooltips with numbers over 1,000 are read right.** "1,067 Shadow damage" (Bane of Agony rank 5) was read as 67, so the marker showed a fraction of that DoT's damage and its tick size couldn't be learned.
 - Forever: **Bane of Agony's tick size is learned again.** When most of its ticks couldn't be picked out (they share Shadow with Corruption and Drain Life), the damage meter's total was put down to only a tick or two and learning was skipped ("9.36x the tooltip"). Every tick due while the mob was still taking damage now counts.
 - **Drain Life (and Drain Soul, Mind Flay) stay on the marker for the whole channel.** On Forever the addon can't see channel ticks, took that as "missed ticks" and dropped Drain Life halfway through. It now stays for as long as you channel, and its ticks are counted from the start of the channel, so the last one isn't dropped either.
+- Forever: **Drain Life, Drain Soul and Mind Flay learn their real tick size** from the damage meter, like DoTs, and show in `/dida ticks`. The game says exactly when a channel starts and stops, so the ticks it got in are known even though each one is hidden.
 - **Stripes line up across DoTs:** with a color per DoT, each DoT's stripes started fresh at its own edge, so they didn't join up between DoTs. All segments now share one stripe pattern (target frame, nameplates, Enemy Frames).
 
 ## v1.2.9

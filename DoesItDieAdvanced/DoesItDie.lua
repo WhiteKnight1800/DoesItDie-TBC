@@ -1193,6 +1193,7 @@ do
 
     function channels.stop(reason)
         if not current then return false end
+        current.dot.channelStoppedAt = GetTime() -- how many ticks it got in (damage meter learning)
         local dots = dotsByTarget[current.key]
         if dots and dots[current.name] == current.dot then
             dots[current.name] = nil
@@ -1219,6 +1220,13 @@ do
         local endsAt = channelEndTime()
         if endsAt and endsAt > now then dot.expiresAt, dot.channelEndsAt = endsAt, endsAt end
         dot.channel = true
+        dot.key = key
+        -- Forever: learned from the damage meter like a DoT. The game says when the channel starts and stops, so
+        -- the ticks it got in are known exactly even though each one is hidden.
+        do
+            local t = meterTallyFor(dot)
+            if t then t.dots[#t.dots + 1] = dot end
+        end
         local okS, _, _, _, startMS = pcall(UnitChannelInfo or function() end, "player")
         local start = okS and type(startMS) == "number" and not isSecret(startMS) and startMS / 1000 or nil
         dot.channelStart = (start and math.abs(start - now) < 1) and start or now
@@ -2035,7 +2043,14 @@ local function learnFromMeter(totals, tally, untracked)
         -- picked-out ticks when the meter held 7-8: "448 is 9.36x the tooltip").
         local due, dueCount = 0, 0
         for _, dot in ipairs(t.dots) do
-            if not dot.discarded then
+            if dot.channel then
+                -- Ticks every interval from the channel's start, until it stopped (or ran out).
+                local stoppedAt = math.min(dot.channelStoppedAt or GetTime(), dot.channelEndsAt or math.huge)
+                local landed = math.floor((stoppedAt - (dot.channelStart or dot.appliedAt)) / dot.interval + 0.05)
+                landed = math.max(0, math.min(landed, dot.totalTicks))
+                due = due + landed * (dot.curseNow or 1)
+                dueCount = dueCount + landed * (dot.curseNow or 1)
+            elseif not dot.discarded then
                 local lastTick = dot.meterLastTick or 0
                 local alive = dot.key and lastHitAt[dot.key]
                 if alive and dot.appliedAt and dot.interval then
@@ -2066,7 +2081,7 @@ local function learnFromMeter(totals, tally, untracked)
         else
             for _, dot in ipairs(t.dots) do
                 -- (A cast that was missed, resisted or replaced before it landed did no damage: it doesn't count.)
-                if dot.ticksSeen == 0 and not dot.discarded then
+                if dot.ticksSeen == 0 and not dot.discarded and not dot.channel then
                     skip = "a cast showed no ticks (out of sight, or the mob died first)"
                 end
             end

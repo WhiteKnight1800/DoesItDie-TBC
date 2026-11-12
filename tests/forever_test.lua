@@ -443,8 +443,20 @@ for _ = 1, 3 do H.update(1); H.fire("UNIT_COMBAT", "target", "WOUND", "", secret
 check("3s in (ticks hidden): still on, 2 ticks left", drainLife(), 20)
 H.update(1.2)
 check("4.2s in: the last tick (at 5s) still counted", drainLife(), 10)
+H.update(0.8) -- the channel runs its 5s
 UnitChannelInfo = nil
 H.fire("UNIT_SPELLCAST_CHANNEL_STOP", "player")
+-- Drain Life learned from the damage meter: 5 ticks in, the meter says 60 (12 a tick, tooltip 10)
+C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+step("combat ends, meter says 60 for Drain Life", function()
+    H.fire("PLAYER_REGEN_ENABLED")
+    C_DamageMeter.GetCombatSessionSourceFromType = function()
+        return { combatSpells = { { spellID = 689, totalAmount = 60 } } }
+    end
+    runTimers(); runTimers()
+end)
+C_Timer.After = realAfter
+check("Drain Life tick learned from the damage meter: 12", DoesItDieAdvancedDB.ticks[689], 12)
 
 if os.getenv("SHOWLOG") then for _, l in ipairs(db.log) do print("LOG: " .. l) end end
 print(string.format("\n%d passed, %d failed", passes, failures))
