@@ -816,8 +816,12 @@ end
 -- A hit on a mob: the pending casts on it landed (a later avoid belongs to something else, except an IMMUNE for
 -- a DoT's own part). For a spell DoT only a hit in its school says so (Immolate's direct damage); a melee hit is
 -- someone else's.
+-- When each mob last took damage (Forever): it was alive then. The damage meter learning counts a DoT's ticks up to
+-- that moment, whether or not each tick was picked out.
+local lastHitAt = {}
 local function onHit(key, school)
     local now = GetTime()
+    lastHitAt[key] = now
     local prior = lastOutcome
     lastOutcome = { key = key, avoided = false, at = now }
     if prior and prior.key == key and prior.action == "IMMUNE" and now - prior.at <= OUTCOME_LOOKBACK then
@@ -1067,8 +1071,10 @@ local function onPlayerCast(spellID, castGUID, keyOverride)
     if previous and previous.doubtful and previous.ticksSeen == 0 and previous.missed >= 1 then
         previous.discarded = true
     end
+    if previous then previous.replacedAt = now end
     local dot = newDot(spellID, tickKey, name, total, school, duration, statedInterval, now)
     dot.name = name
+    dot.key = key
     do
         local t = meterTallyFor(dot)
         if t then
@@ -2005,6 +2011,34 @@ local function learnFromMeter(totals, tally, untracked)
     local perSpell = {}
     for _, t in pairs(tally) do perSpell[t.spellID] = (perSpell[t.spellID] or 0) + 1 end
     for key, t in pairs(tally) do
+        -- A tick the addon didn't pick out still went into the meter's total: dividing by too few ticks made
+        -- the size too big (seen: Corruption learned 132, real ticks 112). Every tick up to the last one seen
+        -- landed (the mob was alive then), so those count even when one was missed.
+        -- Also every tick due while the mob was still taking damage (seen: Bane of Agony learned from 1-2
+        -- picked-out ticks when the meter held 7-8: "448 is 9.36x the tooltip").
+        local due, dueCount = 0, 0
+        for _, dot in ipairs(t.dots) do
+            if not dot.discarded then
+                local lastTick = dot.meterLastTick or 0
+                local alive = dot.key and lastHitAt[dot.key]
+                if alive and dot.appliedAt and dot.interval then
+                    local untilAt = math.min(alive + 0.5, dot.replacedAt or math.huge, dot.expiresAt + 0.5)
+                    local first = dot.firstTickAt or (dot.appliedAt + dot.interval)
+                    if untilAt >= first then
+                        lastTick = math.max(lastTick, math.floor((untilAt - first) / dot.interval) + 1)
+                    end
+                end
+                for i = 1, math.min(lastTick, dot.totalTicks) do
+                    due = due + tickShape(dot, i) * (dot.curseNow or 1)
+                    dueCount = dueCount + (dot.curseNow or 1)
+                end
+            end
+        end
+        local count = t.ticks
+        if due > t.factors then
+            trace(string.format("LEARN %s: %d tick(s) picked out, %.1f were due: using the due ticks", t.name, t.ticks, due))
+            t.factors, count = due, dueCount
+        end
         local skip
         if t.factors < LEARN_MIN_TICKS then skip = t.ticks > 0 and string.format("only %d tick(s) counted", t.ticks) or ""
         elseif t.unclear then skip = "its upfront hit can't be told apart in this language"
@@ -2023,21 +2057,6 @@ local function learnFromMeter(totals, tally, untracked)
         if skip then
             if skip ~= "" then trace(string.format("LEARN %s skipped: %s", t.name, skip)) end
         else
-            -- A tick the addon didn't pick out still went into the meter's total: dividing by too few ticks made
-            -- the size too big (seen: Corruption learned 132, real ticks 112). Every tick up to the last one seen
-            -- landed (the mob was alive then), so those count even when one was missed.
-            local due, dueCount = 0, 0
-            for _, dot in ipairs(t.dots) do
-                for i = 1, math.min(dot.meterLastTick or 0, dot.totalTicks) do
-                    due = due + tickShape(dot, i) * (dot.curseNow or 1)
-                    dueCount = dueCount + (dot.curseNow or 1)
-                end
-            end
-            local count = t.ticks
-            if due > t.factors then
-                trace(string.format("LEARN %s: %d tick(s) picked out, %.1f were due: using the due ticks", t.name, t.ticks, due))
-                t.factors, count = due, dueCount
-            end
             local total = totals[t.spellID]
             local ratio = total / (t.direct + t.descTick * t.factors)
             -- Agony: only the tooltip's base ramps up, the spell power bonus is the same on every tick (see
@@ -2047,7 +2066,8 @@ local function learnFromMeter(totals, tally, untracked)
                 ratio = (t.descTick + (total - t.direct - t.descTick * t.factors) / count) / t.descTick
             end
             if ratio < LEARN_RATIO_MIN or ratio > LEARN_RATIO_MAX then
-                trace(string.format("LEARN %s skipped: damage meter %d is %.2fx the tooltip", t.name, total, ratio))
+                trace(string.format("LEARN %s skipped: damage meter %d is %.2fx the tooltip (%d tick(s) picked out, %.1f due, tooltip %.1f a tick)",
+                    t.name, total, ratio, t.ticks, t.factors, t.descTick))
             else
                 local crit = critShare(t.school)
                 local tick = ratio * t.descTick / (1 + crit * 0.5)

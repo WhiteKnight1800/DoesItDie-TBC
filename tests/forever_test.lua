@@ -336,6 +336,30 @@ step("combat ends, meter says 200.8", function()
 end)
 C_Timer.After = realAfter
 check("Bane of Agony learns its average (60.4 + 20), not the early ramp scaled up", DoesItDieAdvancedDB.ticks[1014], 80.4)
+-- Bane of Agony's ticks mostly not picked out (Forever matched them to something else), the mob kept taking damage:
+-- every tick due while it was alive counts, so the meter's total isn't put down to 1-2 ticks
+DoesItDieAdvancedDB.ticks[1014], DoesItDieAdvancedDB.tickWeights[1014] = nil, nil
+targetGuid = "Creature-0-0000-0-0000-9999-0000AB0069"; H.fire("PLAYER_TARGET_CHANGED")
+combat = true
+step("Bane of Agony, only 2 of its 6 ticks picked out", function()
+    cast(1014)
+    for i = 1, 6 do
+        H.update(2)
+        if i <= 2 then H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(50), 32)
+        else H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(7), 1) end -- other damage: the mob's alive
+    end
+end)
+combat = false
+C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+step("combat ends, meter says 6 ticks worth (4 x 50.2 + 2 x 80.4 = 361.6)", function()
+    H.fire("PLAYER_REGEN_ENABLED")
+    C_DamageMeter.GetCombatSessionSourceFromType = function()
+        return { combatSpells = { { spellID = 1014, totalAmount = 361.6 } } }
+    end
+    runTimers(); runTimers()
+end)
+C_Timer.After = realAfter
+check("ticks not picked out still counted: average 80.4", DoesItDieAdvancedDB.ticks[1014], 80.4)
 -- The pet's melee miss right after a cast makes it doubtful; it really missed (no first tick), the recast landed:
 -- the miss doesn't stop learning (Rost4Love's log: "LEARN skipped: a cast showed no ticks")
 targetGuid = "Creature-0-0000-0-0000-9999-0000AB0049"; H.fire("PLAYER_TARGET_CHANGED")
