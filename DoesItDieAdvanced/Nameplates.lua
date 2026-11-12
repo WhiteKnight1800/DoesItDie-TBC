@@ -779,7 +779,13 @@ local function copyText(w, root, healthBar, cell)
         end
         walk(root, 0, nil)
         if not cell then -- nameplates: only text on the bar needs to be above the stripes
-            for region, c in pairs(w.textCopies) do c.onBar = onBar(region, healthBar) end
+            -- Plater names its health text: only that one (its name, hung below the bar where the cast bar goes,
+            -- slipped through the position check on Forever and was drawn over "Fireball").
+            local okL, platerText = pcall(rawget, healthBar, "lifePercent")
+            platerText = okL and type(platerText) == "table" and platerText or nil
+            for region, c in pairs(w.textCopies) do
+                if platerText then c.onBar = region == platerText else c.onBar = onBar(region, healthBar) end
+            end
         end
     end
     -- Enemy Frames: is an overlay (anything in the row but the health bar) showing over the health bar?

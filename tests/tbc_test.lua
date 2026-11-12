@@ -371,6 +371,10 @@ do
     function actorName.GetLeft() return 20 end; function actorName.GetRight() return 110 end
     function actorName.GetTop() return -2 end; function actorName.GetBottom() return -12 end
     function hb.GetRegions() return lifePercent, actorName end
+    hb.lifePercent = lifePercent
+    -- as on Forever: the name's position gives nothing away (centred on the bar's frame)
+    function actorName.GetPoint() return "CENTER", hb, "CENTER", 0, -14 end
+    function actorName.GetTop() return 12 end; function actorName.GetBottom() return 2 end
     platerFrame.healthBar = hb
     FakePlate.unitFrame = platerFrame
     step("nameplate refresh with Plater on UIParent", function() for _ = 1, 15 do H.update(0.1) end end)
