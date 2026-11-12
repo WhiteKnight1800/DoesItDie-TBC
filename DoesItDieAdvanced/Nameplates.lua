@@ -696,13 +696,23 @@ local function effectiveAlpha(region, owner)
     if not okE or isSecret(ownerAlpha) or type(ownerAlpha) ~= "number" then ownerAlpha = 1 end
     return alpha * ownerAlpha
 end
-local function frameShows(frame)
-    local okV, visible = pcall(frame.IsVisible, frame)
-    if not okV then return false end
-    if isSecret(visible) then return true end
-    if not visible then return false end
-    local okE, alpha = pcall(frame.GetEffectiveAlpha, frame)
-    return not okE or isSecret(alpha) or type(alpha) ~= "number" or alpha > 0.05
+-- Shown, itself and every parent up to (not including) `stop`. Not IsVisible: Enemy Frames' row frame itself can
+-- say it's hidden while its bars are on screen, which made every text look hidden.
+local function shownUpTo(frame, stop)
+    local depth = 0
+    while frame and frame ~= stop and frame ~= UIParent and depth < 12 do
+        local okS, shown = pcall(frame.IsShown, frame)
+        if okS and not isSecret(shown) and not shown then return false end
+        local okP, parent = pcall(frame.GetParent, frame)
+        frame = okP and parent or nil
+        depth = depth + 1
+    end
+    return true
+end
+local function frameShows(frame, stop)
+    if not shownUpTo(frame, stop) then return false end
+    local okA, alpha = pcall(frame.GetAlpha, frame)
+    return not okA or isSecret(alpha) or type(alpha) ~= "number" or alpha > 0.05
 end
 local function copyText(w, root, healthBar, cell)
     if not w.textHolder then
@@ -747,19 +757,25 @@ local function copyText(w, root, healthBar, cell)
     if cell then
         local okK, kids = pcall(function() return { cell:GetChildren() } end)
         for _, kid in ipairs(okK and kids or {}) do
-            if kid ~= healthBar and kid ~= w.marker and kid ~= w.iconWindow and kid ~= w.iconBar and frameShows(kid) then
+            if kid ~= healthBar and kid ~= w.marker and kid ~= w.iconWindow and kid ~= w.iconBar and frameShows(kid, cell) then
                 overlayShown = true
             end
         end
     end
     for region, c in pairs(w.textCopies) do
         local copy = c.copy
-        local okV, visible = pcall(region.IsVisible, region)
-        local show = okV and (isSecret(visible) or visible)
-        if show and cell then
-            if c.group == healthBar then show = not overlayShown
-            elseif c.group then show = frameShows(c.group) end
+        local show
+        if cell then
+            show = shownUpTo(region, cell)
+            if show then
+                if c.group == healthBar then show = not overlayShown
+                elseif c.group then show = frameShows(c.group, cell) end
+            end
+        else
+            local okV, visible = pcall(region.IsVisible, region)
+            show = okV and (isSecret(visible) or visible)
         end
+        c.shown = show
         if show then
             -- Each part on its own: on Forever any of them can be secret (passed on as is, never tested).
             pcall(function() local font, size, flags = region:GetFont(); if isSecret(font) or font then copy:SetFont(font, size, flags) end end)
@@ -962,6 +978,19 @@ function ns.enemyFramesReport()
             elseif w and (frame == w.iconWindow or frame == w.iconBar) then tag = "  <- our icon"
             elseif frame == entry.bar then tag = "  <- health bar" end
             if depth > 0 then table.insert(report, string.rep("  ", depth) .. describe(frame) .. tag) end
+            local okR, regions = pcall(function() return { frame:GetRegions() } end)
+            for _, region in ipairs(okR and regions or {}) do
+                local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
+                if okT and isText then
+                    local okX, text = pcall(region.GetText, region)
+                    text = (not okX and "?") or (isSecret(text) and "secret") or tostring(text)
+                    local c = w and w.textCopies and w.textCopies[region]
+                    table.insert(report, string.format("%s  text \"%s\" shown=%s alpha=%s: %s", string.rep("  ", depth), text,
+                        (function() local ok, v = pcall(region.IsShown, region); return ok and (isSecret(v) and "secret" or tostring(v)) or "?" end)(),
+                        (function() local ok, v = pcall(region.GetAlpha, region); return ok and (isSecret(v) and "secret" or tostring(v)) or "?" end)(),
+                        not c and "no copy" or (c.shown and "copied above the stripes" or "copy hidden")))
+                end
+            end
             if depth < 8 then
                 local ok, kids = pcall(function() return { frame:GetChildren() } end)
                 if ok then for _, kid in ipairs(kids) do walk(kid, depth + 1) end end

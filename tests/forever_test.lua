@@ -195,7 +195,7 @@ check("Enemy Frames marker above the cast bar too (level 14 + 5)", efMarker and 
 local efCopy
 for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == efName then efCopy = f end end
 check("cast bar showing: the mob's name (under it) isn't drawn over the marker", efCopy ~= nil and efCopy.shown, false)
-function efCast.IsVisible() return false end
+efCast:Hide()
 step("the cast ends", function()
     function UnitHealth() return 100 end
     function UnitHealthMax() return 100 end
