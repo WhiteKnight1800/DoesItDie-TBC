@@ -962,6 +962,29 @@ do -- every DoT its own color, the same each session; an unknown spell takes a f
     for _, v in ipairs(all) do if seen[v] then clash = true end seen[v] = true end
     check("no two DoTs share a color", clash, false)
     check("plates default to a color per DoT", db.plateDotColors, "each")
+    -- no red (enemy health bars are red), and a color picked for a DoT wins, in every mode but one color
+    ns.resetDotColors()
+    local red = false
+    for i = 1, 12 do local col = ns.dotColor({ name = "DoT " .. i }, "each"); if col[1] > 0.9 and col[2] < 0.4 and col[3] < 0.4 then red = true end end
+    check("no DoT is red", red, false)
+    db.dotColorOverrides = { ["Corruption"] = { 1, 1, 0 } }
+    check("picked color used", c("Corruption"), "1,1,0")
+    check("picked color used with school colors too", table.concat(ns.dotColor({ name = "Corruption", school = 32 }, "school"), ","), "1,1,0")
+    check("DoTs listed for the colors window", db.seenDotNames["Bane of Agony"], true)
+    db.dotColorOverrides = nil
+    step("DoT colors window opens, lists DoTs, and a pick is saved", function()
+        ns.toggleColorWindow()
+        local w = DoesItDieAdvancedDotColors
+        assert(w and w.rows[1].dotName, "no rows")
+        -- a picker that answers at once
+        ColorPickerFrame = { SetupColorPickerAndShow = function(self, info) self.r, self.g, self.b = 0.2, 0.4, 0.6; info.swatchFunc() end,
+            GetColorRGB = function(self) return self.r, self.g, self.b end }
+        w.rows[1].swatch:GetScript("OnClick")()
+        ns.toggleColorWindow()
+    end)
+    local first = next(db.dotColorOverrides or {})
+    check("color picked in the window is saved", first ~= nil and table.concat(db.dotColorOverrides[first], ","), "0.2,0.4,0.6")
+    db.dotColorOverrides = nil
 end
 print(string.format("\n%d passed, %d failed", passes, failures))
 if failures > 0 then

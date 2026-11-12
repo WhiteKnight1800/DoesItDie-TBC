@@ -96,8 +96,9 @@ local SCHOOL_COLORS = {
 -- "Different color per DoT": common DoTs always get the same color (Corruption purple, Agony green, Immolate
 -- orange...), so you learn them. Any other spell takes the first palette color no DoT is using yet this session,
 -- and keeps it, so colors don't shuffle when DoTs are recast or expire, and no two DoTs share one.
+-- No red: enemy health bars are red, and a red DoT disappears into them.
 local DOT_PALETTE = {
-    { 0.95, 0.3, 0.3 },  -- 1 red
+    { 1, 0.3, 1 },       -- 1 magenta
     { 0.3, 0.75, 1 },    -- 2 blue
     { 1, 0.85, 0.2 },    -- 3 yellow
     { 0.45, 1, 0.45 },   -- 4 green
@@ -122,6 +123,13 @@ function ns.resetDotColors() paletteIndexByName, paletteTaken = {}, {} end -- te
 
 -- mode: "school" or "each"; defaults to the target marker's setting (nameplates pass their own).
 local function dotColor(entry, mode)
+    -- Remembered so the DoT colors window (Marker tab) can list every DoT you use; a color picked there wins.
+    if entry.name then
+        db.seenDotNames = db.seenDotNames or {}
+        db.seenDotNames[entry.name] = true
+        local picked = db.dotColorOverrides and db.dotColorOverrides[entry.name]
+        if type(picked) == "table" and picked[1] then return picked end
+    end
     if (mode or db.dotColors) == "school" then
         return SCHOOL_COLORS[entry.school] or COLOR_BY_ID.white
     end

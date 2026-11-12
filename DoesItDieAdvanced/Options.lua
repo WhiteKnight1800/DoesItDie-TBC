@@ -753,6 +753,183 @@ local function createTickViewer()
     return viewer
 end
 
+---------------------------------------------------------------------------
+-- DoT colors window (Marker tab > Pick): every DoT you've used, each with a color square to click. A picked color
+-- is used for that DoT on the target frame, nameplates and focus (unless set to one color), and is kept.
+---------------------------------------------------------------------------
+
+local COLORS_ROW_HEIGHT, COLORS_VISIBLE_ROWS, COLORS_WIDTH = 30, 10, 340
+local colorWindow
+
+local function openColorPicker(r, g, b, onPick, onCancel)
+    if not ColorPickerFrame then return end
+    local function picked()
+        local nr, ng, nb = ColorPickerFrame:GetColorRGB()
+        onPick(nr, ng, nb)
+    end
+    local function cancelled(previous)
+        if type(previous) == "table" then onPick(previous.r or previous[1], previous.g or previous[2], previous.b or previous[3])
+        else onCancel() end
+    end
+    if ColorPickerFrame.SetupColorPickerAndShow then
+        ColorPickerFrame:SetupColorPickerAndShow({ r = r, g = g, b = b, hasOpacity = false,
+            swatchFunc = picked, cancelFunc = cancelled })
+    else
+        ColorPickerFrame.hasOpacity = false
+        ColorPickerFrame.previousValues = { r = r, g = g, b = b }
+        ColorPickerFrame.func, ColorPickerFrame.cancelFunc = picked, cancelled
+        ColorPickerFrame:SetColorRGB(r, g, b)
+        ColorPickerFrame:Hide()
+        ColorPickerFrame:Show()
+    end
+end
+
+local function dotColorNames()
+    local d, names, seen = ns.db, {}, {}
+    for name in pairs(d.seenDotNames or {}) do if not seen[name] then seen[name] = true; table.insert(names, name) end end
+    for name in pairs(d.dotColorOverrides or {}) do if not seen[name] then seen[name] = true; table.insert(names, name) end end
+    table.sort(names)
+    return names
+end
+
+local function createColorWindow()
+    local w = CreateFrame("Frame", "DoesItDieAdvancedDotColors", UIParent, "BackdropTemplate")
+    w:Hide()
+    w:SetSize(COLORS_WIDTH, 96 + COLORS_VISIBLE_ROWS * COLORS_ROW_HEIGHT + 44)
+    w:SetFrameStrata("DIALOG")
+    w:SetToplevel(true)
+    w:SetClampedToScreen(true)
+    w:EnableMouse(true)
+    w:SetMovable(true)
+    w:RegisterForDrag("LeftButton")
+    w:SetScript("OnDragStart", w.StartMoving)
+    w:SetScript("OnDragStop", w.StopMovingOrSizing)
+    setBackdrop(w, 0.06, 0.97)
+    table.insert(UISpecialFrames, "DoesItDieAdvancedDotColors")
+    local title = w:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText(T("DoT colors"))
+    local close = CreateFrame("Button", nil, w, "UIPanelCloseButton")
+    close:SetPoint("TOPRIGHT", -6, -10)
+    local intro = w:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    intro:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+    intro:SetWidth(COLORS_WIDTH - 32)
+    intro:SetJustifyH("LEFT")
+    intro:SetText(T("Click a color to change it for that DoT. Your DoTs appear here once you've cast them."))
+
+    local list = CreateFrame("Frame", nil, w, "BackdropTemplate")
+    list:SetPoint("TOPLEFT", 10, -84)
+    list:SetPoint("TOPRIGHT", -10, -84)
+    list:SetHeight(COLORS_VISIBLE_ROWS * COLORS_ROW_HEIGHT + 2)
+    setBackdrop(list, 0.09)
+    list:EnableMouseWheel(true)
+    local empty = list:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+    empty:SetPoint("CENTER")
+    empty:SetWidth(COLORS_WIDTH - 60)
+    empty:SetText(T("No DoTs yet: cast one on a mob and it shows up here."))
+
+    w.rows = {}
+    for i = 1, COLORS_VISIBLE_ROWS do
+        local row = CreateFrame("Frame", nil, list)
+        row:SetHeight(COLORS_ROW_HEIGHT)
+        row:SetPoint("TOPLEFT", list, "TOPLEFT", 1, -1 - (i - 1) * COLORS_ROW_HEIGHT)
+        row:SetPoint("RIGHT", list, "RIGHT", -1, 0)
+        local stripe = row:CreateTexture(nil, "BACKGROUND")
+        stripe:SetAllPoints()
+        stripe:SetColorTexture(1, 1, 1, i % 2 == 0 and 0.035 or 0)
+        row.swatch = CreateFrame("Button", nil, row, "BackdropTemplate")
+        row.swatch:SetSize(40, 18)
+        row.swatch:SetPoint("LEFT", 10, 0)
+        setBackdrop(row.swatch, 0.2, 1)
+        row.swatch.fill = row.swatch:CreateTexture(nil, "ARTWORK")
+        row.swatch.fill:SetPoint("TOPLEFT", 2, -2)
+        row.swatch.fill:SetPoint("BOTTOMRIGHT", -2, 2)
+        row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        row.name:SetPoint("LEFT", row.swatch, "RIGHT", 10, 0)
+        row.name:SetWidth(COLORS_WIDTH - 150)
+        row.name:SetJustifyH("LEFT")
+        row.name:SetWordWrap(false)
+        row.reset = CreateFrame("Button", nil, row)
+        row.reset:SetSize(54, 20)
+        row.reset:SetPoint("RIGHT", -8, 0)
+        row.reset.text = row.reset:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        row.reset.text:SetPoint("CENTER")
+        row.reset.text:SetText(T("Default"))
+        local resetHighlight = row.reset:CreateTexture(nil, "HIGHLIGHT")
+        resetHighlight:SetAllPoints()
+        resetHighlight:SetColorTexture(1, 1, 1, 0.1)
+        row.swatch:SetScript("OnClick", function()
+            local name = row.dotName
+            if not name then return end
+            local c = ns.dotColor({ name = name }, "each")
+            local before = ns.db.dotColorOverrides and ns.db.dotColorOverrides[name]
+            openColorPicker(c[1], c[2], c[3], function(r, g, b)
+                ns.db.dotColorOverrides = ns.db.dotColorOverrides or {}
+                ns.db.dotColorOverrides[name] = { r, g, b }
+                w:Refresh()
+                if ns.refresh then ns.refresh() end
+            end, function()
+                ns.db.dotColorOverrides = ns.db.dotColorOverrides or {}
+                ns.db.dotColorOverrides[name] = before
+                w:Refresh()
+                if ns.refresh then ns.refresh() end
+            end)
+        end)
+        row.reset:SetScript("OnClick", function()
+            if row.dotName and ns.db.dotColorOverrides then ns.db.dotColorOverrides[row.dotName] = nil end
+            w:Refresh()
+            if ns.refresh then ns.refresh() end
+        end)
+        w.rows[i] = row
+    end
+
+    local resetAll = pushButton(w, "All default", 110, function()
+        ns.db.dotColorOverrides = {}
+        w:Refresh()
+        if ns.refresh then ns.refresh() end
+    end)
+    resetAll:SetPoint("BOTTOMRIGHT", -12, 12)
+
+    w.offset = 0
+    function w:Refresh()
+        local names = dotColorNames()
+        local maxOffset = math.max(0, #names - COLORS_VISIBLE_ROWS)
+        self.offset = math.max(0, math.min(self.offset, maxOffset))
+        for i, row in ipairs(self.rows) do
+            local name = names[self.offset + i]
+            row.dotName = name
+            if name then
+                local c = ns.dotColor({ name = name }, "each")
+                row.swatch.fill:SetColorTexture(c[1], c[2], c[3], 1)
+                row.name:SetText(name)
+                local picked = ns.db.dotColorOverrides and ns.db.dotColorOverrides[name]
+                row.reset:SetShown(picked ~= nil)
+                row:Show()
+            else
+                row:Hide()
+            end
+        end
+        empty:SetShown(#names == 0)
+    end
+    list:SetScript("OnMouseWheel", function(_, delta) w.offset = w.offset - delta; w:Refresh() end)
+    w:SetScript("OnShow", function(self) self:Refresh() end)
+    return w
+end
+
+local function toggleColorWindow()
+    if not ns.db then return end
+    if not colorWindow then colorWindow = createColorWindow() end
+    if colorWindow:IsShown() then return colorWindow:Hide() end
+    colorWindow:ClearAllPoints()
+    if window and window:IsShown() then
+        colorWindow:SetPoint("LEFT", window, "RIGHT", 8, 0)
+    else
+        colorWindow:SetPoint("CENTER")
+    end
+    colorWindow:Show()
+end
+ns.toggleColorWindow = toggleColorWindow
+
 local function toggleTickViewer()
     if not ns.db then return end
     if not tickViewer then tickViewer = createTickViewer() end
@@ -875,6 +1052,9 @@ local function buildTabs()
         .. "deal on the target's health bar. If the health ends inside it, the target dies." })
     marker:choice("dotColors", "DoT colors", lists.dotColors, { tooltip = "One color, or one segment per DoT "
         .. "colored by spell school or with a different color each." })
+    marker:action("Color of each DoT", "Pick", function() toggleColorWindow() end, { enabledIf = perDot,
+        tooltip = "Choose the color of each of your DoTs. Used on the target frame, nameplates and focus "
+        .. "(unless DoT colors is set to one color)." })
     marker:choice("fillTexture", "Fill style", lists.fills)
     marker:choice("fillColor", "Fill color", lists.colors, { enabledIf = singleColor,
         tooltip = "Used when DoT colors is set to one color." })

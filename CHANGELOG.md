@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.2.8
+- **Pick the color of each DoT:** `/dida` → Marker → **Color of each DoT → Pick**. Every DoT you've cast is listed; click its color to change it, **Default** to undo. Your colors are used on the target frame, nameplates and focus, and are kept.
+- Red is no longer used for DoT colors: enemy health bars are red, so a red DoT disappeared into the bar.
+
 ## v1.2.7
 - Forever: health text of unit frame addons like EllesmereUI ("603 | 87.3%") is drawn above the marker. The game hides where that text sits, so the addon couldn't tell it was over the health bar; any text that's part of your target frame is now copied above the marker.
 - `/dida textcheck` now lists every text in your target frame, whether the game hides its position, and parts of the frame the game locks.
