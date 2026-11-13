@@ -926,26 +926,35 @@ do
             if okS and okL and not isSecret(fs) and not isSecret(fl) then
                 local fr = STRATA_RANK[fs] or 0
                 if (fr < rank or (fr == rank and fl <= top)) and truthy(frame, "IsVisible") then
-                    local scale = frame:GetEffectiveScale()
-                    for _, region in ipairs({ frame:GetRegions() }) do
-                        if region:GetObjectType() == "FontString" and truthy(region, "IsShown") then
-                            local inside = centreInside(region, scale, l, r, t, b)
-                            if inside or (inTree and inside == nil) then
-                                mirror(region, frame)
-                                knownOwners[frame] = true
+                    -- Each frame and each text on its own pcall: one that errors (a secret scale or position on
+                    -- Forever) stopped the whole search, so EllesmereUI's target text, searched after its player
+                    -- frame, was never reached ("43%" listed by /dida textcheck but NOT copied).
+                    local okSc, scale = pcall(frame.GetEffectiveScale, frame)
+                    if not okSc or isSecret(scale) or type(scale) ~= "number" then scale = nil end
+                    local okRg, regions = pcall(function() return { frame:GetRegions() } end)
+                    for _, region in ipairs(okRg and regions or {}) do
+                        pcall(function()
+                            if region:GetObjectType() == "FontString" and truthy(region, "IsShown") then
+                                local inside = nil
+                                if scale then inside = centreInside(region, scale, l, r, t, b) end
+                                if inside or (inTree and inside == nil) then
+                                    mirror(region, frame)
+                                    knownOwners[frame] = true
+                                end
                             end
-                        end
+                        end)
                     end
                 end
             end
             if depth < 6 then
-                for _, child in ipairs({ frame:GetChildren() }) do consider(child, depth + 1, inTree) end
+                local okK, kids = pcall(function() return { frame:GetChildren() } end)
+                for _, child in ipairs(okK and kids or {}) do consider(child, depth + 1, inTree) end
             end
         end
         consider(bar, 0, true)
+        local okPa, parent = pcall(bar.GetParent, bar)
+        if okPa and parent and parent ~= UIParent then consider(parent, 1, true) end
         if root and root ~= UIParent then consider(root, 0, true) end
-        local parent = bar:GetParent()
-        if parent and parent ~= UIParent then consider(parent, 1, true) end
         for owner in pairs(knownOwners) do consider(owner, 6) end
         if l and EnumerateFrames then
             local now = GetTime()

@@ -106,7 +106,11 @@ function otherText.GetText() return "603 | 87.3%" end
 function otherText.GetDrawLayer() return "OVERLAY", 0 end
 function otherText.IsShown() return true end
 function textFrame.GetRegions() return otherText end
-function hbar.GetChildren() return textFrame end
+-- a frame searched first that errors when read (a secret scale on Forever): the search goes on past it
+local brokenFrame = CreateFrame("Frame", nil, hbar)
+function brokenFrame.GetEffectiveScale() error("attempt to perform arithmetic on a secret value") end
+function brokenFrame.GetRegions() error("secret") end
+function hbar.GetChildren() return brokenFrame, textFrame end
 step("attach to the target frame", function() ns.display.attach(true); ns.relayer(); ns.refresh() end)
 step("cast Corruption", function() cast(172) end)
 step("display refresh with secret health", function() for _ = 1, 5 do H.update(0.1) end end)

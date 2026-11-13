@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.1
+- EllesmereUI (Forever): **the target's health text ("43%") is drawn above the stripes.** The search for text to copy stopped at the first part of the interface it couldn't read, which came before the target frame, so the target's numbers were never reached. Each part is now checked on its own, and the target frame is searched first.
+
 ## v1.3.0
 - **Tooltips with numbers over 1,000 are read right.** "1,067 Shadow damage" (Bane of Agony rank 5) was read as 67, so the marker showed a fraction of that DoT's damage and its tick size couldn't be learned.
 - Forever: **Bane of Agony's tick size is learned again.** When most of its ticks couldn't be picked out (they share Shadow with Corruption and Drain Life), the damage meter's total was put down to only a tick or two and learning was skipped ("9.36x the tooltip"). Every tick due while the mob was still taking damage now counts.
