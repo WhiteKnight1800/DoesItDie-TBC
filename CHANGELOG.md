@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.1
+- **Fixed stutter and high CPU use.** The search for health text to draw above the stripes, and the check of the target frame's layers, walked a lot of frames every second; they now run every 5 seconds (and at once when you change target or a setting). Enemy Frames rows were also walked ten times a second; their bars are now looked up once and only checked after that.
+- New `/dida cpu`: shows how much time each part of the addon takes, for reports like "my game stutters".
+
 ## v1.3.0
 - EllesmereUI (Forever): **the target's health text ("43%" and the health number) is drawn above the stripes.** It's now picked up directly from EllesmereUI's text layer, by name, so nothing Forever hides can get in the way. The search for other addons' text also no longer stops at the first part of the interface it can't read.
 - **Tooltips with numbers over 1,000 are read right.** "1,067 Shadow damage" (Bane of Agony rank 5) was read as 67, so the marker showed a fraction of that DoT's damage and its tick size couldn't be learned.

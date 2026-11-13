@@ -288,7 +288,7 @@ function efTop.GetChildren() return efCC end
 step("refresh with a crowd control bar in HIGH", function()
     function UnitHealth() return 100 end
     function UnitHealthMax() return 100 end
-    H.update(0.2); H.update(0.2)
+    H.update(1.1); H.update(0.2) -- the row's top layer is re-read every second
     UnitHealth, UnitHealthMax = realUH, realUHM
 end)
 check("Enemy Frames marker follows the CC bar's strata", efMarker and efMarker.strata, "HIGH")

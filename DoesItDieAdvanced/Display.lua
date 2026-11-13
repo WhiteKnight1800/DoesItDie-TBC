@@ -1156,18 +1156,24 @@ end
 -- Keeps our marker and skull above everything on the target frame. Checked while displaying (throttled)
 -- because Blizzard can re-layer the frame at any time.
 local layerCheckedAt, lastStrata, lastLevel, layerErrorLogged = 0, nil, nil, false
+local FULL_LAYER_SECONDS = 5
+local lastFullLayerAt, lastFullLayerBar
 local lastLayerBar, lastMarkerLevel
 local function updateLayering(now)
     if healthBar ~= lastLayerBar then lastLayerBar, layerCheckedAt = healthBar, 0 end -- re-layer at once on a new bar
     if now - layerCheckedAt < LAYER_CHECK_INTERVAL then return end
     layerCheckedAt = now
+    -- The full checks (the target frame's top layer, the search for text over the bar) walk a lot of frames:
+    -- done every 5s, or at once for a new bar or a changed setting; in between the last result is kept.
+    if lastFullLayerAt and now - lastFullLayerAt < FULL_LAYER_SECONDS and healthBar == lastFullLayerBar then return end
+    lastFullLayerAt, lastFullLayerBar = now, healthBar
     local ok, strata, level
     if previewHost then
         -- One strata above the options window: it's a top-level frame, which WoW raises above everything else
         -- in its own strata (our frames included) when it's shown or clicked. Dropdowns and tooltips sit higher.
         ok, strata, level = true, "FULLSCREEN", 1
     else
-        ok, strata, level = pcall(targetFrameTopLayer)
+        ok, strata, level = pcall(ns.timed, "target frame layers", targetFrameTopLayer)
     end
     if not ok then
         if not layerErrorLogged then
@@ -1193,7 +1199,7 @@ local function updateLayering(now)
     skullBar:SetFrameStrata(strata)
     skullBar:SetFrameLevel(level + 8)
     if under then
-        local okT, errT = pcall(textLift.apply, healthBar, strata, level + 5, layerRoot)
+        local okT, errT = pcall(ns.timed, "health text search", textLift.apply, healthBar, strata, level + 5, layerRoot)
         if not okT and not layerErrorLogged then
             layerErrorLogged = true
             trace("TEXT lift failed (logged once): " .. tostring(errT))
@@ -1209,7 +1215,7 @@ local function updateLayering(now)
 end
 
 -- Re-layer on the next refresh (a setting changed).
-function ns.relayer() layerCheckedAt = 0 end
+function ns.relayer() layerCheckedAt, lastFullLayerAt = 0, nil end
 function ns.textReport() return textLift.report(healthBar, layerRoot) end
 function ns.textMirror(region) return textLift.isMirrored(region) end
 

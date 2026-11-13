@@ -804,18 +804,31 @@ local function copyText(w, root, healthBar, cell)
     -- "Fear"). The row's aura icons (frames of icons) aren't bars: counting them hid the name once DoTs went on.
     local overlayShown = false
     if cell then
-        local function look(frame, depth)
-            if overlayShown or frame == w.marker or frame == w.iconWindow or frame == w.iconBar then return end
-            if frame ~= healthBar and frame ~= cell and isStatusBar(frame) and frameShows(frame, cell) then
-                overlayShown = true
-                return
+        -- The row's bars are found with the text scan (every few seconds), and only their visibility is checked
+        -- each update: walking the whole row ten times a second (its aura icons too) cost a lot of CPU.
+        -- (Read again when the row's parts change, e.g. a bar Enemy Frames adds later.)
+        local okN, parts = pcall(function() return { cell:GetChildren() } end)
+        parts = okN and parts or {}
+        local same = w.overlayParts and #w.overlayParts == #parts
+        if same then for i = 1, #parts do if parts[i] ~= w.overlayParts[i] then same = false break end end end
+        if not w.overlayBars or w.overlayBarsAt ~= w.textScannedAt or not same then
+            w.overlayBars, w.overlayBarsAt, w.overlayParts = {}, w.textScannedAt, parts
+            local function collect(frame, depth)
+                if frame == w.marker or frame == w.iconWindow or frame == w.iconBar then return end
+                if frame ~= healthBar and frame ~= cell and isStatusBar(frame) then
+                    table.insert(w.overlayBars, frame)
+                    return
+                end
+                if depth < 4 then
+                    local okK, kids = pcall(function() return { frame:GetChildren() } end)
+                    for _, kid in ipairs(okK and kids or {}) do collect(kid, depth + 1) end
+                end
             end
-            if depth < 4 then
-                local okK, kids = pcall(function() return { frame:GetChildren() } end)
-                for _, kid in ipairs(okK and kids or {}) do look(kid, depth + 1) end
-            end
+            collect(cell, 0)
         end
-        look(cell, 0)
+        for _, bar in ipairs(w.overlayBars) do
+            if frameShows(bar, cell) then overlayShown = true break end
+        end
         -- Crowd control (Fear...): Enemy Frames shows it on the health bar itself, turned blue with the time left,
         -- and its "Fear" label sits under the name (seen in /dida efcheck: no other bar shown, name still "shown").
         -- A blue health bar means the mob is crowd controlled: the name copy steps aside so "Fear" shows.
@@ -1101,8 +1114,15 @@ local function updateEnemyFrames(db)
                 local health, maxHealth = (ns.realHealth or function(u) return UnitHealth(u), UnitHealthMax(u) end)(unit)
                 if health then
                     seenHosts[entry.cell] = true
-                    local floor, floorStrata = cellTopLevel(entry.cell)
+                    -- The row's top layer, read every second (not ten times a second: walking it costs).
                     local w = widgetsByHost[entry.cell]
+                    local floor, floorStrata
+                    if w and w.floorReadAt and now - w.floorReadAt < 1 then
+                        floor, floorStrata = w.levelFloor, w.strataFloor
+                    else
+                        floor, floorStrata = cellTopLevel(entry.cell)
+                        if w then w.floorReadAt = now end
+                    end
                     if w and (w.levelFloor ~= floor or w.strataFloor ~= floorStrata) then
                         w.levelFloor, w.strataFloor, w.layerKey, w.appliedStrata = floor, floorStrata, nil, nil
                     end
@@ -1171,7 +1191,7 @@ driver:SetScript("OnUpdate", function(_, elapsed)
     sinceUpdate = sinceUpdate + elapsed
     if sinceUpdate < UPDATE_INTERVAL then return end
     sinceUpdate = 0
-    local ok, err = pcall(refreshPlates)
+    local ok, err = pcall(ns.timed, "nameplates", refreshPlates)
     if not ok and not reportedError and ns.trace then
         reportedError = true
         ns.trace("ERROR in nameplate update: " .. tostring(err))

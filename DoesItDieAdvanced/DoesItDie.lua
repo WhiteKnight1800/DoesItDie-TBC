@@ -25,6 +25,21 @@ do
 end
 
 local UPDATE_INTERVAL = 0.1
+
+-- /dida cpu: how much time each part of the addon takes (for "my game stutters" reports). Always on; cheap.
+ns.cpu = {}
+local profileClock = debugprofilestop
+function ns.timed(name, fn, ...)
+    if not profileClock then return fn(...) end
+    local started = profileClock()
+    local a, b, c, d = fn(...)
+    local spent = profileClock() - started
+    local entry = ns.cpu[name]
+    if not entry then entry = { total = 0, calls = 0, worst = 0 }; ns.cpu[name] = entry end
+    entry.total, entry.calls = entry.total + spent, entry.calls + 1
+    if spent > entry.worst then entry.worst = spent end
+    return a, b, c, d
+end
 local DEFAULT_TICK_INTERVAL = 3
 -- Seconds either side of an expected tick time. Observed on Forever: the first tick lands within ~0.1s of one
 -- interval after the cast, and later ticks within ~0.1s of the first tick's rhythm. Tight windows keep melee
@@ -2388,7 +2403,7 @@ frame:SetScript("OnUpdate", function(self, elapsed)
     sinceUpdate = sinceUpdate + elapsed
     if sinceUpdate < UPDATE_INTERVAL or not db then return end
     sinceUpdate = 0
-    ns.refresh()
+    ns.timed("target frame", ns.refresh)
 end)
 
 ---------------------------------------------------------------------------
@@ -2440,6 +2455,20 @@ SlashCmdList.DOESITDIEADVANCED = function(msg)
     elseif cmd == "updates" then
         db.updateNotice = db.updateNotice == false
         print((db.updateNotice and "you'll be told when a newer version is out." or "update notices off."))
+    elseif cmd == "cpu" or cmd == "cpu reset" then
+        local rest = cmd == "cpu reset" and "reset" or nil
+        local names = {}
+        for name in pairs(ns.cpu) do table.insert(names, name) end
+        table.sort(names, function(a, b) return ns.cpu[a].total > ns.cpu[b].total end)
+        local lines = { "Time spent since login (or /dida cpu reset), most first:" }
+        for _, name in ipairs(names) do
+            local e = ns.cpu[name]
+            table.insert(lines, string.format("%s: %.0f ms total, %d calls, %.2f ms average, %.1f ms worst", name, e.total,
+                e.calls, e.calls > 0 and e.total / e.calls or 0, e.worst))
+        end
+        if rest == "reset" then ns.cpu = {}; print("CPU counters reset.") return end
+        for _, line in ipairs(lines) do print(line) end
+        if ns.showCopyBox then ns.showCopyBox("CPU use: select all (Ctrl+A), copy (Ctrl+C) and paste it in a comment", table.concat(lines, "\n")) end
     elseif cmd == "efcheck" then
         local ok, report = pcall(ns.enemyFramesReport)
         if not ok then report = { "efcheck failed: " .. tostring(report) } end

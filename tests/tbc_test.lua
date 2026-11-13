@@ -988,6 +988,8 @@ end)
 if not okCE then failures = failures + 1; print("FAIL  Classic Era test crashed: " .. tostring(errCE)) end
 
 check("other addons' health text on by default on TBC/Classic", db.markerUnderTextAddons, true)
+step("/dida cpu lists where time goes", function() SlashCmdList.DOESITDIEADVANCED("cpu") end)
+check("cpu use counted for the target frame", ns.cpu["target frame"] ~= nil and ns.cpu["target frame"].calls > 0, true)
 do -- update notice: a newer version heard from a guild or group member
     check("version numbers compare", ns.versionNumber("1.2.10") > ns.versionNumber("1.2.9"), true)
     local said = {}
