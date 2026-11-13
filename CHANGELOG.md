@@ -1,9 +1,7 @@
 # Changelog (Does It Die Advanced)
 
-## v1.3.1
-- EllesmereUI (Forever): **the target's health text ("43%" and the health number) is drawn above the stripes.** It's now picked up directly from EllesmereUI's text layer, by name, so nothing Forever hides can get in the way. The search for other addons' text also no longer stops at the first part of the interface it can't read.
-
 ## v1.3.0
+- EllesmereUI (Forever): **the target's health text ("43%" and the health number) is drawn above the stripes.** It's now picked up directly from EllesmereUI's text layer, by name, so nothing Forever hides can get in the way. The search for other addons' text also no longer stops at the first part of the interface it can't read.
 - **Tooltips with numbers over 1,000 are read right.** "1,067 Shadow damage" (Bane of Agony rank 5) was read as 67, so the marker showed a fraction of that DoT's damage and its tick size couldn't be learned.
 - Forever: **Bane of Agony's tick size is learned again.** When most of its ticks couldn't be picked out (they share Shadow with Corruption and Drain Life), the damage meter's total was put down to only a tick or two and learning was skipped ("9.36x the tooltip"). Every tick due while the mob was still taking damage now counts.
 - **Drain Life (and Drain Soul, Mind Flay) stay on the marker for the whole channel.** On Forever the addon can't see channel ticks, took that as "missed ticks" and dropped Drain Life halfway through. It now stays for as long as you channel, and its ticks are counted from the start of the channel, so the last one isn't dropped either.
