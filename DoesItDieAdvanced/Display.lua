@@ -893,6 +893,28 @@ do
                 end
             end
         end
+        -- EllesmereUI keeps its health text ("43%", the health number) on a frame it calls _textOverlay, on the unit
+        -- frame that holds the bar. Copied by name, straight away: no search, nothing hidden by Forever can get in
+        -- the way (Rost4Love's /dida textcheck: listed, but the search never reached it).
+        if db.markerUnderTextAddons ~= false then
+            local unitFrame, depth = bar, 0
+            while unitFrame and unitFrame ~= UIParent and depth < 5 do
+                local okO, overlay = pcall(function() return rawget(unitFrame, "_textOverlay") end)
+                if okO and type(overlay) == "table" then
+                    local okRg, regions = pcall(function() return { overlay:GetRegions() } end)
+                    for _, region in ipairs(okRg and regions or {}) do
+                        local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
+                        if okT and isText then
+                            mirror(region, overlay)
+                            knownOwners[overlay] = true
+                        end
+                    end
+                    break
+                end
+                local okP, parent = pcall(unitFrame.GetParent, unitFrame)
+                unitFrame, depth = okP and parent or nil, depth + 1
+            end
+        end
         -- Everything else is found by position, which Forever hides at times (in combat, on some mobs): then the
         -- named text above is all that's copied, instead of nothing. "Other addons' health text too" turns the
         -- search off (the default on Forever).

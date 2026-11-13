@@ -111,6 +111,16 @@ local brokenFrame = CreateFrame("Frame", nil, hbar)
 function brokenFrame.GetEffectiveScale() error("attempt to perform arithmetic on a secret value") end
 function brokenFrame.GetRegions() error("secret") end
 function hbar.GetChildren() return brokenFrame, textFrame end
+-- EllesmereUI's layout: the unit frame holding the bar has a _textOverlay frame with the health text
+local unitFrameOfBar = hbar:GetParent()
+local ellesmereOverlay = CreateFrame("Frame", nil, UIParent) -- not under the bar: found by its name only
+local ellesmereText = FakeMock("FontString", ellesmereOverlay)
+function ellesmereText.GetObjectType() return "FontString" end
+function ellesmereText.GetText() return "43%" end
+function ellesmereText.GetDrawLayer() return "OVERLAY", 0 end
+function ellesmereText.IsShown() return true end
+function ellesmereOverlay.GetRegions() return ellesmereText end
+rawset(unitFrameOfBar, "_textOverlay", ellesmereOverlay)
 step("attach to the target frame", function() ns.display.attach(true); ns.relayer(); ns.refresh() end)
 step("cast Corruption", function() cast(172) end)
 step("display refresh with secret health", function() for _ = 1, 5 do H.update(0.1) end end)
@@ -145,6 +155,7 @@ for _, l in ipairs(db.log) do if l:find("DROP Immolate", 1, true) then dropped =
 check("Immolate not dropped as never ticked", dropped, false)
 check("Blizzard's health text found by name (position secret): copied above the marker", (ns.textMirror(leftText)), true)
 check("an unnamed text in the target frame, position hidden: copied above the marker", (ns.textMirror(otherText)), true)
+check("EllesmereUI's _textOverlay health text copied by name", (ns.textMirror(ellesmereText)), true)
 function hbar.GetRect() return secret(100), secret(500), secret(126), secret(20) end
 function leftText.IsVisible() return setmetatable({}, getmetatable(secret(1))) end
 step("refresh with the bar's position hidden", function() ns.relayer(); ns.refresh() end)
