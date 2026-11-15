@@ -397,6 +397,19 @@ do
     local nameCopy
     for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == actorName then nameCopy = f end end
     check("Plater's name (below the bar) not drawn over its cast bar", nameCopy == nil or nameCopy.shown == false, true)
+    -- the same text read as a new object each time: no new copy on each rescan (the 1.3.1 leak)
+    local function countFS() local n = 0; for _, f in ipairs(frames) do if f.kind == "fontstring" then n = n + 1 end end return n end
+    local realRegions = hb.GetRegions
+    function hb.GetRegions()
+        local a, b = realRegions()
+        return setmetatable({ GetObjectType = function() return "FontString" end }, { __index = a }),
+            setmetatable({ GetObjectType = function() return "FontString" end }, { __index = b })
+    end
+    wait(4)
+    local before = countFS()
+    for _ = 1, 20 do wait(3.1) end
+    check("nameplate text rescans make no new copies", countFS() - before, 0)
+    hb.GetRegions = realRegions
 end
 
 -- 19c. NeatPlates: its frame is plate.extended, on a carrier outside the plate, bar at extended.bars.healthbar

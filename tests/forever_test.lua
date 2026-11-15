@@ -155,6 +155,19 @@ for _, l in ipairs(db.log) do if l:find("DROP Immolate", 1, true) then dropped =
 check("Immolate not dropped as never ticked", dropped, false)
 check("Blizzard's health text found by name (position secret): copied above the marker", (ns.textMirror(leftText)), true)
 check("an unnamed text in the target frame, position hidden: copied above the marker", (ns.textMirror(otherText)), true)
+-- The leak reported in 1.3.1: on Forever the same text can come back as a new object each time it's read. Keyed by
+-- the object, every search made a new copy (300,000 after an hour). Now one copy per text, however often it's read.
+local function countFontStrings() local n = 0; for _, f in ipairs(frames) do if f.kind == "fontstring" then n = n + 1 end end return n end
+function textFrame.GetRegions()
+    local proxy = setmetatable({}, { __index = otherText }) -- a fresh object for the same text, every call
+    function proxy.GetObjectType() return "FontString" end
+    return proxy
+end
+step("search 3 times", function() for _ = 1, 3 do ns.relayer(); H.update(1.1) end end)
+local before = countFontStrings()
+step("search 50 more times", function() for _ = 1, 50 do ns.relayer(); H.update(1.1) end end)
+check("no new copies for the same text read again (was one per search)", countFontStrings() - before, 0)
+function textFrame.GetRegions() return otherText end
 check("EllesmereUI's _textOverlay health text copied by name", (ns.textMirror(ellesmereText)), true)
 function hbar.GetRect() return secret(100), secret(500), secret(126), secret(20) end
 function leftText.IsVisible() return setmetatable({}, getmetatable(secret(1))) end

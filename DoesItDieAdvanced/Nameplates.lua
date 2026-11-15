@@ -755,14 +755,15 @@ local function copyText(w, root, healthBar, cell)
     if not w.textHolder then
         w.textHolder = CreateFrame("Frame", nil, w.marker)
         w.textHolder:SetAllPoints(cell or w.marker)
-        w.textCopies = {}
+        w.textCopies = {}   -- frame -> { [index] = copy entry }: by place, not by text object (see textLift)
+        w.textByRegion = setmetatable({}, { __mode = "k" }) -- lookups only
     end
     local okL, level = pcall(w.marker.GetFrameLevel, w.marker)
     if okL and type(level) == "number" and not isSecret(level) then w.textHolder:SetFrameLevel(level + 4) end
     local now = GetTime()
     if w.textRoot ~= root or not w.textScannedAt or now - w.textScannedAt >= TEXT_RESCAN then
         if w.textRoot ~= root then
-            for _, c in pairs(w.textCopies) do c.copy:Hide() end
+            for _, owned in pairs(w.textCopies) do for _, c in pairs(owned) do c.copy:Hide() end end
             w.textCopies, w.textRoot = {}, root
         end
         w.textScannedAt = now
@@ -772,14 +773,25 @@ local function copyText(w, root, healthBar, cell)
             local okF, forbidden = pcall(function() return frame.IsForbidden and frame:IsForbidden() end)
             if not okF or forbidden then return end
             local ok, regions = pcall(function() return { frame:GetRegions() } end)
-            for _, region in ipairs(ok and regions or {}) do
+            for index, region in ipairs(ok and regions or {}) do
                 local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
-                if okT and isText and not w.textCopies[region] then
-                    local okD, layer = pcall(region.GetDrawLayer, region)
-                    local copy = w.textHolder:CreateFontString(nil, okD and type(layer) == "string" and layer or "OVERLAY")
-                    copy:SetFontObject(GameFontHighlightSmall or GameFontNormalSmall)
-                    copy:SetAllPoints(region)
-                    w.textCopies[region] = { copy = copy, owner = frame, group = group }
+                if okT and isText then
+                    local owned = w.textCopies[frame]
+                    if not owned then owned = {}; w.textCopies[frame] = owned end
+                    local c = owned[index]
+                    if not c then
+                        local okD, layer = pcall(region.GetDrawLayer, region)
+                        local copy = w.textHolder:CreateFontString(nil, okD and type(layer) == "string" and layer or "OVERLAY")
+                        copy:SetFontObject(GameFontHighlightSmall or GameFontNormalSmall)
+                        c = { copy = copy, owner = frame, group = group }
+                        owned[index] = c
+                    end
+                    if c.region ~= region then -- the same text read as a new object: the copy follows it
+                        c.region = region
+                        c.copy:ClearAllPoints()
+                        c.copy:SetAllPoints(region)
+                    end
+                    w.textByRegion[region] = c
                 end
             end
             if depth < 4 then
@@ -793,8 +805,10 @@ local function copyText(w, root, healthBar, cell)
             -- slipped through the position check on Forever and was drawn over "Fireball").
             local okL, platerText = pcall(rawget, healthBar, "lifePercent")
             platerText = okL and type(platerText) == "table" and platerText or nil
-            for region, c in pairs(w.textCopies) do
-                if platerText then c.onBar = region == platerText else c.onBar = onBar(region, healthBar) end
+            for _, owned in pairs(w.textCopies) do
+                for _, c in pairs(owned) do
+                    if platerText then c.onBar = c.region == platerText else c.onBar = onBar(c.region, healthBar) end
+                end
             end
         end
     end
@@ -850,8 +864,8 @@ local function copyText(w, root, healthBar, cell)
             if okT and not isSecret(hasTarget) and not hasTarget then overlayShown = true end
         end
     end
-    for region, c in pairs(w.textCopies) do
-        local copy = c.copy
+    for _, owned in pairs(w.textCopies) do for _, c in pairs(owned) do
+        local copy, region = c.copy, c.region
         local show
         if cell then
             show = shownUpTo(region, cell)
@@ -881,7 +895,7 @@ local function copyText(w, root, healthBar, cell)
         else
             copy:Hide()
         end
-    end
+    end end
     w.textHolder:SetShown(ns.db.markerUnderText ~= false)
 end
 local function plateText(w, bar) copyText(w, bar, bar, nil) end
@@ -1081,7 +1095,7 @@ function ns.enemyFramesReport()
                 if okT and isText then
                     local okX, text = pcall(region.GetText, region)
                     text = (not okX and "?") or (isSecret(text) and "secret") or tostring(text)
-                    local c = w and w.textCopies and w.textCopies[region]
+                    local c = w and w.textByRegion and w.textByRegion[region]
                     table.insert(report, string.format("%s  text \"%s\" shown=%s alpha=%s: %s", string.rep("  ", depth), text,
                         (function() local ok, v = pcall(region.IsShown, region); return ok and (isSecret(v) and "secret" or tostring(v)) or "?" end)(),
                         (function() local ok, v = pcall(region.GetAlpha, region); return ok and (isSecret(v) and "secret" or tostring(v)) or "?" end)(),

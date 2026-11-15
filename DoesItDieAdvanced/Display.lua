@@ -820,8 +820,15 @@ local TOP_STRATA_RANK = 4 -- HIGH
 -- position, updated on every refresh, shown only while the marker is shown and the original is visible.
 local textLift = {}
 do
-    local mirrors = {}  -- original fontString -> { copy, owner, found }
+    -- Copies are kept per owner frame and slot (the text's place among the owner's texts), never per text object
+    -- alone: on Forever the same text can come back as a different object each time it's read, and keying by it made
+    -- a new copy every search: 300,000 empty copies after an hour and the FPS falling with them (reported in 1.3.1).
+    local slots = {}    -- owner frame -> { [slot] = { copy, owner, region, found } }
+    local mirrors = setmetatable({}, { __mode = "k" }) -- original fontString -> its copy entry (lookups only)
+    local slotCount, ownerCount = 0, 0
+    local MAX_COPIES, MAX_OWNERS = 120, 40 -- a hard ceiling, whatever an addon's frames do
     local holders = {}  -- owner frame -> our frame (parented to UIParent, scaled and shown to match the owner)
+    local isHolderFrame = {} -- our frame -> true (looked up for every frame searched: must be quick)
     -- Unit frame addons often keep their text on a frame outside the target frame's own tree, so every frame in the
     -- interface is searched too (EnumerateFrames): on a new bar, then again every RESCAN_SECONDS. The search is spread
     -- over many checks, SCAN_BUDGET frames each: walking every frame at once (tens of thousands with a big UI or in a
@@ -843,37 +850,51 @@ do
         local cx, cy = (rl + rr) / 2 * scale, (rt + rb) / 2 * scale
         return cx >= l and cx <= r and cy >= b and cy <= t
     end
-    function textLift.isHolder(frame) for _, h in pairs(holders) do if h == frame then return true end end return false end
+    function textLift.isHolder(frame) return isHolderFrame[frame] == true end
     local function holderFor(owner)
         local holder = holders[owner]
         if not holder then
             holder = CreateFrame("Frame", nil, UIParent)
             holder:SetAllPoints(UIParent)
             holders[owner] = holder
+            isHolderFrame[holder] = true
         end
         holder:SetFrameStrata(layerStrata)
         holder:SetFrameLevel(layerLevel)
         return holder
     end
-    local function mirror(region, owner)
-        local m = mirrors[region]
+    local function mirror(region, owner, slot)
+        local owned = slots[owner]
+        if not owned then
+            if ownerCount >= MAX_OWNERS then return end
+            owned = {}
+            slots[owner], ownerCount = owned, ownerCount + 1
+        end
+        local m = owned[slot]
         if not m then
-            local layer = select(1, region:GetDrawLayer()) or "OVERLAY"
-            local copy = holderFor(owner):CreateFontString(nil, layer)
+            if slotCount >= MAX_COPIES then return end
+            local okD, layer = pcall(region.GetDrawLayer, region)
+            local copy = holderFor(owner):CreateFontString(nil, okD and type(layer) == "string" and layer or "OVERLAY")
             copy:SetFontObject(GameFontHighlightSmall or GameFontNormalSmall)
-            copy:SetAllPoints(region)
             copy:Hide()
             m = { copy = copy, owner = owner }
-            mirrors[region] = m
+            owned[slot], slotCount = m, slotCount + 1
         end
+        if m.region ~= region then -- a new object for the same text: the copy follows it (not a new copy)
+            m.region = region
+            m.copy:ClearAllPoints()
+            m.copy:SetAllPoints(region)
+        end
+        mirrors[region] = m
         m.found = true
     end
+    local function eachMirror(fn) for _, owned in pairs(slots) do for _, m in pairs(owned) do fn(m) end end end
     function textLift.restore()
-        for _, m in pairs(mirrors) do m.found = false; m.copy:Hide() end
+        eachMirror(function(m) m.found = false; m.copy:Hide() end)
     end
     -- bar: the health bar; strata and top: the marker's strata and highest frame level; root: the frame to search.
     function textLift.apply(bar, strata, top, root)
-        for _, m in pairs(mirrors) do m.found = false end
+        eachMirror(function(m) m.found = false end)
         if not bar then return textLift.restore() end
         layerStrata, layerLevel = strata, top + 1
         for _, holder in pairs(holders) do holder:SetFrameStrata(strata); holder:SetFrameLevel(top + 1) end
@@ -887,7 +908,7 @@ do
                     if okR and okT and isText and field ~= "ManaBarText" then
                         local okP, owner = pcall(region.GetParent, region)
                         owner = okP and owner or holder
-                        mirror(region, owner)
+                        mirror(region, owner, field)
                         knownOwners[owner] = true
                     end
                 end
@@ -902,10 +923,10 @@ do
                 local okO, overlay = pcall(function() return rawget(unitFrame, "_textOverlay") end)
                 if okO and type(overlay) == "table" then
                     local okRg, regions = pcall(function() return { overlay:GetRegions() } end)
-                    for _, region in ipairs(okRg and regions or {}) do
+                    for index, region in ipairs(okRg and regions or {}) do
                         local okT, isText = pcall(function() return region:GetObjectType() == "FontString" end)
                         if okT and isText then
-                            mirror(region, overlay)
+                            mirror(region, overlay, index)
                             knownOwners[overlay] = true
                         end
                     end
@@ -954,13 +975,13 @@ do
                     local okSc, scale = pcall(frame.GetEffectiveScale, frame)
                     if not okSc or isSecret(scale) or type(scale) ~= "number" then scale = nil end
                     local okRg, regions = pcall(function() return { frame:GetRegions() } end)
-                    for _, region in ipairs(okRg and regions or {}) do
+                    for index, region in ipairs(okRg and regions or {}) do
                         pcall(function()
                             if region:GetObjectType() == "FontString" and truthy(region, "IsShown") then
                                 local inside = nil
                                 if scale then inside = centreInside(region, scale, l, r, t, b) end
                                 if inside or (inTree and inside == nil) then
-                                    mirror(region, frame)
+                                    mirror(region, frame, index)
                                     knownOwners[frame] = true
                                 end
                             end
@@ -976,7 +997,8 @@ do
         consider(bar, 0, true)
         local okPa, parent = pcall(bar.GetParent, bar)
         if okPa and parent and parent ~= UIParent then consider(parent, 1, true) end
-        if root and root ~= UIParent then consider(root, 0, true) end
+        -- (Not the whole "root": for EllesmereUI that's the holder of all its frames, player, party, bosses and all,
+        -- and copying everything in it is what made 260 copy frames. The bar's own unit frame is searched above.)
         for owner in pairs(knownOwners) do consider(owner, 6) end
         if l and EnumerateFrames then
             local now = GetTime()
@@ -1000,9 +1022,9 @@ do
     -- Every refresh: each copy follows its original (text, look, visibility, scale), shown only over the marker.
     function textLift.sync(markerShown)
         local uiScale = UIParent:GetEffectiveScale()
-        for region, m in pairs(mirrors) do
-            local copy = m.copy
-            if m.found and markerShown and truthy(region, "IsVisible") then
+        eachMirror(function(m)
+            local copy, region = m.copy, m.region
+            if m.found and markerShown and region and truthy(region, "IsVisible") then
                 local holder = copy:GetParent()
                 local okS, ownerScale = pcall(m.owner.GetEffectiveScale, m.owner)
                 if okS and type(ownerScale) == "number" and uiScale and uiScale > 0 then holder:SetScale(ownerScale / uiScale) end
@@ -1024,7 +1046,7 @@ do
             else
                 copy:Hide()
             end
-        end
+        end)
     end
     function textLift.isMirrored(region) local m = mirrors[region]; return m ~= nil and m.found, m and m.copy end
 

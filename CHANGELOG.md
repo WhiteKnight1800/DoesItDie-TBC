@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.2
+- **Fixed FPS dropping the longer you play** (only `/reload` helped). Drawing the health text above the stripes made a new copy of the same text again and again, because on Forever the game can hand back the same text as a new object each time it's read. The copies were never removed, so they piled up (300,000 after an hour). There's now one copy per text, with a hard limit, and a search that only looks at your target frame instead of every frame of your unit frame addon. Thanks to the player who tracked this down.
+- The health text search and layer check are much faster (one part was getting slower as the copies piled up).
+
 ## v1.3.1
 - **Fixed stutter and high CPU use.** The search for health text to draw above the stripes, and the check of the target frame's layers, walked a lot of frames every second; they now run every 5 seconds (and at once when you change target or a setting). Enemy Frames rows were also walked ten times a second; their bars are now looked up once and only checked after that.
 - New `/dida cpu`: shows how much time each part of the addon takes, for reports like "my game stutters".
