@@ -159,7 +159,8 @@ end
 local function plainRect(region)
     local ok, left, bottom, width, height = pcall(region.GetRect, region)
     if not ok or type(left) ~= "number" then return nil end
-    for _, v in ipairs({ left, bottom, width, height }) do
+    for i = 1, 4 do
+        local v = select(i, left, bottom, width, height)
         if isSecret(v) or type(v) ~= "number" then return nil end
     end
     return left, bottom, width, height

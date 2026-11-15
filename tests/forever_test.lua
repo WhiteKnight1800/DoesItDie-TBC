@@ -154,6 +154,14 @@ local dropped = false
 for _, l in ipairs(db.log) do if l:find("DROP Immolate", 1, true) then dropped = true end end
 check("Immolate not dropped as never ticked", dropped, false)
 check("Blizzard's health text found by name (position secret): copied above the marker", (ns.textMirror(leftText)), true)
+-- The world map open over the target frame: the marker, kill icon and health text copies step aside
+check("no map: nothing hidden", ns.mapCovers(), false)
+WorldMapFrame = CreateFrame("Frame", "WorldMapFrame", UIParent)
+WorldMapFrame:Show()
+check("map open over the target frame (position hidden): marker steps aside", ns.mapCovers(), true)
+WorldMapFrame:Hide()
+check("map closed: marker back", ns.mapCovers(), false)
+WorldMapFrame = nil
 check("an unnamed text in the target frame, position hidden: copied above the marker", (ns.textMirror(otherText)), true)
 -- The leak reported in 1.3.1: on Forever the same text can come back as a new object each time it's read. Keyed by
 -- the object, every search made a new copy (300,000 after an hour). Now one copy per text, however often it's read.

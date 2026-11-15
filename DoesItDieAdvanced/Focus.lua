@@ -113,9 +113,12 @@ local layerCheckedAt, topStrata, topLevel, layerBar = -math.huge, nil, nil, nil
 local function topLayer(root)
     local bestStrata, bestLevel = "BACKGROUND", 0
     local function visit(frame, depth)
-        -- Some of Blizzard's frames report a secret strata/level; those are skipped (their children aren't).
-        local strata, level = frame:GetFrameStrata(), frame:GetFrameLevel()
-        if not isSecret(strata) and not isSecret(level) then
+        -- Only what's on screen counts (hidden HIGH parts lifted the marker over the world map), and frames the game
+        -- won't let us read are skipped. Some report a secret strata/level; those are skipped (their children aren't).
+        local okV, visible = pcall(frame.IsVisible, frame)
+        if okV and not isSecret(visible) and not visible then return end
+        local okSL, strata, level = pcall(function() return frame:GetFrameStrata(), frame:GetFrameLevel() end)
+        if okSL and not isSecret(strata) and not isSecret(level) then
             local rank, bestRank = STRATA_RANK[strata] or 0, STRATA_RANK[bestStrata] or 0
             if rank > bestRank then
                 bestStrata, bestLevel = strata, level
@@ -124,7 +127,8 @@ local function topLayer(root)
             end
         end
         if depth < 6 then
-            for _, child in ipairs({ frame:GetChildren() }) do visit(child, depth + 1) end
+            local okK, kids = pcall(function() return { frame:GetChildren() } end)
+            for _, child in ipairs(okK and kids or {}) do visit(child, depth + 1) end
         end
     end
     visit(root, 0)
@@ -157,6 +161,7 @@ local function refresh()
     if db.focusMode == "off" or not UnitExists("focus") or dead() then return hide() end
     local bar = focusBar(db)
     if not bar or not shown(bar) then return hide() end
+    if ns.mapCovers and ns.mapCovers(bar) then return hide() end -- the world map open over it
     local entries, total = ns.dotBreakdownForUnit("focus")
     if total <= 0 then return hide() end
     ns.barMarker.pin(host)

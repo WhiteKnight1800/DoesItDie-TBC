@@ -819,6 +819,7 @@ local TOP_STRATA_RANK = 4 -- HIGH
 -- centre lies over the health bar, one level above the marker: same font, size, outline, colour, shadow and
 -- position, updated on every refresh, shown only while the marker is shown and the original is visible.
 local textLift = {}
+local mapCoversTarget
 do
     -- Copies are kept per owner frame and slot (the text's place among the owner's texts), never per text object
     -- alone: on Forever the same text can come back as a different object each time it's read, and keying by it made
@@ -1156,6 +1157,10 @@ local function targetFrameTopLayer()
         end
         -- Some of Blizzard's frames report a secret strata/level in Forever; those can't be compared, so skip
         -- them (their children are still visited).
+        -- Only what's on screen counts: EllesmereUI keeps hidden parts in HIGH (its cast bar, while not casting), and
+        -- counting them put the marker and the health text copies in HIGH, over the world map and other windows.
+        local okV, visible = pcall(frame.IsVisible, frame)
+        if okV and not isSecret(visible) and not visible then return end
         local okS, strata = pcall(frame.GetFrameStrata, frame)
         local okL, level = pcall(frame.GetFrameLevel, frame)
         if okS and okL and not isSecret(strata) and not isSecret(level) and (STRATA_RANK[strata] or 0) <= TOP_STRATA_RANK then
@@ -1245,6 +1250,31 @@ local function hideMarkers()
     remainingBar:Hide()
     markerScale = nil -- grow in again next time it appears
 end
+
+-- Is the world map open on top of the target frame? Where positions can't be read, an open map counts as covering it.
+mapCoversTarget = function(frame)
+    local map = WorldMapFrame
+    if not map or not truthy(map, "IsVisible") then return false end
+    local target = frame or healthBar
+    if not target then return true end
+    local okM, ml, mb, mw, mh = pcall(map.GetRect, map)
+    local okT, tl, tb, tw, th = pcall(target.GetRect, target)
+    local readable = okM and okT
+    for i = 1, 8 do -- (not ipairs: it stops at the first nil, and a nil let a missing position through)
+        local v = select(i, ml, mb, mw, mh, tl, tb, tw, th)
+        if isSecret(v) or type(v) ~= "number" then readable = false break end
+    end
+    if not readable then return true end
+    local okMS, ms = pcall(map.GetEffectiveScale, map)
+    local okTS, ts = pcall(target.GetEffectiveScale, target)
+    ms = okMS and type(ms) == "number" and not isSecret(ms) and ms or 1
+    ts = okTS and type(ts) == "number" and not isSecret(ts) and ts or 1
+    ml, mb, mw, mh = ml * ms, mb * ms, mw * ms, mh * ms
+    tl, tb, tw, th = tl * ts, tb * ts, tw * ts, th * ts
+    return tl < ml + mw and tl + tw > ml and tb < mb + mh and tb + th > mb
+end
+
+ns.mapCovers = function(frame) return mapCoversTarget(frame) end
 
 local function hideAll()
     skullWindow:Hide()
@@ -1364,6 +1394,9 @@ local function refresh()
         local ok, visible = pcall(visibilityFrame.IsVisible, visibilityFrame)
         if ok and not isSecret(visible) and not visible then return hideAll() end
     end
+    -- The world map open over the target frame: the marker, kill icon and health text copies would be drawn on top
+    -- of the map (seen with EllesmereUI), so they step aside until it's closed.
+    if mapCoversTarget() then return hideAll() end
     local damage, count, breakdown = ns.tracking.targetRemainingDamage()
     if damage ~= lastTracedDamage then
         lastTracedDamage = damage

@@ -232,7 +232,8 @@ local function healthMatches(bar, unit)
     local okH, health = pcall(UnitHealth, unit)
     local okX, maxHealth = pcall(UnitHealthMax, unit)
     if not (okM and okV and okH and okX) then return false end
-    for _, v in ipairs({ high, value, health, maxHealth }) do
+    for i = 1, 4 do
+        local v = select(i, high, value, health, maxHealth)
         if type(v) ~= "number" or isSecret(v) then return false end
     end
     if maxHealth <= 0 or high <= 0 then return false end
@@ -707,7 +708,8 @@ local function onBar(region, bar)
     local okR, left, right, top, bottom = pcall(function() return region:GetLeft(), region:GetRight(), region:GetTop(), region:GetBottom() end)
     local okB, bl, br, bt, bb = pcall(function() return bar:GetLeft(), bar:GetRight(), bar:GetTop(), bar:GetBottom() end)
     local readable = okR and okB
-    for _, v in ipairs({ left, right, top, bottom, bl, br, bt, bb }) do
+    for i = 1, 8 do -- (not ipairs: it stops at the first nil, and a missing position got through to the maths)
+        local v = select(i, left, right, top, bottom, bl, br, bt, bb)
         if isSecret(v) or type(v) ~= "number" then readable = false break end
     end
     if readable then
