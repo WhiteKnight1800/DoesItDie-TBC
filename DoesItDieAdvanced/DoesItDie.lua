@@ -849,10 +849,14 @@ end
 -- someone else's.
 -- When each mob last took damage (Forever): it was alive then. The damage meter learning counts a DoT's ticks up to
 -- that moment, whether or not each tick was picked out.
-local lastHitAt = {}
+local lastHitAt, lastHitPrunedAt = {}, 0
 local function onHit(key, school)
     local now = GetTime()
     lastHitAt[key] = now
+    if now - lastHitPrunedAt > 60 then -- forget mobs not hit for a few minutes (one entry per mob otherwise kept)
+        lastHitPrunedAt = now
+        for k, at in pairs(lastHitAt) do if now - at > 300 then lastHitAt[k] = nil end end
+    end
     local prior = lastOutcome
     lastOutcome = { key = key, avoided = false, at = now }
     if prior and prior.key == key and prior.action == "IMMUNE" and now - prior.at <= OUTCOME_LOOKBACK then

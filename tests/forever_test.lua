@@ -543,6 +543,30 @@ end)
 C_Timer.After = realAfter
 check("Drain Life tick learned from the damage meter: 12", DoesItDieAdvancedDB.ticks[689], 12)
 
+-- Soak: an hour of play (target swaps, searches, texts read back as new objects): nothing may keep piling up
+do
+    function textFrame.GetRegions()
+        local proxy = setmetatable({}, { __index = otherText })
+        function proxy.GetObjectType() return "FontString" end
+        return proxy
+    end
+    local guids = { "Creature-0-0000-0-0000-9999-0000AB1001", "Creature-0-0000-0-0000-9999-0000AB1002",
+        "Creature-0-0000-0-0000-9999-0000AB1003" }
+    local function soak(n)
+        for i = 1, n do
+            if i % 20 == 0 then targetGuid = guids[(i / 20) % 3 + 1]; H.fire("PLAYER_TARGET_CHANGED") end
+            if i % 30 == 0 then cast(172) end
+            if i % 7 == 0 then H.fire("UNIT_COMBAT", "target", "WOUND", "", secret(16), 32) end
+            H.update(1.1)
+        end
+    end
+    step("warm up (10 minutes)", function() soak(550) end)
+    local before = #frames
+    step("an hour more", function() soak(3300) end)
+    check("nothing piles up over an hour (objects made)", #frames - before, 0)
+    function textFrame.GetRegions() return otherText end
+end
+
 if os.getenv("SHOWLOG") then for _, l in ipairs(db.log) do print("LOG: " .. l) end end
 print(string.format("\n%d passed, %d failed", passes, failures))
 local errs = 0
