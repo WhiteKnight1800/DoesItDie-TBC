@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.5
+- **Threat Plates: text no longer slightly doubled.** On a grown plate (your target's) the copy of the health text and level drawn above the stripes was a pixel or two off the original, so it still looked doubled. The copies are now drawn at the plate's own scale, so they land exactly on the original.
+
 ## v1.3.4
 - **Threat Plates: no more doubled numbers on nameplates.** Threat Plates grows a plate (e.g. your target's), and the copy of its level drawn above the stripes kept the normal size, so you saw two numbers of different sizes on top of each other. Copies now match the size of the text they copy, on any nameplate addon.
 - Threat Plates: its health text is now drawn above the stripes too (it was under them), and its name is left alone.

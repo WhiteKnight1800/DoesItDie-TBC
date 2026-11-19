@@ -448,7 +448,8 @@ do
     end
     local lc, sc, nc = copyOf(level), copyOf(status), copyOf(name)
     check("Threat Plates' level copied", lc and lc.shown, true)
-    check("level copy sized to the scaled plate (9 x 1.25)", lc and lc.fontSize, 11.25)
+    check("copies drawn at the scaled plate's scale", lc and lc.parent:GetEffectiveScale(), 1.25)
+    check("level copy keeps the original font size", lc and lc.fontSize, 9)
     check("Threat Plates' health text copied", sc and sc.text, "72%")
     check("health text copy shown", sc and sc.shown, true)
     check("Threat Plates' name (above the bar) not copied", nc == nil or nc.shown == false, true)

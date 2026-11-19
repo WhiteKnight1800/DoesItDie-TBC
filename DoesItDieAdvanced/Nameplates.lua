@@ -762,6 +762,18 @@ local function copyText(w, root, healthBar, cell)
     end
     local okL, level = pcall(w.marker.GetFrameLevel, w.marker)
     if okL and type(level) == "number" and not isSecret(level) then w.textHolder:SetFrameLevel(level + 4) end
+    -- The copies are drawn at the bar's scale: Threat Plates grows a plate (the target's) by scaling its own frame,
+    -- not Blizzard's plate our widgets hang on. A copy at the plate's scale with a bigger font size still drew a
+    -- pixel or two off the original (fonts are rendered at whole sizes), so the text looked doubled.
+    local okB, barScale = pcall(healthBar.GetEffectiveScale, healthBar)
+    local okE, holderEffective = pcall(w.textHolder.GetEffectiveScale, w.textHolder)
+    local okS, holderScale = pcall(w.textHolder.GetScale, w.textHolder)
+    if okB and okE and okS and type(barScale) == "number" and type(holderEffective) == "number"
+        and type(holderScale) == "number" and not isSecret(barScale) and not isSecret(holderEffective)
+        and not isSecret(holderScale) and barScale > 0 and holderEffective > 0 then
+        local wanted = holderScale * barScale / holderEffective
+        if math.abs(wanted - holderScale) > 0.001 then pcall(w.textHolder.SetScale, w.textHolder, wanted) end
+    end
     local now = GetTime()
     if w.textRoot ~= root or not w.textScannedAt or now - w.textScannedAt >= TEXT_RESCAN then
         if w.textRoot ~= root then
@@ -902,9 +914,8 @@ local function copyText(w, root, healthBar, cell)
         end
         c.shown = show
         if show then
-            -- The copy sits on our frame, the text on its addon's: if that one is scaled (Threat Plates grows the
-            -- target's plate), the same font size draws smaller or bigger, and both numbers showed. The size is
-            -- scaled to match.
+            -- A text on a frame scaled differently from the bar (or when the bar's scale can't be read): the font
+            -- size is scaled to match, so the copy isn't smaller or bigger than the original.
             local ratio = 1
             local okO, ownerScale = pcall(c.owner.GetEffectiveScale, c.owner)
             local okH, holderScale = pcall(w.textHolder.GetEffectiveScale, w.textHolder)
