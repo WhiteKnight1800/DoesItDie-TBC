@@ -1,5 +1,9 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.4
+- **Threat Plates: no more doubled numbers on nameplates.** Threat Plates grows a plate (e.g. your target's), and the copy of its level drawn above the stripes kept the normal size, so you saw two numbers of different sizes on top of each other. Copies now match the size of the text they copy, on any nameplate addon.
+- Threat Plates: its health text is now drawn above the stripes too (it was under them), and its name is left alone.
+
 ## v1.3.3
 - **The marker no longer draws over the world map.** With EllesmereUI the marker, kill icon and health text could be put on a higher layer than the map (a hidden part of the unit frame was counted), so they showed through it. Only visible parts count now, and while the map is open over your target frame (or the focus frame) the marker steps aside until it's closed.
 

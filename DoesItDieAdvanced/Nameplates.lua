@@ -802,6 +802,25 @@ local function copyText(w, root, healthBar, cell)
             end
         end
         walk(root, 0, nil)
+        -- Threat Plates keeps its texts by name in TPFrame.visual: the health text (StatusText) on a text frame
+        -- beside the bar, the level on the bar. Only those two are copied (its name is above the bar).
+        local tpTexts
+        if not cell then
+            local okV, visual = pcall(function()
+                local tp = healthBar:GetParent()
+                local v = tp and rawget(tp, "visual")
+                return type(v) == "table" and rawget(v, "Healthbar") == healthBar and v or nil
+            end)
+            if okV and visual then
+                tpTexts = {}
+                for _, key in ipairs({ "StatusText", "LevelText" }) do
+                    local text = rawget(visual, key)
+                    if type(text) == "table" then tpTexts[text] = true end
+                end
+                local textFrame = rawget(visual, "textframe")
+                if type(textFrame) == "table" and textFrame ~= root then walk(textFrame, 4, nil) end
+            end
+        end
         if not cell then -- nameplates: only text on the bar needs to be above the stripes
             -- Plater names its health text: only that one (its name, hung below the bar where the cast bar goes,
             -- slipped through the position check on Forever and was drawn over "Fireball").
@@ -809,7 +828,9 @@ local function copyText(w, root, healthBar, cell)
             platerText = okL and type(platerText) == "table" and platerText or nil
             for _, owned in pairs(w.textCopies) do
                 for _, c in pairs(owned) do
-                    if platerText then c.onBar = c.region == platerText else c.onBar = onBar(c.region, healthBar) end
+                    if tpTexts then c.onBar = tpTexts[c.region] == true
+                    elseif platerText then c.onBar = c.region == platerText
+                    else c.onBar = onBar(c.region, healthBar) end
                 end
             end
         end
@@ -881,11 +902,32 @@ local function copyText(w, root, healthBar, cell)
         end
         c.shown = show
         if show then
+            -- The copy sits on our frame, the text on its addon's: if that one is scaled (Threat Plates grows the
+            -- target's plate), the same font size draws smaller or bigger, and both numbers showed. The size is
+            -- scaled to match.
+            local ratio = 1
+            local okO, ownerScale = pcall(c.owner.GetEffectiveScale, c.owner)
+            local okH, holderScale = pcall(w.textHolder.GetEffectiveScale, w.textHolder)
+            if okO and okH and type(ownerScale) == "number" and type(holderScale) == "number" and not isSecret(ownerScale)
+                and not isSecret(holderScale) and holderScale > 0 then
+                ratio = ownerScale / holderScale
+            end
             -- Each part on its own: on Forever any of them can be secret (passed on as is, never tested).
-            pcall(function() local font, size, flags = region:GetFont(); if isSecret(font) or font then copy:SetFont(font, size, flags) end end)
+            pcall(function()
+                local font, size, flags = region:GetFont()
+                if type(size) == "number" and not isSecret(size) and ratio ~= 1 then size = size * ratio end
+                if isSecret(font) or font then copy:SetFont(font, size, flags) end
+            end)
             pcall(function() copy:SetTextColor(region:GetTextColor()) end)
             pcall(function() copy:SetShadowColor(region:GetShadowColor()) end)
-            pcall(function() copy:SetShadowOffset(region:GetShadowOffset()) end)
+            pcall(function()
+                local x, y = region:GetShadowOffset()
+                if type(x) == "number" and type(y) == "number" and not isSecret(x) and not isSecret(y) then
+                    copy:SetShadowOffset(x * ratio, y * ratio)
+                else
+                    copy:SetShadowOffset(x, y)
+                end
+            end)
             pcall(function() copy:SetJustifyH(region:GetJustifyH()) end)
             pcall(function() copy:SetJustifyV(region:GetJustifyV()) end)
             pcall(function()
@@ -1383,7 +1425,7 @@ function ns.probeNameplates()
 
     local found, shown, report = 0, 0, {}
     local addons = {}
-    for _, name in ipairs({ "Plater", "NeatPlates", "TidyPlates", "Platynator", "KuiNameplates", "ThreatPlates",
+    for _, name in ipairs({ "Plater", "NeatPlates", "TidyPlates", "Platynator", "KuiNameplates", "TidyPlatesThreat",
         "EllesmereNameplates_NS", "ElvUI" }) do
         if _G[name] then table.insert(addons, name) end
     end

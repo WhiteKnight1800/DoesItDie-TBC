@@ -412,6 +412,49 @@ do
     hb.GetRegions = realRegions
 end
 
+-- 20b. Threat Plates: TPFrame on the plate, texts kept in TPFrame.visual; the frame is scaled up (target) --------
+do
+    FakePlate.unitFrame = nil; Plater = nil
+    local tp = CreateFrame("Frame", nil, FakePlate)
+    function tp.GetEffectiveScale() return 1.25 end
+    function FakePlate.GetEffectiveScale() return 1 end
+    local hb = CreateFrame("StatusBar", nil, tp)
+    hb:SetSize(120, 10); hb:SetMinMaxValues(0, 100); hb.value = 100
+    function hb.GetEffectiveScale() return 1.25 end
+    function hb.GetEffectiveAlpha() return 1 end
+    local textframe = CreateFrame("Frame", nil, tp)
+    function textframe.GetEffectiveScale() return 1.25 end
+    local function text(parent, value, size)
+        local t = FakeMock("FontString", parent)
+        function t.GetObjectType() return "FontString" end
+        function t.GetText() return value end
+        function t.GetFont() return "Fonts\\FRIZQT__.TTF", size, "" end
+        function t.IsVisible() return true end
+        function t.GetShadowOffset() return 1, -1 end
+        return t
+    end
+    local level = text(hb, "60", 9)
+    local status = text(textframe, "72%", 11)
+    local name = text(textframe, "Jaedenar Cultist", 11)
+    function hb.GetRegions() return level end
+    function textframe.GetRegions() return status, name end
+    tp.visual = { Healthbar = hb, textframe = textframe, LevelText = level, StatusText = status, NameText = name }
+    FakePlate.TPFrame = tp
+    cast(27216); applied(targetGuid, 27216)
+    step("nameplate refresh with Threat Plates", function() for _ = 1, 5 do H.update(0.1) end end)
+    check("Threat Plates' bar used", ns.plateBarStatus(), "found: TPFrame.visual.Healthbar")
+    local function copyOf(region)
+        for _, f in ipairs(frames) do if f.kind == "fontstring" and f.allPoints == region then return f end end
+    end
+    local lc, sc, nc = copyOf(level), copyOf(status), copyOf(name)
+    check("Threat Plates' level copied", lc and lc.shown, true)
+    check("level copy sized to the scaled plate (9 x 1.25)", lc and lc.fontSize, 11.25)
+    check("Threat Plates' health text copied", sc and sc.text, "72%")
+    check("health text copy shown", sc and sc.shown, true)
+    check("Threat Plates' name (above the bar) not copied", nc == nil or nc.shown == false, true)
+    FakePlate.TPFrame = nil; FakePlate.GetEffectiveScale = nil; hb:Hide(); tp:Hide()
+end
+
 -- 19c. NeatPlates: its frame is plate.extended, on a carrier outside the plate, bar at extended.bars.healthbar
 do
     FakePlate.unitFrame = nil; Plater = nil

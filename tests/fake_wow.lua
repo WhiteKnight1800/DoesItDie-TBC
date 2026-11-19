@@ -48,6 +48,12 @@ function methods.GetWidth(self) return self.width end
 function methods.GetHeight(self) return self.height end
 function methods.GetStringWidth(self) return #(self.text or "") * 6 end
 function methods.GetFont(self) return "Fonts\\FRIZQT__.TTF", 12, "" end
+function methods.GetEffectiveScale(self)
+    local parent = self.parent
+    if type(parent) == "table" and parent.GetEffectiveScale then return parent:GetEffectiveScale() end
+    return 1
+end
+function methods.SetFont(self, font, size, flags) self.fontFile, self.fontSize = font, size end
 function methods.SetFrameStrata(self, v) self.strata = v end
 function methods.GetFrameStrata(self) return self.strata or "MEDIUM" end
 function methods.SetFrameLevel(self, v) self.level = v end
