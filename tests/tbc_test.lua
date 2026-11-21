@@ -780,6 +780,28 @@ local okT, errT = pcall(function()
     check("forbidden frame: text still copied", (ns.textMirror(pct)), true)
     check("secret visibility: text still copied", (ns.textMirror(pct)), true)
     issecretvalue, textFrame.IsVisible, TargetFrame.GetChildren = realSecret, realVisible, realChildren
+    -- The target frame hidden (target cleared, logging in): nothing measured, the last good layer stays
+    for _ = 1, 3 do ns.relayer(); ns.refresh() end
+    check("marker on the frame's top layer", marker.strata .. "/" .. marker.level, "LOW/32")
+    TargetFrame:Hide()
+    for _ = 1, 3 do ns.relayer(); ns.refresh() end
+    TargetFrame:Show()
+    ns.refresh()
+    check("target frame hidden: marker not dropped to BACKGROUND", marker.strata .. "/" .. marker.level, "LOW/32")
+    -- A shown part with a secret layer (Blizzard's frame on Forever): its real top is unknown, marker lifted to MEDIUM
+    local hidden = CreateFrame("Frame", nil, TargetFrame)
+    local secretLevel = setmetatable({}, { __secret = true })
+    function hidden.GetFrameLevel() return secretLevel end
+    function TargetFrame.GetChildren() return bar, high, hidden end
+    issecretvalue = function(v) return type(v) == "table" and getmetatable(v) and getmetatable(v).__secret or false end
+    for _ = 1, 3 do ns.relayer(); ns.refresh() end
+    check("secret layer in the frame: marker lifted out of LOW", marker.strata, "MEDIUM")
+    local _, liftedCopy = ns.textMirror(pct)
+    check("health text copy still above the marker", liftedCopy and liftedCopy.parent.strata == "MEDIUM"
+        and liftedCopy.parent.level > marker.level, true)
+    issecretvalue, TargetFrame.GetChildren = realSecret, realChildren
+    for _ = 1, 3 do ns.relayer(); ns.refresh() end
+    check("no secret layers: back on the frame's own top layer", marker.strata .. "/" .. marker.level, "LOW/32")
 end)
 if not okT then failures = failures + 1; print('FAIL  layering test crashed: ' .. tostring(errT)) end
 

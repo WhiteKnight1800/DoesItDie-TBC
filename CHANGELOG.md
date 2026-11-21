@@ -1,5 +1,10 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.6
+- **Blizzard's target frame (Forever): the marker no longer hides under the green health bar.** Two causes, both tracked down by a player:
+  - While the target frame was hidden (just after clearing your target, logging in or closing the options), the layer check found nothing and put the marker at the bottom for 5 seconds, so on a new target it was under the bar. The last good layer is now kept, and the frame is checked again as soon as you change target.
+  - Forever hides some of the target frame's layers, so the real top couldn't be measured and the fill could still cover the marker. When that happens, the marker (and the health text above it) is lifted one layer up, above the whole frame.
+
 ## v1.3.5
 - **Threat Plates: text no longer slightly doubled.** On a grown plate (your target's) the copy of the health text and level drawn above the stripes was a pixel or two off the original, so it still looked doubled. The copies are now drawn at the plate's own scale, so they land exactly on the original.
 

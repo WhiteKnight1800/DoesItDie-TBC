@@ -1145,8 +1145,11 @@ end
 
 -- Highest strata/level anywhere in the target frame's tree. Blizzard (Edit Mode) re-layers the target
 -- frame after addons load, so a level picked once at load ends up underneath the health bar and portrait.
+-- Also returns whether anything was measured (nothing is while the target frame is hidden) and whether a shown
+-- part's layer was secret (then the real top can be above what was measured).
 local function targetFrameTopLayer()
     local topStrata, topLevel = "BACKGROUND", 0
+    local found, sawSecret = false, false
     local function visit(frame, depth)
         if textLift.isHolder(frame) then return end -- our own lifted-text frame isn't part of the target frame
         -- A forbidden frame inside the tree (EllesmereUI's target frame on Forever holds one) can't be read at all,
@@ -1163,7 +1166,9 @@ local function targetFrameTopLayer()
         if okV and not isSecret(visible) and not visible then return end
         local okS, strata = pcall(frame.GetFrameStrata, frame)
         local okL, level = pcall(frame.GetFrameLevel, frame)
+        if okS and okL and (isSecret(strata) or isSecret(level)) then sawSecret = true end
         if okS and okL and not isSecret(strata) and not isSecret(level) and (STRATA_RANK[strata] or 0) <= TOP_STRATA_RANK then
+            found = true
             local rank, topRank = STRATA_RANK[strata] or 0, STRATA_RANK[topStrata] or 0
             if rank > topRank then
                 topStrata, topLevel = strata, level
@@ -1177,7 +1182,7 @@ local function targetFrameTopLayer()
         end
     end
     visit(layerRoot or healthBar or UIParent, 0)
-    return topStrata, topLevel
+    return topStrata, topLevel, found, sawSecret
 end
 
 -- Keeps our marker and skull above everything on the target frame. Checked while displaying (throttled)
@@ -1186,6 +1191,7 @@ local layerCheckedAt, lastStrata, lastLevel, layerErrorLogged = 0, nil, nil, fal
 local FULL_LAYER_SECONDS = 5
 local lastFullLayerAt, lastFullLayerBar
 local lastLayerBar, lastMarkerLevel
+local lastGoodStrata, lastGoodLevel
 local function updateLayering(now)
     if healthBar ~= lastLayerBar then lastLayerBar, layerCheckedAt = healthBar, 0 end -- re-layer at once on a new bar
     if now - layerCheckedAt < LAYER_CHECK_INTERVAL then return end
@@ -1194,13 +1200,13 @@ local function updateLayering(now)
     -- done every 5s, or at once for a new bar or a changed setting; in between the last result is kept.
     if lastFullLayerAt and now - lastFullLayerAt < FULL_LAYER_SECONDS and healthBar == lastFullLayerBar then return end
     lastFullLayerAt, lastFullLayerBar = now, healthBar
-    local ok, strata, level
+    local ok, strata, level, found, sawSecret
     if previewHost then
         -- One strata above the options window: it's a top-level frame, which WoW raises above everything else
         -- in its own strata (our frames included) when it's shown or clicked. Dropdowns and tooltips sit higher.
         ok, strata, level = true, "FULLSCREEN", 1
     else
-        ok, strata, level = pcall(ns.timed, "target frame layers", targetFrameTopLayer)
+        ok, strata, level, found, sawSecret = pcall(ns.timed, "target frame layers", targetFrameTopLayer)
     end
     if not ok then
         if not layerErrorLogged then
@@ -1208,6 +1214,24 @@ local function updateLayering(now)
             trace("LAYER check failed (logged once): " .. tostring(strata))
         end
         return
+    end
+    if not previewHost then
+        if not found then
+            -- Nothing measured: the target frame is hidden (just after clearing the target, logging in, closing the
+            -- options). BACKGROUND/0 was kept for 5 seconds then, so on a new target the marker sat under the bar.
+            -- The last good layer is kept, and the check runs again next second.
+            lastFullLayerAt = nil
+            if not lastGoodStrata then return end
+            strata, level = lastGoodStrata, lastGoodLevel
+        else
+            lastGoodStrata, lastGoodLevel = strata, level
+        end
+        -- Forever hides some of the target frame's layers (secret), so its real top can be above what was measured:
+        -- Blizzard's green fill still covered a marker on LOW/504. A higher strata is always drawn on top, so the
+        -- marker is lifted out of LOW then. (It steps aside while the world map covers it.)
+        if sawSecret and (STRATA_RANK[strata] or 0) < STRATA_RANK.MEDIUM then
+            strata, level = "MEDIUM", 1
+        end
     end
     -- Marker and kill icon above everything on the frame; the health numbers lifted one level above the marker
     -- (textLift) so they stay readable, unless "Health text above marker" is off.

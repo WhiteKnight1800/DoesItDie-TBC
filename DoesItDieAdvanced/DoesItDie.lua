@@ -2333,6 +2333,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         dropCastInProgress("target changed")
         ns.display.forgetTracedDamage()
         ns.display.attach() -- custom frames may only exist (or be rebuilt) by now
+        if ns.relayer then ns.relayer() end -- the new target's frame is measured at once, not up to 5s later
         trace("TARGET changed to " .. (unitKey("target") or "none"))
         ns.refresh()
 
