@@ -112,13 +112,16 @@ local layerCheckedAt, topStrata, topLevel, layerBar = -math.huge, nil, nil, nil
 
 local function topLayer(root)
     local bestStrata, bestLevel = "BACKGROUND", 0
+    local found, sawSecret = false, false
     local function visit(frame, depth)
         -- Only what's on screen counts (hidden HIGH parts lifted the marker over the world map), and frames the game
         -- won't let us read are skipped. Some report a secret strata/level; those are skipped (their children aren't).
         local okV, visible = pcall(frame.IsVisible, frame)
         if okV and not isSecret(visible) and not visible then return end
         local okSL, strata, level = pcall(function() return frame:GetFrameStrata(), frame:GetFrameLevel() end)
+        if okSL and (isSecret(strata) or isSecret(level)) then sawSecret = true end
         if okSL and not isSecret(strata) and not isSecret(level) then
+            found = true
             local rank, bestRank = STRATA_RANK[strata] or 0, STRATA_RANK[bestStrata] or 0
             if rank > bestRank then
                 bestStrata, bestLevel = strata, level
@@ -132,7 +135,7 @@ local function topLayer(root)
         end
     end
     visit(root, 0)
-    return bestStrata, bestLevel
+    return bestStrata, bestLevel, found, sawSecret
 end
 
 -- Keeps the focus widgets above everything on the frame that holds `bar` (checked at most once a second).
@@ -140,7 +143,15 @@ local function updateLayering(bar, now)
     if bar ~= layerBar or now - layerCheckedAt >= LAYER_CHECK_INTERVAL then
         layerCheckedAt, layerBar = now, bar
         local root = ns.frameRoot and ns.frameRoot(bar) or bar
-        local ok, strata, level = pcall(topLayer, root)
+        local ok, strata, level, found, sawSecret = pcall(topLayer, root)
+        -- Nothing measured (the frame hidden for a moment): the last layer is kept. Secret layers on the frame
+        -- (Blizzard's on Forever): its real top is unknown, so the marker goes one strata up, out of LOW (as on the
+        -- target frame).
+        if ok and not found then
+            ok, layerCheckedAt = false, 0
+        elseif ok and sawSecret and (STRATA_RANK[strata] or 0) < STRATA_RANK.MEDIUM then
+            strata, level = "MEDIUM", 1
+        end
         if ok and (strata ~= topStrata or level ~= topLevel) then
             topStrata, topLevel = strata, level
             ns.trace(string.format("LAYER focus frame top is %s/%d; focus marker placed above it", strata, level))

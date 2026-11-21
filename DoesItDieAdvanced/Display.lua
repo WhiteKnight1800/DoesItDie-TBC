@@ -1219,8 +1219,9 @@ local function updateLayering(now)
         if not found then
             -- Nothing measured: the target frame is hidden (just after clearing the target, logging in, closing the
             -- options). BACKGROUND/0 was kept for 5 seconds then, so on a new target the marker sat under the bar.
-            -- The last good layer is kept, and the check runs again next second.
-            lastFullLayerAt = nil
+            -- The last good layer is kept, and the check runs again on the next update (cheap while hidden: the
+            -- walk stops at the hidden frame).
+            lastFullLayerAt, layerCheckedAt = nil, 0
             if not lastGoodStrata then return end
             strata, level = lastGoodStrata, lastGoodLevel
         else
