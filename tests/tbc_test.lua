@@ -802,6 +802,29 @@ local okT, errT = pcall(function()
     issecretvalue, TargetFrame.GetChildren = realSecret, realChildren
     for _ = 1, 3 do ns.relayer(); ns.refresh() end
     check("no secret layers: back on the frame's own top layer", marker.strata .. "/" .. marker.level, "LOW/32")
+    -- Marker direction: a health bar set to reverse fill (shrinks left to right) gets the marker from the right end
+    check("normal bar: marker fills from the left", marker.reverseFill or false, false)
+    bar:SetReverseFill(true)
+    ns.refresh()
+    check("reverse-fill bar, auto: marker fills from the right", marker.reverseFill, true)
+    local firstClip
+    for _, f in ipairs(frames) do
+        if f.points and f.points.TOPRIGHT and f.points.TOPRIGHT.rel == marker then firstClip = f end
+    end
+    check("first DoT segment starts at the right end", firstClip ~= nil, true)
+    check("first segment runs to its fill's left end", firstClip and firstClip.points.BOTTOMLEFT
+        and firstClip.points.BOTTOMLEFT.relPoint, "BOTTOMLEFT")
+    db.markerDirection = "normal"
+    ns.refresh()
+    check("Marker direction 'from the left' overrides the bar", marker.reverseFill, false)
+    check("first segment back at the left end", firstClip.points.TOPLEFT and firstClip.points.TOPLEFT.rel, marker)
+    bar:SetReverseFill(false)
+    db.markerDirection = "reverse"
+    ns.refresh()
+    check("Marker direction 'from the right' on a normal bar", marker.reverseFill, true)
+    db.markerDirection = "auto"
+    ns.refresh()
+    check("auto again: follows the normal bar", marker.reverseFill, false)
 end)
 if not okT then failures = failures + 1; print('FAIL  layering test crashed: ' .. tostring(errT)) end
 

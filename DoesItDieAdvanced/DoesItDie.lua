@@ -211,6 +211,7 @@ local DEFAULTS = {
     markerOffsetY = 0,              -- moved up (+) or down (-), in pixels
     markerInsetLeft = 0,            -- left end pulled in, in pixels
     markerInsetRight = 0,           -- right end pulled in, in pixels
+    markerDirection = "auto",       -- marker from the left or right end; auto follows the bar's reverse fill
     updateNotice = true,            -- tell me when a newer version is out (heard from guild and group members)
     enemyFrames = true,             -- the marker and kill icon on Enemy Frames' list too (Krelock's addon, Forever)
     plateMarkerHeight = 0,          -- plate marker height in pixels, centred; 0 = the bar frame's full height

@@ -1,5 +1,8 @@
 # Changelog (Does It Die Advanced)
 
+## v1.3.7
+- **New: Marker direction** (Marker tab). If your target frame's health shrinks from left to right, the marker now starts from the right end of the bar to match. "Same as the health bar" (the default) works it out by itself for frame addons that use a reversed bar; "From the left" and "From the right" set it by hand. The options preview shows it too.
+
 ## v1.3.6
 - **Blizzard's target frame (Forever): the marker no longer hides under the green health bar.** Two causes, both tracked down by a player:
   - While the target frame was hidden (just after clearing your target, logging in or closing the options), the layer check found nothing and put the marker at the bottom for 5 seconds, so on a new target it was under the bar. The last good layer is now kept, and the frame is checked again as soon as it shows and whenever you change target.

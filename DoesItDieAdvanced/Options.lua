@@ -152,6 +152,8 @@ end
 
 local function updatePreview()
     if not window then return end
+    -- The mock target bar shrinks the way the chosen marker direction expects
+    pcall(window.healthBar.SetReverseFill, window.healthBar, ns.db and ns.db.markerDirection == "reverse")
     window.healthBar:SetValue(preview.health)
     window.plateHealthBar:SetValue(preview.health)
     window.focusHealthBar:SetValue(preview.health)
@@ -213,6 +215,7 @@ end
 local function changed()
     ns.reattach() -- refreshes; re-attaches only if a custom frame setting changed what to attach to
     if ns.relayer then ns.relayer() end -- settings like "Health text above marker" apply at once
+    updatePreview() -- the mock bar follows settings like Marker direction
     refreshControls()
 end
 
@@ -1095,6 +1098,9 @@ local function buildTabs()
         .. "in pixels, to where the visible bar starts." })
     marker:slider("markerInsetRight", "Marker right edge", 0, 20, 1, { tooltip = "Pulls the marker's right end "
         .. "in, in pixels, to where the visible bar ends." })
+    marker:choice("markerDirection", "Marker direction", lists.markerDirections, { tooltip = "Which end of the "
+        .. "target frame's health bar the marker starts from. Set it to \"From the right\" if your health bar "
+        .. "shrinks from left to right. \"Same as the health bar\" works it out by itself for most frame addons." })
     marker:checkbox("segmentDividers", "Dividers between DoTs", { enabledIf = perDot })
     marker:gap()
     marker:choice("outlineStyle", "Outline", lists.outlines)

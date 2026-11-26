@@ -87,6 +87,13 @@ function methods.GetDebugName(self) return self.name or "mock" end
 function methods.GetName(self) return self.name end
 function methods.GetParent(self) return self.parent end
 function methods.SetAllPoints(self, target) self.allPoints = target end
+function methods.SetPoint(self, point, rel, relPoint)
+    self.points = self.points or {}
+    self.points[point] = { rel = rel, relPoint = relPoint }
+end
+function methods.ClearAllPoints(self) self.points = {} end
+function methods.SetReverseFill(self, v) self.reverseFill = v and true or false end
+function methods.GetReverseFill(self) return self.reverseFill or false end
 
 function CreateFrame(kind, name, parent, template)
     local f = mock(kind, parent)

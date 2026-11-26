@@ -75,6 +75,11 @@ local LABEL_POSITIONS = {
     { id = "right",  label = "Inside the bar, right end" },
 }
 
+local MARKER_DIRECTIONS = {
+    { id = "auto",    label = "Same as the health bar" },
+    { id = "normal",  label = "From the left (health shrinks right to left)" },
+    { id = "reverse", label = "From the right (health shrinks left to right)" },
+}
 local DOT_COLOR_MODES = {
     { id = "single", label = "One color (fill color)" },
     { id = "school", label = "By spell school" },
@@ -277,6 +282,38 @@ for i = 1, MAX_SEGMENTS do
     divider:Hide()
 
     segments[i] = { bar = bar, fillEnd = fillEnd, texture = texture, clip = clip, divider = divider, target = 0, shown = 0 }
+end
+
+-- Marker direction: the marker runs from the end the health drains towards. Normally that's the left end (the green
+-- shrinks right to left); frames set to shrink the other way (reverse fill) get it from the right end. The segments
+-- and dividers are re-anchored to match.
+local function setMarkerReversed(reversed)
+    remainingBar:SetReverseFill(reversed)
+    for i, segment in ipairs(segments) do
+        segment.bar:SetReverseFill(reversed)
+        local clip, divider, fillEnd = segment.clip, segment.divider, segment.fillEnd
+        clip:ClearAllPoints()
+        divider:ClearAllPoints()
+        if reversed then
+            if i == 1 then
+                clip:SetPoint("TOPRIGHT", remainingBar, "TOPRIGHT")
+            else
+                clip:SetPoint("TOPRIGHT", segments[i - 1].fillEnd, "TOPLEFT")
+            end
+            clip:SetPoint("BOTTOMLEFT", fillEnd, "BOTTOMLEFT")
+            divider:SetPoint("TOP", fillEnd, "TOPLEFT")
+            divider:SetPoint("BOTTOM", fillEnd, "BOTTOMLEFT")
+        else
+            if i == 1 then
+                clip:SetPoint("TOPLEFT", remainingBar, "TOPLEFT")
+            else
+                clip:SetPoint("TOPLEFT", segments[i - 1].fillEnd, "TOPRIGHT")
+            end
+            clip:SetPoint("BOTTOMRIGHT", fillEnd, "BOTTOMRIGHT")
+            divider:SetPoint("TOP", fillEnd, "TOPRIGHT")
+            divider:SetPoint("BOTTOM", fillEnd, "BOTTOMRIGHT")
+        end
+    end
 end
 
 local flashTex = clipLayer:CreateTexture(nil, "OVERLAY")
@@ -1359,9 +1396,24 @@ anchorMarker = function()
     local y = (not previewHost and db and tonumber(db.markerOffsetY)) or 0
     local left = (not previewHost and db and tonumber(db.markerInsetLeft)) or 0
     local right = (not previewHost and db and tonumber(db.markerInsetRight)) or 0
-    local key = height .. ":" .. y .. ":" .. left .. ":" .. right
+    -- Marker direction (Marker tab): auto follows the health bar (a bar set to reverse fill shrinks left to right).
+    local direction = db and db.markerDirection or "auto"
+    local reversed = direction == "reverse"
+    if direction == "auto" and not previewHost then
+        local okR, rev = pcall(healthBar.GetReverseFill, healthBar)
+        reversed = okR and not isSecret(rev) and rev == true
+    end
+    local key = height .. ":" .. y .. ":" .. left .. ":" .. right .. ":" .. tostring(reversed)
     if anchoredHeight == key then return end
     anchoredHeight = key
+    if reversed ~= (remainingBar.didaReversed or false) then
+        remainingBar.didaReversed = reversed
+        setMarkerReversed(reversed)
+        spark:ClearAllPoints()
+        local edge = reversed and "LEFT" or "RIGHT"
+        spark:SetPoint("TOP", span, "TOP" .. edge, 0, 7)
+        spark:SetPoint("BOTTOM", span, "BOTTOM" .. edge, 0, -7)
+    end
     remainingBar:ClearAllPoints()
     if height > 0 then
         remainingBar:SetPoint("LEFT", healthBar, "LEFT", left, y)
@@ -1515,6 +1567,7 @@ end
 ns.lists.colors, ns.lists.icons, ns.lists.fills, ns.lists.outlines = COLOR_PRESETS, SKULL_ICONS, FILL_STYLES,
     OUTLINE_STYLES
 ns.lists.dashLengths, ns.lists.labelPositions, ns.lists.dotColors = DASH_LENGTHS, LABEL_POSITIONS, DOT_COLOR_MODES
+ns.lists.markerDirections = MARKER_DIRECTIONS
 ns.refresh = safeRefresh
 ns.playFlash = playFlash
 ns.dotColor = dotColor
